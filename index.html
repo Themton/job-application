@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบรับสมัครงาน | Job Application System</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+
+// ─── Mock Data ───
+const INITIAL_DATA = [
+  { id: 1, fullName: "สมชาย ใจดี", email: "somchai@email.com", phone: "081-234-5678", position: "นักพัฒนาซอฟต์แวร์", education: "ปริญญาตรี วิศวกรรมคอมพิวเตอร์", experience: "3-5 ปี", introduction: "มีประสบการณ์พัฒนา React และ Node.js มา 4 ปี เคยทำโปรเจกต์ E-commerce ขนาดใหญ่", submittedAt: "2026-02-28", status: "reviewing", hasCredential: true, hasIdCard: true },
+  { id: 2, fullName: "สมหญิง รักเรียน", email: "somying@email.com", phone: "089-876-5432", position: "นักออกแบบ UI/UX", education: "ปริญญาตรี ออกแบบนิเทศศิลป์", experience: "5-10 ปี", introduction: "ออกแบบ UI/UX สำหรับแอปมือถือและเว็บไซต์ เชี่ยวชาญ Figma และ Adobe Suite", submittedAt: "2026-02-27", status: "interview", hasCredential: true, hasIdCard: true },
+  { id: 3, fullName: "วิชัย สร้างสรรค์", email: "wichai@email.com", phone: "062-111-2222", position: "ผู้จัดการโครงการ", education: "ปริญญาโท บริหารธุรกิจ", experience: "มากกว่า 10 ปี", introduction: "บริหารโครงการ IT มากว่า 10 ปี มี PMP Certification", submittedAt: "2026-02-25", status: "accepted", hasCredential: true, hasIdCard: true },
+  { id: 4, fullName: "นภา แสงจันทร์", email: "napa@email.com", phone: "091-333-4444", position: "นักวิเคราะห์ข้อมูล", education: "ปริญญาตรี สถิติประยุกต์", experience: "1-2 ปี", introduction: "จบใหม่ มีความรู้ด้าน Python, SQL, Power BI", submittedAt: "2026-02-24", status: "new", hasCredential: true, hasIdCard: false },
+  { id: 5, fullName: "ธนา เจริญกิจ", email: "thana@email.com", phone: "085-555-6666", position: "นักพัฒนาซอฟต์แวร์", education: "ปริญญาตรี วิทยาการคอมพิวเตอร์", experience: "3-5 ปี", introduction: "Full-stack developer เชี่ยวชาญ Vue.js และ Laravel", submittedAt: "2026-02-23", status: "rejected", hasCredential: true, hasIdCard: true },
+  { id: 6, fullName: "พิมพ์ใจ อารีย์", email: "pimjai@email.com", phone: "097-777-8888", position: "เจ้าหน้าที่บุคคล", education: "ปริญญาตรี การจัดการทรัพยากรมนุษย์", experience: "3-5 ปี", introduction: "มีประสบการณ์งาน HR ด้านสรรหาบุคลากร และจัดทำสวัสดิการ", submittedAt: "2026-02-22", status: "reviewing", hasCredential: true, hasIdCard: true },
+  { id: 7, fullName: "กฤษณ์ มหาชัย", email: "krit@email.com", phone: "063-999-0000", position: "นักออกแบบ UI/UX", education: "ปริญญาตรี สถาปัตยกรรม", experience: "1-2 ปี", introduction: "มีพื้นฐานด้านการออกแบบจากสถาปัตย์ สนใจงาน Digital Product Design", submittedAt: "2026-02-20", status: "new", hasCredential: false, hasIdCard: true },
+  { id: 8, fullName: "อรุณี สุขสวัสดิ์", email: "arunee@email.com", phone: "088-111-3333", position: "นักบัญชี", education: "ปริญญาตรี การบัญชี", experience: "5-10 ปี", introduction: "มี CPA License ประสบการณ์ทำบัญชีบริษัทมหาชน", submittedAt: "2026-02-19", status: "interview", hasCredential: true, hasIdCard: true },
+];
+
+const STATUS_MAP = {
+  new: { label: "ใหม่", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
+  reviewing: { label: "กำลังพิจารณา", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
+  interview: { label: "นัดสัมภาษณ์", color: "#8b5cf6", bg: "rgba(139,92,246,0.1)" },
+  accepted: { label: "ผ่าน", color: "#16a34a", bg: "rgba(22,163,74,0.1)" },
+  rejected: { label: "ไม่ผ่าน", color: "#dc2626", bg: "rgba(220,38,38,0.1)" },
+};
+
+const INITIAL_POSITIONS = [
+  { id: 1, title: "นักพัฒนาซอฟต์แวร์", department: "ฝ่ายเทคโนโลยี", slots: 3, active: true, createdAt: "2026-01-15" },
+  { id: 2, title: "นักออกแบบ UI/UX", department: "ฝ่ายออกแบบ", slots: 2, active: true, createdAt: "2026-01-20" },
+  { id: 3, title: "ผู้จัดการโครงการ", department: "ฝ่ายบริหาร", slots: 1, active: true, createdAt: "2026-02-01" },
+  { id: 4, title: "นักวิเคราะห์ข้อมูล", department: "ฝ่ายเทคโนโลยี", slots: 2, active: true, createdAt: "2026-02-05" },
+  { id: 5, title: "เจ้าหน้าที่บุคคล", department: "ฝ่ายบุคคล", slots: 1, active: false, createdAt: "2026-02-10" },
+  { id: 6, title: "นักบัญชี", department: "ฝ่ายการเงิน", slots: 2, active: true, createdAt: "2026-02-12" },
+];
+
+// ─── Icons ───
+const I = {
+  Search: () => <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35" strokeLinecap="round"/></svg>,
+  Upload: () => <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17,8 12,3 7,8" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="3" x2="12" y2="15" strokeLinecap="round"/></svg>,
+  File: () => <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>,
+  Check: () => <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#16a34a" strokeWidth="3"><polyline points="20,6 9,17 4,12" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  X: () => <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" strokeLinecap="round"/></svg>,
+  Users: () => <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  Back: () => <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12" strokeLinecap="round" strokeLinejoin="round"/><polyline points="12,19 5,12 12,5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Lock: () => <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+  Dashboard: () => <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>,
+  Logout: () => <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  Eye: () => <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+  Chart: () => <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  Calendar: () => <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  Mail: () => <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+  Phone: () => <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+  Briefcase: () => <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
+  Gear: () => <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  Globe: () => <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+  Trash: () => <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+};
+
+// ─── CSS ───
+const css = `
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
+:root{--bg:#f4f1ec;--card:#fff;--primary:#1a2e44;--primary-mid:#2a4a6b;--primary-light:#3a6b9f;--accent:#c17d2e;--accent-hover:#d4922f;--text:#1e293b;--text-sec:#475569;--text-muted:#94a3b8;--border:#e2ddd5;--border-light:#f0ece6;--input-bg:#faf9f7;--sidebar-bg:#14202e;--sidebar-hover:rgba(255,255,255,0.06);--sidebar-active:rgba(193,125,46,0.2);--success:#16a34a;--danger:#dc2626;--shadow-sm:0 1px 2px rgba(0,0,0,0.04);--shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);--shadow-md:0 4px 12px rgba(0,0,0,0.07);--shadow-lg:0 12px 32px rgba(0,0,0,0.1);--radius:10px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans Thai','IBM Plex Sans Thai',sans-serif;background:var(--bg);color:var(--text)}
+.pub-header{background:var(--primary)}.pub-header-inner{max-width:900px;margin:0 auto;padding:22px 24px;display:flex;align-items:center;justify-content:space-between}
+.pub-brand{display:flex;align-items:center;gap:14px}.pub-logo{width:44px;height:44px;background:var(--accent);border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff}
+.pub-brand h1{font-size:19px;color:#fff;font-weight:600}.pub-brand p{font-size:12px;color:rgba(255,255,255,.5)}
+.admin-link{display:flex;align-items:center;gap:7px;padding:9px 16px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:rgba(255,255,255,.8);border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s}
+.admin-link:hover{background:rgba(255,255,255,.14);color:#fff}
+.pub-main{max-width:720px;margin:0 auto;padding:32px 20px 60px}.pub-title{font-size:26px;font-weight:700;color:var(--primary);margin-bottom:4px}.pub-sub{font-size:14px;color:var(--text-sec);margin-bottom:28px}
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:18px;box-shadow:var(--shadow)}
+.form-card-title{font-size:15px;font-weight:600;color:var(--primary);margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid var(--border-light);display:flex;align-items:center;gap:8px}
+.dot{width:7px;height:7px;background:var(--accent);border-radius:50%}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.form-grid .full{grid-column:1/-1}
+.field label{display:block;font-size:13px;font-weight:500;margin-bottom:5px}.field label .req{color:var(--danger)}
+.field input,.field select,.field textarea{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;background:var(--input-bg);color:var(--text);transition:all .2s;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary-light);box-shadow:0 0 0 3px rgba(58,107,159,.1);background:#fff}
+.field textarea{resize:vertical;min-height:80px}.field.err input,.field.err select{border-color:var(--danger)}
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:22px;text-align:center;cursor:pointer;transition:all .2s;background:var(--input-bg);position:relative}
+.upload-zone:hover{border-color:var(--accent);background:rgba(193,125,46,.03)}.upload-zone.done{border-color:var(--success);border-style:solid;background:rgba(22,163,74,.03)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-icon{color:var(--text-muted);margin-bottom:6px;display:flex;justify-content:center}.upload-text{font-size:14px;color:var(--text-sec);font-weight:500}.upload-hint{font-size:12px;color:var(--text-muted);margin-top:3px}
+.file-info{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:var(--success);font-weight:500}
+.rm-file{background:none;border:none;cursor:pointer;color:var(--danger);padding:2px;display:flex;border-radius:50%}
+.submit-row{display:flex;justify-content:flex-end;margin-top:8px}
+.btn{padding:11px 26px;border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;border:none}
+.btn-accent{background:var(--accent);color:#fff}.btn-accent:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.btn-ghost{background:transparent;color:var(--text-sec);border:1px solid var(--border)}.btn-ghost:hover{background:var(--input-bg)}
+.btn-sm{padding:7px 14px;font-size:13px;border-radius:7px}
+.btn-danger-sm{padding:7px 14px;font-size:13px;border-radius:7px;background:rgba(220,38,38,.08);color:var(--danger);border:1px solid rgba(220,38,38,.15);cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:6px;transition:all .15s}
+.btn-danger-sm:hover{background:rgba(220,38,38,.15)}
+.toast{position:fixed;bottom:24px;right:24px;padding:13px 22px;border-radius:10px;font-size:14px;font-weight:500;box-shadow:var(--shadow-lg);z-index:1000;animation:slideUp .3s;display:flex;align-items:center;gap:8px;color:#fff}
+.toast.success{background:var(--success)}.toast.error{background:var(--danger)}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#14202e,#1a3350,#14202e);padding:20px}
+.login-box{background:var(--card);border-radius:18px;padding:44px 38px;width:100%;max-width:400px;box-shadow:var(--shadow-lg);text-align:center}
+.login-logo{width:60px;height:60px;background:var(--accent);border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;margin:0 auto 20px}
+.login-box h2{font-size:22px;font-weight:700;color:var(--primary);margin-bottom:6px}.login-box .sub{font-size:14px;color:var(--text-muted);margin-bottom:28px}
+.login-box .field{text-align:left;margin-bottom:14px}.login-box .btn{width:100%;justify-content:center;margin-top:8px;padding:13px}.login-box .hint{font-size:12px;color:var(--text-muted);margin-top:16px}
+.admin{display:flex;min-height:100vh}
+.sidebar{width:240px;background:var(--sidebar-bg);padding:20px 0;display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:50}
+.sb-brand{display:flex;align-items:center;gap:12px;padding:0 20px 24px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px}
+.sb-logo{width:38px;height:38px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff}
+.sb-brand h2{font-size:16px;color:#fff;font-weight:600}.sb-brand p{font-size:11px;color:rgba(255,255,255,.4)}
+.sb-nav{flex:1;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.sb-link{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;color:rgba(255,255,255,.55);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.sb-link:hover{background:var(--sidebar-hover);color:rgba(255,255,255,.85)}.sb-link.active{background:var(--sidebar-active);color:var(--accent)}
+.sb-link .count{margin-left:auto;background:rgba(255,255,255,.1);padding:2px 8px;border-radius:10px;font-size:11px}
+.sb-bottom{padding:10px 10px;border-top:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:2px}
+.admin-content{flex:1;margin-left:240px;padding:28px 32px;min-height:100vh}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow-sm)}
+.stat-card .label{font-size:12px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.stat-card .value{font-size:28px;font-weight:700;color:var(--primary)}.stat-card .sub{font-size:12px;color:var(--text-muted);margin-top:4px}
+.toolbar{display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.search-wrap{flex:1;min-width:240px;position:relative}.search-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-muted)}
+.search-wrap input{width:100%;padding:11px 14px 11px 40px;border:1px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;background:var(--card);color:var(--text);box-shadow:var(--shadow-sm);outline:none;transition:all .2s}
+.search-wrap input:focus{border-color:var(--primary-light);box-shadow:0 0 0 3px rgba(58,107,159,.1)}
+.results-info{font-size:13px;color:var(--text-muted);margin-bottom:14px;font-weight:500}
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:13px 16px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);background:var(--input-bg);border-bottom:1px solid var(--border)}
+td{padding:13px 16px;font-size:14px;border-bottom:1px solid var(--border-light);vertical-align:middle}
+tr:last-child td{border-bottom:none}tbody tr{transition:background .12s;cursor:pointer}tbody tr:hover{background:rgba(193,125,46,.03)}
+.name-cell{font-weight:600;color:var(--primary)}.email-cell{font-size:12px;color:var(--text-muted);margin-top:1px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.doc-badges{display:flex;gap:5px}.doc-badge{font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500}
+.doc-yes{background:rgba(22,163,74,.1);color:var(--success)}.doc-no{background:rgba(220,38,38,.08);color:var(--danger)}
+.action-btn{padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);cursor:pointer;color:var(--text-sec);transition:all .15s;display:flex;align-items:center}
+.action-btn:hover{border-color:var(--primary-light);color:var(--primary);background:var(--input-bg)}
+.detail-page{max-width:800px}
+.detail-top{display:flex;align-items:center;gap:18px;margin-bottom:24px}
+.detail-avatar{width:64px;height:64px;background:linear-gradient(135deg,var(--primary),var(--primary-mid));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;flex-shrink:0}
+.detail-name{font-size:24px;font-weight:700;color:var(--primary)}.detail-pos{font-size:14px;color:var(--accent);font-weight:600;margin-top:2px}
+.detail-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.d-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px;box-shadow:var(--shadow-sm)}
+.d-card h4{font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.d-row{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:14px;color:var(--text)}.d-row svg{color:var(--text-muted);flex-shrink:0}
+.d-intro{font-size:14px;line-height:1.8;color:var(--text-sec)}
+.status-select{padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;font-weight:600;cursor:pointer;outline:none;background:var(--card)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-muted)}.empty-state p{font-size:15px;font-weight:500;margin-top:12px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s}
+.modal{background:var(--card);border-radius:16px;max-width:660px;width:100%;max-height:80vh;overflow-y:auto;padding:32px;box-shadow:var(--shadow-lg);animation:scaleIn .25s}
+.modal h2{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:16px}
+.modal pre{background:#1e293b;color:#e2e8f0;padding:16px;border-radius:10px;font-size:11.5px;line-height:1.6;overflow-x:auto;margin:12px 0}
+.modal ol{padding-left:20px;font-size:14px;line-height:1.9}
+.modal .close-btn{margin-top:18px;width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes scaleIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+@media(max-width:900px){.sidebar{display:none}.admin-content{margin-left:0}.stats-grid{grid-template-columns:repeat(2,1fr)}.detail-cards{grid-template-columns:1fr}}
+@media(max-width:640px){.form-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}.toolbar{flex-direction:column}}
+.pos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:20px}
+.pos-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px;box-shadow:var(--shadow-sm);transition:all .2s;position:relative}
+.pos-card:hover{box-shadow:var(--shadow-md)}
+.pos-card.inactive{opacity:.6}
+.pos-title{font-size:16px;font-weight:700;color:var(--primary);margin-bottom:4px}
+.pos-dept{font-size:13px;color:var(--accent);font-weight:500;margin-bottom:12px}
+.pos-meta{display:flex;gap:16px;font-size:13px;color:var(--text-sec)}
+.pos-meta span{display:flex;align-items:center;gap:5px}
+.pos-actions{display:flex;gap:6px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border-light)}
+.toggle{position:relative;width:44px;height:24px;border-radius:12px;cursor:pointer;transition:background .2s;border:none;padding:0;flex-shrink:0}
+.toggle.on{background:var(--success)}.toggle.off{background:var(--border)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle.on::after{transform:translateX(20px)}
+.add-pos-form{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:var(--shadow)}
+.add-pos-form h3{font-size:16px;font-weight:600;color:var(--primary);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+`;
+
+// ─── Components ───
+function Toast({msg,type,onClose}){useEffect(()=>{const t=setTimeout(onClose,3000);return()=>clearTimeout(t)},[onClose]);return<div className={`toast ${type}`}>{type==="success"&&<I.Check/>}{msg}</div>}
+
+function FileUpload({label,file,onChange}){
+  const ref=useRef();
+  const rm=e=>{e.stopPropagation();onChange(null);if(ref.current)ref.current.value=""};
+  return(
+    <div className="field full">
+      <label>{label} <span className="req">*</span></label>
+      <div className={`upload-zone ${file?"done":""}`}>
+        <input ref={ref} type="file" accept="image/*,.pdf" onChange={e=>onChange(e.target.files[0]||null)}/>
+        {file?<div className="file-info"><I.Check/><span>{file.name}</span><button className="rm-file" onClick={rm}><I.X/></button></div>
+        :<><div className="upload-icon"><I.Upload/></div><div className="upload-text">คลิกเพื่ออัปโหลด</div><div className="upload-hint">JPG, PNG, PDF (ไม่เกิน 5MB)</div></>}
+      </div>
+    </div>
+  );
+}
+
+// ═══ PUBLIC FORM ═══
+function PublicForm({onSubmit,onGoAdmin,positions}){
+  const [f,setF]=useState({fullName:"",email:"",phone:"",position:"",education:"",experience:"",introduction:""});
+  const [cred,setCred]=useState(null);const [idCard,setIdCard]=useState(null);const [errs,setErrs]=useState({});
+  const set=k=>e=>setF({...f,[k]:e.target.value});
+  const activePositions=positions.filter(p=>p.active);
+  const submit=()=>{
+    const er={};if(!f.fullName.trim())er.fullName=true;if(!f.phone.trim())er.phone=true;if(!f.position.trim())er.position=true;if(!cred)er.cred=true;if(!idCard)er.idCard=true;setErrs(er);if(Object.keys(er).length)return;
+    onSubmit({...f,hasCredential:!!cred,hasIdCard:!!idCard,submittedAt:new Date().toISOString().split("T")[0],id:Date.now(),status:"new"});
+    setF({fullName:"",email:"",phone:"",position:"",education:"",experience:"",introduction:""});setCred(null);setIdCard(null);
+  };
+  return(
+    <div style={{minHeight:"100vh",background:"var(--bg)"}}>
+      <header className="pub-header"><div className="pub-header-inner">
+        <div className="pub-brand"><div className="pub-logo">HR</div><div><h1>ระบบรับสมัครงาน</h1><p>Job Application Portal</p></div></div>
+        <button className="admin-link" onClick={onGoAdmin}><I.Lock/> เข้าหลังบ้าน</button>
+      </div></header>
+      <div className="pub-main">
+        <h2 className="pub-title">ฟอร์มสมัครงาน</h2><p className="pub-sub">กรอกข้อมูลให้ครบถ้วน พร้อมแนบเอกสารประกอบ</p>
+        <div className="form-card"><div className="form-card-title"><span className="dot"/>ข้อมูลส่วนตัว</div>
+          <div className="form-grid">
+            <div className={`field ${errs.fullName?"err":""}`}><label>ชื่อ - สกุล <span className="req">*</span></label><input value={f.fullName} onChange={set("fullName")} placeholder="กรอกชื่อ-สกุล"/></div>
+            <div className="field"><label>อีเมล</label><input type="email" value={f.email} onChange={set("email")} placeholder="example@email.com"/></div>
+            <div className={`field ${errs.phone?"err":""}`}><label>โทรศัพท์ <span className="req">*</span></label><input value={f.phone} onChange={set("phone")} placeholder="08X-XXX-XXXX"/></div>
+            <div className={`field ${errs.position?"err":""}`}><label>ตำแหน่งที่สมัคร <span className="req">*</span></label><select value={f.position} onChange={set("position")}><option value="">-- เลือกตำแหน่ง --</option>{activePositions.map(p=><option key={p.id} value={p.title}>{p.title} ({p.department})</option>)}</select></div>
+          </div></div>
+        <div className="form-card"><div className="form-card-title"><span className="dot"/>คุณสมบัติ</div>
+          <div className="form-grid">
+            <div className="field"><label>วุฒิการศึกษา</label><input value={f.education} onChange={set("education")} placeholder="เช่น ปริญญาตรี วิศวกรรมคอมพิวเตอร์"/></div>
+            <div className="field"><label>ประสบการณ์ทำงาน</label><select value={f.experience} onChange={set("experience")}><option value="">-- เลือก --</option><option value="ไม่มี">ไม่มีประสบการณ์</option><option value="1-2 ปี">1 - 2 ปี</option><option value="3-5 ปี">3 - 5 ปี</option><option value="5-10 ปี">5 - 10 ปี</option><option value="มากกว่า 10 ปี">มากกว่า 10 ปี</option></select></div>
+            <div className="field full"><label>แนะนำตัวเอง</label><textarea value={f.introduction} onChange={set("introduction")} placeholder="บอกเล่าเกี่ยวกับตัวคุณ..." rows={4}/></div>
+          </div></div>
+        <div className="form-card"><div className="form-card-title"><span className="dot"/>แนบเอกสาร</div>
+          <div className="form-grid">
+            <FileUpload label="วุฒิการศึกษา / Transcript" file={cred} onChange={setCred}/>
+            <FileUpload label="สำเนาบัตรประชาชน" file={idCard} onChange={setIdCard}/>
+          </div></div>
+        <div className="submit-row"><button className="btn btn-accent" onClick={submit}>ส่งใบสมัคร</button></div>
+      </div>
+    </div>
+  );
+}
+
+// ═══ LOGIN ═══
+function LoginPage({onLogin,onBack}){
+  const [u,setU]=useState("");const [p,setP]=useState("");const [err,setErr]=useState("");
+  const go=()=>{if(u==="admin"&&p==="1234")onLogin();else setErr("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง")};
+  return(
+    <div className="login-page"><div className="login-box">
+      <div className="login-logo">HR</div><h2>เข้าสู่ระบบหลังบ้าน</h2><p className="sub">สำหรับเจ้าหน้าที่ HR เท่านั้น</p>
+      {err&&<div style={{background:"rgba(220,38,38,.08)",color:"var(--danger)",padding:"10px",borderRadius:8,fontSize:13,marginBottom:14,fontWeight:500}}>{err}</div>}
+      <div className="field"><label>ชื่อผู้ใช้</label><input value={u} onChange={e=>setU(e.target.value)} placeholder="admin" onKeyDown={e=>e.key==="Enter"&&go()}/></div>
+      <div className="field"><label>รหัสผ่าน</label><input type="password" value={p} onChange={e=>setP(e.target.value)} placeholder="••••" onKeyDown={e=>e.key==="Enter"&&go()}/></div>
+      <button className="btn btn-accent" onClick={go}><I.Lock/> เข้าสู่ระบบ</button>
+      <button className="btn btn-ghost" style={{width:"100%",justifyContent:"center",marginTop:8}} onClick={onBack}><I.Back/> กลับหน้าสมัครงาน</button>
+      <p className="hint">ทดสอบ: admin / 1234</p>
+    </div></div>
+  );
+}
+
+// ═══ ADMIN PANEL ═══
+function AdminPanel({applicants,setApplicants,positions,setPositions,onLogout,onGoPublic}){
+  const [page,setPage]=useState("dashboard");
+  const [selected,setSelected]=useState(null);
+  const [search,setSearch]=useState("");
+  const [statusFilter,setStatusFilter]=useState("all");
+  const [posFilter,setPosFilter]=useState("all");
+  const [showSetup,setShowSetup]=useState(false);
+  const [toast,setToast]=useState(null);
+
+  const counts={total:applicants.length,new:applicants.filter(a=>a.status==="new").length,reviewing:applicants.filter(a=>a.status==="reviewing").length,interview:applicants.filter(a=>a.status==="interview").length,accepted:applicants.filter(a=>a.status==="accepted").length,rejected:applicants.filter(a=>a.status==="rejected").length};
+
+  const filtered=applicants.filter(a=>{
+    const ms=a.fullName.toLowerCase().includes(search.toLowerCase())||a.email.toLowerCase().includes(search.toLowerCase())||a.phone.includes(search)||a.position.toLowerCase().includes(search.toLowerCase())||a.education?.toLowerCase().includes(search.toLowerCase());
+    return ms&&(statusFilter==="all"||a.status===statusFilter)&&(posFilter==="all"||a.position===posFilter);
+  });
+
+  const positions=[...new Set(applicants.map(a=>a.position))];
+  const updateStatus=(id,status)=>{setApplicants(applicants.map(a=>a.id===id?{...a,status}:a));if(selected?.id===id)setSelected({...selected,status});setToast({msg:"อัปเดตสถานะเรียบร้อย",type:"success"})};
+  const deleteApplicant=(id)=>{setApplicants(applicants.filter(a=>a.id!==id));if(selected?.id===id){setSelected(null);setPage("list");}setToast({msg:"ลบข้อมูลเรียบร้อย",type:"success"})};
+
+  const DashboardView=()=>(
+    <>
+      <h2 style={{fontSize:22,fontWeight:700,color:"var(--primary)",marginBottom:4}}>แดชบอร์ด</h2>
+      <p style={{fontSize:14,color:"var(--text-muted)",marginBottom:24}}>ภาพรวมข้อมูลผู้สมัครทั้งหมด</p>
+      <div className="stats-grid">
+        <div className="stat-card"><div className="label">ผู้สมัครทั้งหมด</div><div className="value">{counts.total}</div><div className="sub">ทุกสถานะ</div></div>
+        <div className="stat-card"><div className="label">รอพิจารณา</div><div className="value" style={{color:"#3b82f6"}}>{counts.new+counts.reviewing}</div><div className="sub">ใหม่ + กำลังพิจารณา</div></div>
+        <div className="stat-card"><div className="label">นัดสัมภาษณ์</div><div className="value" style={{color:"#8b5cf6"}}>{counts.interview}</div><div className="sub">กำลังดำเนินการ</div></div>
+        <div className="stat-card"><div className="label">ผ่านการคัดเลือก</div><div className="value" style={{color:"var(--accent)"}}>{counts.accepted}</div><div className="sub">ตอบรับแล้ว</div></div>
+      </div>
+      <div className="form-card" style={{marginBottom:20}}><div className="form-card-title"><span className="dot"/>สถิติตามสถานะ</div>
+        <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
+          {Object.entries(STATUS_MAP).map(([k,v])=>{const c=counts[k]||0;const pct=counts.total?(c/counts.total*100):0;return(
+            <div key={k} style={{flex:1,minWidth:90}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:12,fontWeight:600,marginBottom:6}}><span style={{color:v.color}}>{v.label}</span><span style={{color:"var(--text-muted)"}}>{c}</span></div>
+              <div style={{height:8,borderRadius:4,background:"var(--border-light)",overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:v.color,borderRadius:4,transition:"width .5s"}}/></div>
+            </div>
+          )})}
+        </div>
+      </div>
+      <div className="form-card"><div className="form-card-title"><span className="dot"/>ผู้สมัครล่าสุด</div>
+        {applicants.slice(0,5).map(a=>(
+          <div key={a.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid var(--border-light)",cursor:"pointer"}} onClick={()=>{setSelected(a);setPage("detail")}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,var(--primary),var(--primary-mid))",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:14}}>{a.fullName[0]}</div>
+              <div><div style={{fontWeight:600,fontSize:14,color:"var(--primary)"}}>{a.fullName}</div><div style={{fontSize:12,color:"var(--text-muted)"}}>{a.position}</div></div>
+            </div>
+            <span className="badge" style={{background:STATUS_MAP[a.status].bg,color:STATUS_MAP[a.status].color}}>{STATUS_MAP[a.status].label}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  const ListView=()=>(
+    <>
+      <h2 style={{fontSize:22,fontWeight:700,color:"var(--primary)",marginBottom:4}}>ผู้สมัครทั้งหมด</h2>
+      <p style={{fontSize:14,color:"var(--text-muted)",marginBottom:20}}>ค้นหาและกรองข้อมูลผู้สมัครงาน</p>
+      <div className="toolbar">
+        <div className="search-wrap"><I.Search/><input placeholder="ค้นหาชื่อ, อีเมล, โทรศัพท์, ตำแหน่ง, วุฒิ..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <select className="btn btn-ghost btn-sm" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{cursor:"pointer",fontWeight:500}}><option value="all">ทุกสถานะ</option>{Object.entries(STATUS_MAP).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select>
+        <select className="btn btn-ghost btn-sm" value={posFilter} onChange={e=>setPosFilter(e.target.value)} style={{cursor:"pointer",fontWeight:500}}><option value="all">ทุกตำแหน่ง</option>{positions.map(p=><option key={p} value={p}>{p}</option>)}</select>
+      </div>
+      <div className="results-info">พบ {filtered.length} รายการ {search&&`สำหรับ "${search}"`}</div>
+      {filtered.length===0?<div className="empty-state"><I.Users/><p>ไม่พบข้อมูลผู้สมัคร</p></div>:(
+        <div className="table-card"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>ประสบการณ์</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่</th><th style={{width:90}}></th></tr></thead>
+          <tbody>{filtered.map(a=>(
+            <tr key={a.id} onClick={()=>{setSelected(a);setPage("detail")}}>
+              <td><div className="name-cell">{a.fullName}</div><div className="email-cell">{a.email}</div></td>
+              <td>{a.position}</td><td>{a.experience||"-"}</td>
+              <td><div className="doc-badges"><span className={`doc-badge ${a.hasCredential?"doc-yes":"doc-no"}`}>วุฒิ {a.hasCredential?"✓":"✗"}</span><span className={`doc-badge ${a.hasIdCard?"doc-yes":"doc-no"}`}>บัตร {a.hasIdCard?"✓":"✗"}</span></div></td>
+              <td><span className="badge" style={{background:STATUS_MAP[a.status].bg,color:STATUS_MAP[a.status].color}}>{STATUS_MAP[a.status].label}</span></td>
+              <td>{a.submittedAt}</td>
+              <td onClick={e=>e.stopPropagation()}><div style={{display:"flex",gap:5}}>
+                <button className="action-btn" title="ดูรายละเอียด" onClick={()=>{setSelected(a);setPage("detail")}}><I.Eye/></button>
+                <button className="action-btn" title="ลบ" onClick={()=>{if(confirm("ลบข้อมูลผู้สมัคร "+a.fullName+" ?"))deleteApplicant(a.id)}} style={{color:"var(--danger)"}}><I.Trash/></button>
+              </div></td>
+            </tr>
+          ))}</tbody></table></div>
+      )}
+    </>
+  );
+
+  const DetailView=()=>{
+    if(!selected)return null;const a=applicants.find(x=>x.id===selected.id)||selected;
+    return(
+      <div className="detail-page">
+        <div style={{display:"flex",gap:8,marginBottom:20}}>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setPage("list")}><I.Back/> กลับ</button>
+          <button className="btn-danger-sm" onClick={()=>{if(confirm("ลบข้อมูลผู้สมัคร "+a.fullName+" ?"))deleteApplicant(a.id)}}><I.Trash/> ลบ</button>
+        </div>
+        <div className="detail-top">
+          <div className="detail-avatar">{a.fullName[0]}</div>
+          <div style={{flex:1}}><div className="detail-name">{a.fullName}</div><div className="detail-pos">{a.position}</div></div>
+          <div>
+            <label style={{fontSize:12,color:"var(--text-muted)",fontWeight:600,display:"block",marginBottom:4}}>เปลี่ยนสถานะ</label>
+            <select className="status-select" value={a.status} onChange={e=>updateStatus(a.id,e.target.value)} style={{color:STATUS_MAP[a.status]?.color,borderColor:STATUS_MAP[a.status]?.color}}>
+              {Object.entries(STATUS_MAP).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="detail-cards">
+          <div className="d-card"><h4>ข้อมูลติดต่อ</h4><div className="d-row"><I.Mail/> {a.email||"-"}</div><div className="d-row"><I.Phone/> {a.phone}</div><div className="d-row"><I.Calendar/> สมัครเมื่อ {a.submittedAt}</div></div>
+          <div className="d-card"><h4>คุณสมบัติ</h4><div className="d-row"><I.Briefcase/> {a.position}</div><div className="d-row"><I.File/> {a.education||"-"}</div><div className="d-row"><I.Chart/> ประสบการณ์: {a.experience||"-"}</div></div>
+          <div className="d-card"><h4>เอกสารแนบ</h4>
+            <div style={{display:"flex",gap:12,marginTop:4}}>
+              <div style={{flex:1,padding:16,borderRadius:8,border:"1px solid var(--border)",textAlign:"center"}}><I.File/><div style={{fontSize:13,fontWeight:600,marginTop:6}}>วุฒิการศึกษา</div><span className={`doc-badge ${a.hasCredential?"doc-yes":"doc-no"}`} style={{marginTop:6,display:"inline-block"}}>{a.hasCredential?"แนบแล้ว ✓":"ยังไม่แนบ"}</span></div>
+              <div style={{flex:1,padding:16,borderRadius:8,border:"1px solid var(--border)",textAlign:"center"}}><I.File/><div style={{fontSize:13,fontWeight:600,marginTop:6}}>บัตรประชาชน</div><span className={`doc-badge ${a.hasIdCard?"doc-yes":"doc-no"}`} style={{marginTop:6,display:"inline-block"}}>{a.hasIdCard?"แนบแล้ว ✓":"ยังไม่แนบ"}</span></div>
+            </div>
+          </div>
+          {a.introduction&&<div className="d-card"><h4>แนะนำตัว</h4><p className="d-intro">{a.introduction}</p></div>}
+        </div>
+      </div>
+    );
+  };
+
+  // ─── Positions View ───
+  const [posForm,setPosForm]=useState({title:"",department:"",slots:1});
+  const [editingPos,setEditingPos]=useState(null);
+  const [showPosForm,setShowPosForm]=useState(false);
+
+  const addPosition=()=>{
+    if(!posForm.title.trim()||!posForm.department.trim())return;
+    if(editingPos){
+      setPositions(positions.map(p=>p.id===editingPos.id?{...p,title:posForm.title,department:posForm.department,slots:Number(posForm.slots)||1}:p));
+      setEditingPos(null);
+    }else{
+      setPositions([...positions,{id:Date.now(),title:posForm.title,department:posForm.department,slots:Number(posForm.slots)||1,active:true,createdAt:new Date().toISOString().split("T")[0]}]);
+    }
+    setPosForm({title:"",department:"",slots:1});setShowPosForm(false);
+    setToast({msg:editingPos?"แก้ไขตำแหน่งเรียบร้อย":"เพิ่มตำแหน่งเรียบร้อย",type:"success"});
+  };
+  const startEditPos=(p)=>{setEditingPos(p);setPosForm({title:p.title,department:p.department,slots:p.slots});setShowPosForm(true)};
+  const togglePos=(id)=>setPositions(positions.map(p=>p.id===id?{...p,active:!p.active}:p));
+  const deletePos=(id)=>{if(confirm("ลบตำแหน่งนี้?"))setPositions(positions.filter(p=>p.id!==id))};
+  const cancelPosForm=()=>{setPosForm({title:"",department:"",slots:1});setEditingPos(null);setShowPosForm(false)};
+
+  const PositionsView=()=>{
+    const activeCount=positions.filter(p=>p.active).length;
+    return(
+    <>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+        <div><h2 style={{fontSize:22,fontWeight:700,color:"var(--primary)",marginBottom:4}}>ตำแหน่งที่รับสมัคร</h2><p style={{fontSize:14,color:"var(--text-muted)"}}>จัดการตำแหน่งงานที่เปิดรับ ({activeCount} ตำแหน่งเปิดรับอยู่)</p></div>
+        {!showPosForm&&<button className="btn btn-accent btn-sm" onClick={()=>{setEditingPos(null);setPosForm({title:"",department:"",slots:1});setShowPosForm(true)}}><I.Plus/> เพิ่มตำแหน่ง</button>}
+      </div>
+
+      {showPosForm&&(
+        <div className="add-pos-form" style={{marginTop:20}}>
+          <h3><span className="dot"/>{editingPos?"แก้ไขตำแหน่ง":"เพิ่มตำแหน่งใหม่"}</h3>
+          <div className="form-grid">
+            <div className="field"><label>ชื่อตำแหน่ง <span className="req">*</span></label><input value={posForm.title} onChange={e=>setPosForm({...posForm,title:e.target.value})} placeholder="เช่น นักพัฒนาซอฟต์แวร์"/></div>
+            <div className="field"><label>แผนก <span className="req">*</span></label><input value={posForm.department} onChange={e=>setPosForm({...posForm,department:e.target.value})} placeholder="เช่น ฝ่ายเทคโนโลยี"/></div>
+            <div className="field"><label>จำนวนที่รับ</label><input type="number" min="1" value={posForm.slots} onChange={e=>setPosForm({...posForm,slots:e.target.value})}/></div>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:16,justifyContent:"flex-end"}}>
+            <button className="btn btn-ghost btn-sm" onClick={cancelPosForm}>ยกเลิก</button>
+            <button className="btn btn-accent btn-sm" onClick={addPosition}>{editingPos?"บันทึก":"เพิ่มตำแหน่ง"}</button>
+          </div>
+        </div>
+      )}
+
+      <div className="pos-grid">
+        {positions.map(p=>{
+          const appCount=applicants.filter(a=>a.position===p.title).length;
+          return(
+            <div key={p.id} className={`pos-card ${p.active?"":"inactive"}`}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div><div className="pos-title">{p.title}</div><div className="pos-dept">{p.department}</div></div>
+                <button className={`toggle ${p.active?"on":"off"}`} onClick={()=>togglePos(p.id)} title={p.active?"เปิดรับอยู่":"ปิดรับแล้ว"}/>
+              </div>
+              <div className="pos-meta">
+                <span><I.Users/> ผู้สมัคร {appCount} คน</span>
+                <span><I.Briefcase/> รับ {p.slots} ตำแหน่ง</span>
+              </div>
+              <div style={{marginTop:8}}>
+                <div style={{height:6,borderRadius:3,background:"var(--border-light)",overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${Math.min((appCount/p.slots)*100,100)}%`,background:appCount>=p.slots?"var(--success)":"var(--primary-light)",borderRadius:3,transition:"width .4s"}}/>
+                </div>
+                <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>{appCount}/{p.slots} ({p.active?<span style={{color:"var(--success)"}}>เปิดรับ</span>:<span style={{color:"var(--danger)"}}>ปิดรับ</span>})</div>
+              </div>
+              <div className="pos-actions">
+                <button className="btn btn-ghost btn-sm" onClick={()=>startEditPos(p)}><I.Eye/> แก้ไข</button>
+                <button className="btn-danger-sm" onClick={()=>deletePos(p.id)}><I.Trash/> ลบ</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+    );
+  };
+
+  return(
+    <div className="admin">
+      <aside className="sidebar">
+        <div className="sb-brand"><div className="sb-logo">HR</div><div><h2>Admin Panel</h2><p>ระบบหลังบ้าน</p></div></div>
+        <nav className="sb-nav">
+          <button className={`sb-link ${page==="dashboard"?"active":""}`} onClick={()=>setPage("dashboard")}><I.Dashboard/> แดชบอร์ด</button>
+          <button className={`sb-link ${page==="list"||page==="detail"?"active":""}`} onClick={()=>{setPage("list");setSelected(null)}}><I.Users/> ผู้สมัครงาน <span className="count">{counts.total}</span></button>
+          <button className={`sb-link ${page==="positions"?"active":""}`} onClick={()=>setPage("positions")}><I.Briefcase/> ตำแหน่งงาน <span className="count">{positions.filter(p=>p.active).length}</span></button>
+          <button className="sb-link" onClick={()=>setShowSetup(true)}><I.Gear/> ตั้งค่า Google Sheets</button>
+        </nav>
+        <div className="sb-bottom">
+          <button className="sb-link" onClick={onGoPublic}><I.Globe/> หน้าสมัครงาน</button>
+          <button className="sb-link" onClick={onLogout}><I.Logout/> ออกจากระบบ</button>
+        </div>
+      </aside>
+      <main className="admin-content">
+        {page==="dashboard"&&DashboardView()}
+        {page==="list"&&ListView()}
+        {page==="detail"&&DetailView()}
+        {page==="positions"&&PositionsView()}
+      </main>
+      {showSetup&&<div className="modal-bg" onClick={()=>setShowSetup(false)}><div className="modal" onClick={e=>e.stopPropagation()}>
+        <h2>🔧 เชื่อมต่อ Google Sheets</h2>
+        <ol><li>สร้าง Google Sheet ตั้งชื่อ Sheet ว่า <strong>"Applications"</strong></li><li>เพิ่ม Header: วันที่, ชื่อ-สกุล, อีเมล, โทรศัพท์, ตำแหน่ง, วุฒิ, ประสบการณ์, แนะนำตัว, สถานะ</li><li>ไปที่ Extensions → Apps Script</li><li>วางโค้ดแล้ว Deploy เป็น Web App</li></ol>
+        <pre>{`function doPost(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName("Applications");
+  var d = JSON.parse(e.postData.contents);
+  ss.appendRow([new Date(), d.fullName, d.email,
+    d.phone, d.position, d.education,
+    d.experience, d.introduction, "new",
+    d.credentialFile, d.idCardFile]);
+  return ContentService
+    .createTextOutput(JSON.stringify({status:"ok"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName("Applications");
+  var data = ss.getDataRange().getValues();
+  var headers = data[0], results = [];
+  var q = (e.parameter.search || "").toLowerCase();
+  for (var i=1; i<data.length; i++) {
+    var r = {};
+    for (var j=0; j<headers.length; j++)
+      r[headers[j]] = data[i][j];
+    if (!q || String(r["ชื่อ-สกุล"])
+        .toLowerCase().includes(q))
+      results.push(r);
+  }
+  return ContentService
+    .createTextOutput(JSON.stringify(results))
+    .setMimeType(ContentService.MimeType.JSON);
+}`}</pre>
+        <button className="close-btn" onClick={()=>setShowSetup(false)}>ปิด</button>
+      </div></div>}
+      {toast&&<Toast {...toast} onClose={()=>setToast(null)}/>}
+    </div>
+  );
+}
+
+// ═══ MAIN ═══
+function App(){
+  const [view,setView]=useState("public");
+  const [applicants,setApplicants]=useState(INITIAL_DATA);
+  const [positions,setPositions]=useState(INITIAL_POSITIONS);
+  const [toast,setToast]=useState(null);
+  const handleSubmit=data=>{setApplicants([data,...applicants]);setToast({msg:"ส่งใบสมัครเรียบร้อยแล้ว!",type:"success"})};
+  return(
+    <><style>{css}</style>
+      {view==="public"&&<PublicForm onSubmit={handleSubmit} onGoAdmin={()=>setView("login")} positions={positions}/>}
+      {view==="login"&&<LoginPage onLogin={()=>setView("admin")} onBack={()=>setView("public")}/>}
+      {view==="admin"&&<AdminPanel applicants={applicants} setApplicants={setApplicants} positions={positions} setPositions={setPositions} onLogout={()=>setView("login")} onGoPublic={()=>setView("public")}/>}
+      {toast&&<Toast {...toast} onClose={()=>setToast(null)}/>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

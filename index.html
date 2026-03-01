@@ -13,6 +13,25 @@
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
 
+// ═══ Google Apps Script API ═══
+const API_URL = "https://script.google.com/macros/s/AKfycbwlxXwuaeixm7Nvo7ork7Xy1ZyVFf9FBSehIUK_jH6NO7oEdeT4hViMDwLvXgE86Oig/exec";
+
+const api = {
+  async get(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    const res = await fetch(`${API_URL}?${qs}`);
+    return res.json();
+  },
+  async post(data) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  }
+};
+
 
 // ─── Mock Data ───
 const INITIAL_DATA = [
@@ -254,7 +273,7 @@ function LoginPage({onLogin,onBack}){
 }
 
 // ═══ ADMIN PANEL ═══
-function AdminPanel({applicants,setApplicants,positions,setPositions,onLogout,onGoPublic}){
+function AdminPanel({applicants,setApplicants,positions,setPositions,onLogout,onGoPublic,refreshData}){
   const [page,setPage]=useState("dashboard");
   const [selected,setSelected]=useState(null);
   const [search,setSearch]=useState("");
@@ -271,8 +290,8 @@ function AdminPanel({applicants,setApplicants,positions,setPositions,onLogout,on
   });
 
   const positions=[...new Set(applicants.map(a=>a.position))];
-  const updateStatus=(id,status)=>{setApplicants(applicants.map(a=>a.id===id?{...a,status}:a));if(selected?.id===id)setSelected({...selected,status});setToast({msg:"อัปเดตสถานะเรียบร้อย",type:"success"})};
-  const deleteApplicant=(id)=>{setApplicants(applicants.filter(a=>a.id!==id));if(selected?.id===id){setSelected(null);setPage("list");}setToast({msg:"ลบข้อมูลเรียบร้อย",type:"success"})};
+  const updateStatus=(id,status)=>{setApplicants(applicants.map(a=>a.id===id?{...a,status}:a));if(selected?.id===id)setSelected({...selected,status});setToast({msg:"อัปเดตสถานะเรียบร้อย",type:"success"});api.post({action:"update_status",id,status}).catch(console.error)};
+  const deleteApplicant=(id)=>{setApplicants(applicants.filter(a=>a.id!==id));if(selected?.id===id){setSelected(null);setPage("list");}setToast({msg:"ลบข้อมูลเรียบร้อย",type:"success"});api.post({action:"delete_application",id}).catch(console.error)};
 
   const DashboardView=()=>(
     <>
@@ -380,15 +399,18 @@ function AdminPanel({applicants,setApplicants,positions,setPositions,onLogout,on
     if(editingPos){
       setPositions(positions.map(p=>p.id===editingPos.id?{...p,title:posForm.title,department:posForm.department,slots:Number(posForm.slots)||1}:p));
       setEditingPos(null);
+      api.post({action:"update_position",id:editingPos.id,title:posForm.title,department:posForm.department,slots:Number(posForm.slots)||1}).catch(console.error);
     }else{
-      setPositions([...positions,{id:Date.now(),title:posForm.title,department:posForm.department,slots:Number(posForm.slots)||1,active:true,createdAt:new Date().toISOString().split("T")[0]}]);
+      const newPos={id:Date.now(),title:posForm.title,department:posForm.department,slots:Number(posForm.slots)||1,active:true,createdAt:new Date().toISOString().split("T")[0]};
+      setPositions([...positions,newPos]);
+      api.post({action:"add_position",...newPos}).catch(console.error);
     }
     setPosForm({title:"",department:"",slots:1});setShowPosForm(false);
     setToast({msg:editingPos?"แก้ไขตำแหน่งเรียบร้อย":"เพิ่มตำแหน่งเรียบร้อย",type:"success"});
   };
   const startEditPos=(p)=>{setEditingPos(p);setPosForm({title:p.title,department:p.department,slots:p.slots});setShowPosForm(true)};
-  const togglePos=(id)=>setPositions(positions.map(p=>p.id===id?{...p,active:!p.active}:p));
-  const deletePos=(id)=>{if(confirm("ลบตำแหน่งนี้?"))setPositions(positions.filter(p=>p.id!==id))};
+  const togglePos=(id)=>{const p=positions.find(x=>x.id===id);setPositions(positions.map(p=>p.id===id?{...p,active:!p.active}:p));api.post({action:"update_position",id,active:!p?.active}).catch(console.error)};
+  const deletePos=(id)=>{if(confirm("ลบตำแหน่งนี้?")){setPositions(positions.filter(p=>p.id!==id));api.post({action:"delete_position",id}).catch(console.error)}};
   const cancelPosForm=()=>{setPosForm({title:"",department:"",slots:1});setEditingPos(null);setShowPosForm(false)};
 
   const PositionsView=()=>{
@@ -455,6 +477,7 @@ function AdminPanel({applicants,setApplicants,positions,setPositions,onLogout,on
           <button className={`sb-link ${page==="list"||page==="detail"?"active":""}`} onClick={()=>{setPage("list");setSelected(null)}}><I.Users/> ผู้สมัครงาน <span className="count">{counts.total}</span></button>
           <button className={`sb-link ${page==="positions"?"active":""}`} onClick={()=>setPage("positions")}><I.Briefcase/> ตำแหน่งงาน <span className="count">{positions.filter(p=>p.active).length}</span></button>
           <button className="sb-link" onClick={()=>setShowSetup(true)}><I.Gear/> ตั้งค่า Google Sheets</button>
+          <button className="sb-link" onClick={()=>{refreshData&&refreshData();setToast({msg:"รีเฟรชข้อมูลแล้ว",type:"success"})}}><I.Chart/> รีเฟรชข้อมูล</button>
         </nav>
         <div className="sb-bottom">
           <button className="sb-link" onClick={onGoPublic}><I.Globe/> หน้าสมัครงาน</button>
@@ -511,15 +534,49 @@ function doGet(e) {
 // ═══ MAIN ═══
 function App(){
   const [view,setView]=useState("public");
-  const [applicants,setApplicants]=useState(INITIAL_DATA);
-  const [positions,setPositions]=useState(INITIAL_POSITIONS);
+  const [applicants,setApplicants]=useState([]);
+  const [positions,setPositions]=useState([]);
   const [toast,setToast]=useState(null);
-  const handleSubmit=data=>{setApplicants([data,...applicants]);setToast({msg:"ส่งใบสมัครเรียบร้อยแล้ว!",type:"success"})};
+  const [loading,setLoading]=useState(true);
+
+  // โหลดข้อมูลจาก Google Sheets
+  const loadData=useCallback(async()=>{
+    try{
+      const data=await api.get({type:"all"});
+      if(data.applications) setApplicants(data.applications);
+      if(data.positions) setPositions(data.positions);
+    }catch(e){
+      console.error("Load error:",e);
+      setApplicants(INITIAL_DATA);
+      setPositions(INITIAL_POSITIONS);
+      setToast({msg:"โหลดจาก API ไม่ได้ ใช้ข้อมูลตัวอย่าง",type:"error"});
+    }finally{setLoading(false)}
+  },[]);
+
+  useEffect(()=>{loadData()},[loadData]);
+
+  // ส่งใบสมัครไป Google Sheets
+  const handleSubmit=async(data)=>{
+    setApplicants([data,...applicants]);
+    setToast({msg:"ส่งใบสมัครเรียบร้อยแล้ว!",type:"success"});
+    try{await api.post({action:"apply",...data})}catch(e){console.error(e)}
+  };
+
+  if(loading) return(
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#f4f1ec",fontFamily:"'Noto Sans Thai',sans-serif"}}>
+      <div style={{textAlign:"center"}}>
+        <div style={{width:52,height:52,background:"#c17d2e",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:20,color:"#fff",margin:"0 auto 16px"}}>HR</div>
+        <div style={{fontSize:16,fontWeight:600,color:"#1a2e44"}}>กำลังโหลดข้อมูล...</div>
+        <div style={{fontSize:13,color:"#94a3b8",marginTop:4}}>เชื่อมต่อ Google Sheets</div>
+      </div>
+    </div>
+  );
+
   return(
     <><style>{css}</style>
       {view==="public"&&<PublicForm onSubmit={handleSubmit} onGoAdmin={()=>setView("login")} positions={positions}/>}
       {view==="login"&&<LoginPage onLogin={()=>setView("admin")} onBack={()=>setView("public")}/>}
-      {view==="admin"&&<AdminPanel applicants={applicants} setApplicants={setApplicants} positions={positions} setPositions={setPositions} onLogout={()=>setView("login")} onGoPublic={()=>setView("public")}/>}
+      {view==="admin"&&<AdminPanel applicants={applicants} setApplicants={setApplicants} positions={positions} setPositions={setPositions} onLogout={()=>setView("login")} onGoPublic={()=>setView("public")} refreshData={loadData}/>}
       {toast&&<Toast {...toast} onClose={()=>setToast(null)}/>}
     </>
   );

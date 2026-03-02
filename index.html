@@ -10,6 +10,8 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Noto Sans Thai',sans-serif;background:var(--bg);color:var(--txt);line-height:1.6}
 a{color:var(--pri2)}
+button{-webkit-tap-highlight-color:transparent}
+input,select,textarea{-webkit-appearance:none;appearance:none}
 .hdr{background:var(--pri);position:sticky;top:0;z-index:100}
 .hdr-in{max-width:960px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:11px}
@@ -120,8 +122,46 @@ a{color:var(--pri2)}
   .sts{grid-template-columns:1fr 1fr}
   .hdr-in{flex-direction:column;gap:8px}
   .tb{flex-direction:column}
-  .tw{overflow-x:auto}.tw table{min-width:650px}
+  .tw{overflow-x:auto}.tw table{min-width:500px}
   .pgrid{grid-template-columns:1fr}
+  .wrap{padding:16px 14px 40px}
+  .cd{padding:18px 16px}
+  .ttl{font-size:19px}
+  .brand h1{font-size:15px}
+  .dt{flex-direction:column;text-align:center}
+  .dn-nm{font-size:18px}
+  .dg{grid-template-columns:1fr}
+  .fld input,.fld select,.fld textarea{font-size:16px;padding:11px 12px}
+  .btn{padding:12px 20px;font-size:14px;width:100%;justify-content:center}
+  .brow{flex-direction:column}
+  .btn-s{width:auto}
+  .lb{padding:28px 20px}
+  .lb .logo{width:46px;height:46px;font-size:16px}
+  .lb h2{font-size:17px}
+  .navs{width:100%;justify-content:center}
+  .nbtn{flex:1;justify-content:center;padding:9px 10px}
+  .atabs{overflow-x:auto}
+  .atab{padding:10px 14px;font-size:12px;white-space:nowrap}
+  .st{padding:12px}
+  .st .v{font-size:20px}
+  .pcard{padding:16px}
+  .pmeta{flex-direction:column;gap:4px}
+  .pacts{flex-wrap:wrap}
+  .toast{left:14px;right:14px;bottom:14px}
+  .tw th{padding:9px 10px;font-size:9px}
+  .tw td{padding:9px 10px;font-size:11px}
+  .uz{padding:16px 10px;min-height:80px}
+  .g3{grid-template-columns:1fr 1fr;gap:10px}
+  .g3 .fld:nth-child(3){grid-column:1/-1}
+}
+@media(max-width:400px){
+  .sts{grid-template-columns:1fr 1fr}
+  .st{padding:10px}
+  .st .v{font-size:18px}
+  .st .l{font-size:9px}
+  .cd{padding:14px 12px}
+  .hdr-in{padding:10px 14px}
+  .wrap{padding:12px 10px 36px}
 }
 </style>
 </head>
@@ -151,7 +191,21 @@ a{color:var(--pri2)}
   </div>
   <div class="cd"><div class="cd-t"><span class="dot"></span> คุณสมบัติ</div>
     <div class="g2">
-      <div class="fld"><label>วุฒิการศึกษา</label><input id="i-edu" placeholder="เช่น ปริญญาตรี วิศวกรรมคอมพิวเตอร์"></div>
+      <div class="fld"><label>วุฒิการศึกษา</label>
+        <select id="i-edu">
+          <option value="">-- เลือก --</option>
+          <option value="ไม่มีวุฒิการศึกษา">ไม่มีวุฒิการศึกษา</option>
+          <option value="ประถมศึกษา">ประถมศึกษา</option>
+          <option value="มัธยมศึกษาตอนต้น">มัธยมศึกษาตอนต้น (ม.3)</option>
+          <option value="มัธยมศึกษาตอนปลาย">มัธยมศึกษาตอนปลาย (ม.6)</option>
+          <option value="ปวช.">ปวช.</option>
+          <option value="ปวส.">ปวส.</option>
+          <option value="อนุปริญญา">อนุปริญญา</option>
+          <option value="ปริญญาตรี">ปริญญาตรี</option>
+          <option value="ปริญญาโท">ปริญญาโท</option>
+          <option value="ปริญญาเอก">ปริญญาเอก</option>
+        </select>
+      </div>
       <div class="fld"><label>ประสบการณ์ทำงาน</label>
         <select id="i-exp"><option value="">-- เลือก --</option><option>ไม่มีประสบการณ์</option><option>1-2 ปี</option><option>3-5 ปี</option><option>5-10 ปี</option><option>มากกว่า 10 ปี</option></select>
       </div>
@@ -186,11 +240,10 @@ a{color:var(--pri2)}
 <div id="P-login" class="wrap hide"><div class="lw"><div class="lb">
   <div class="logo">HR</div><h2>เข้าสู่ระบบหลังบ้าน</h2><p class="s">สำหรับเจ้าหน้าที่ HR เท่านั้น</p>
   <div id="l-err" class="lerr hide"></div>
-  <div class="fld"><label>ชื่อผู้ใช้</label><input id="i-user" placeholder="admin" onkeydown="if(event.key==='Enter')doLogin()"></div>
-  <div class="fld"><label>รหัสผ่าน</label><input id="i-pass" type="password" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+  <div class="fld"><label>ชื่อผู้ใช้</label><input id="i-user" placeholder="ชื่อผู้ใช้" onkeydown="if(event.key==='Enter')doLogin()"></div>
+  <div class="fld"><label>รหัสผ่าน</label><input id="i-pass" type="password" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()"></div>
   <button class="btn btn-a" onclick="doLogin()">🔐 เข้าสู่ระบบ</button>
   <button class="btn btn-g" style="width:100%;justify-content:center;margin-top:7px" onclick="go('form')">← กลับหน้าสมัคร</button>
-  <p class="lhn">ทดสอบ: admin / 1234</p>
 </div></div></div>
 
 <!-- ADMIN -->
@@ -317,7 +370,7 @@ function doSubmit(){
   if(bad)return;
   var btn=$('btnSub');btn.disabled=true;btn.innerHTML='<span class="sp"></span> กำลังส่ง...';
   apiPost({action:'apply',name:nm,email:$('i-email').value.trim(),phone:ph,position:ps,
-    education:$('i-edu').value.trim(),experience:$('i-exp').value,intro:$('i-intro').value.trim(),
+    education:$('i-edu').value,experience:$('i-exp').value,intro:$('i-intro').value.trim(),
     credData:FI.c?FI.c.d:'',credType:FI.c?FI.c.t:'',credName:FI.c?FI.c.n:'',
     idData:FI.b?FI.b.d:'',idType:FI.b?FI.b.t:'',idName:FI.b?FI.b.n:''
   }).then(function(r){
@@ -327,8 +380,8 @@ function doSubmit(){
   }).catch(function(e){btn.disabled=false;btn.innerHTML='📩 ส่งใบสมัคร';msg('Error: '+e,'terr')});
 }
 function resetForm(){
-  ['i-name','i-email','i-phone','i-edu','i-intro'].forEach(function(x){$(x).value=''});
-  $('i-pos').selectedIndex=0;$('i-exp').selectedIndex=0;
+  ['i-name','i-email','i-phone','i-intro'].forEach(function(x){$(x).value=''});
+  $('i-pos').selectedIndex=0;$('i-exp').selectedIndex=0;$('i-edu').selectedIndex=0;
   rmFile({stopPropagation:function(){}},'c');rmFile({stopPropagation:function(){}},'b');
 }
 

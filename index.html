@@ -134,9 +134,10 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 .lbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:28px;font-weight:700;cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);border-radius:50%;border:none}
 
 /* ─── Upload progress ─── */
-.upload-bar{position:fixed;top:0;left:0;right:0;height:4px;z-index:200;background:rgba(0,0,0,.08)}
-.upload-bar .inner{height:100%;background:var(--acc);width:0;border-radius:0 2px 2px 0;transition:width .3s;animation:pulse 1.5s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.upload-bar{position:fixed;top:0;left:0;right:0;height:6px;z-index:200;background:rgba(0,0,0,.1)}
+.upload-bar .inner{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));width:0;border-radius:0 3px 3px 0;transition:width .3s}
+.upload-pct{position:fixed;top:10px;right:20px;background:var(--pri);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;z-index:201;box-shadow:var(--sh3);display:flex;align-items:center;gap:6px}
+.upload-pct .sp2{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sn .6s linear infinite}
 
 @media(max-width:700px){
   .g2,.g3,.dg{grid-template-columns:1fr}
@@ -186,6 +187,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 <body>
 
 <div id="upload-bar" class="upload-bar hide"><div class="inner" id="upload-inner"></div></div>
+<div id="upload-pct" class="upload-pct hide"><span class="sp2"></span> <span id="upload-txt">0%</span></div>
 
 <div class="hdr"><div class="hdr-in">
   <div class="brand"><div class="logo">HR</div><div><h1>ระบบรับสมัครงาน</h1><small>Job Application System</small></div></div>
@@ -409,23 +411,57 @@ function doSubmit(){
     if(r.ok){
       var appId=r.id;
       $('suc-id').textContent='รหัสใบสมัคร: '+appId;
-      $('suc-upload').textContent='📤 กำลังอัปโหลดเอกสาร... กรุณาอย่าปิดหน้าต่างนี้';
+      $('suc-upload').textContent='📤 กำลังเตรียมอัปโหลดเอกสาร... กรุณาอย่าปิดหน้าต่างนี้';
       resetForm(); go('success');
 
-      // STEP 2: อัปโหลดไฟล์หลังบ้าน (ไม่ต้องรอ)
+      // STEP 2: อัปโหลดไฟล์ด้วย XHR + แสดง %
       showUploadBar();
-      apiPost({action:'upload_files',id:appId,credData:fileData.credData,credType:fileData.credType,credName:fileData.credName,idData:fileData.idData,idType:fileData.idType,idName:fileData.idName
-      }).then(function(r2){
+      var uploadData={action:'upload_files',id:appId,credData:fileData.credData,credType:fileData.credType,credName:fileData.credName,idData:fileData.idData,idType:fileData.idType,idName:fileData.idName};
+      var body=JSON.stringify(uploadData);
+      var totalSize=body.length;
+      setUploadPct(0);
+
+      var xhr=new XMLHttpRequest();
+      xhr.upload.addEventListener('progress',function(ev){
+        if(ev.lengthComputable){
+          var pct=Math.round(ev.loaded/ev.total*95);
+          setUploadPct(pct);
+        }
+      });
+      xhr.upload.addEventListener('load',function(){setUploadPct(95,'กำลังบันทึกไฟล์...')});
+      xhr.addEventListener('load',function(){
+        setUploadPct(100,'เสร็จสิ้น!');
         hideUploadBar();
-        if(r2.ok) $('suc-upload').textContent='✅ อัปโหลดเอกสารเรียบร้อย สามารถปิดหน้าต่างได้';
-        else $('suc-upload').textContent='⚠️ อัปโหลดเอกสารไม่สำเร็จ — กรุณาติดต่อ HR';
-      }).catch(function(){hideUploadBar();$('suc-upload').textContent='⚠️ อัปโหลดเอกสารไม่สำเร็จ'});
+        try{
+          var r2=JSON.parse(xhr.responseText);
+          if(r2.ok) $('suc-upload').innerHTML='✅ อัปโหลดเอกสารเรียบร้อย<br>สามารถปิดหน้าต่างได้';
+          else $('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ — กรุณาติดต่อ HR';
+        }catch(e){
+          $('suc-upload').innerHTML='✅ ส่งข้อมูลเรียบร้อย<br>สามารถปิดหน้าต่างได้';
+        }
+      });
+      xhr.addEventListener('error',function(){
+        hideUploadBar();
+        $('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ — กรุณาติดต่อ HR';
+      });
+      xhr.open('POST',API);
+      xhr.setRequestHeader('Content-Type','text/plain;charset=utf-8');
+      xhr.send(body);
     } else msg('เกิดข้อผิดพลาด: '+(r.err||''),'terr');
   }).catch(function(e){btn.disabled=false;btn.innerHTML='📩 ส่งใบสมัคร';msg('Error: '+e,'terr')});
 }
 
-function showUploadBar(){$('upload-bar').classList.remove('hide');var inner=$('upload-inner');inner.style.width='30%';setTimeout(function(){inner.style.width='70%'},1500);setTimeout(function(){inner.style.width='90%'},4000)}
-function hideUploadBar(){$('upload-inner').style.width='100%';setTimeout(function(){$('upload-bar').classList.add('hide');$('upload-inner').style.width='0'},500)}
+function showUploadBar(){$('upload-bar').classList.remove('hide');$('upload-pct').classList.remove('hide');$('upload-inner').style.width='0';$('upload-txt').textContent='0%'}
+function setUploadPct(p,txt){
+  $('upload-inner').style.width=p+'%';
+  $('upload-txt').textContent=p+'%';
+  var label=txt||'กำลังอัปโหลดเอกสาร';
+  $('suc-upload').textContent='📤 '+label+' '+p+'% — กรุณาอย่าปิดหน้าต่างนี้';
+}
+function hideUploadBar(){
+  $('upload-inner').style.width='100%';$('upload-txt').textContent='100%';
+  setTimeout(function(){$('upload-bar').classList.add('hide');$('upload-pct').classList.add('hide');$('upload-inner').style.width='0'},1000);
+}
 
 function resetForm(){
   ['i-name','i-email','i-phone','i-intro'].forEach(function(x){$(x).value=''});

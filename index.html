@@ -193,7 +193,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
   <div class="brand"><div class="logo">HR</div><div><h1>ระบบรับสมัครงาน</h1><small>Job Application System</small></div></div>
   <div class="navs">
     <button class="nbtn on" id="n1" onclick="go('form')">📝 สมัครงาน</button>
-    <button class="nbtn" id="n2" onclick="go('login')">🔒 หลังบ้าน</button>
+    <button class="nbtn hide" id="n2" onclick="go('login')">🔒 หลังบ้าน</button>
   </div>
 </div></div>
 
@@ -469,7 +469,7 @@ function resetForm(){
 function doLogin(){
   var u=$('i-user').value.trim(),p=$('i-pass').value.trim();$('l-err').classList.add('hide');
   apiGet({type:'login',u:u,p:p}).then(function(r){
-    if(r.ok) go('admin');
+    if(r.ok){$('n2').classList.remove('hide');go('admin')}
     else{$('l-err').textContent='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';$('l-err').classList.remove('hide')}
   }).catch(function(e){$('l-err').textContent='Error: '+e;$('l-err').classList.remove('hide')});
 }
@@ -639,6 +639,12 @@ function esc(s){var d=document.createElement('div');d.textContent=s||'';return d
 function msg(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinfo'?'📤 ':'❌ ')+t;el.className='toast '+c;el.classList.remove('hide');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.add('hide')},3500)}
 
 loadPosForForm();
+
+// เข้าหลังบ้าน: เพิ่ม ?admin ต่อท้าย URL
+if(location.search.indexOf('admin')>-1){
+  $('n2').classList.remove('hide');
+  go('login');
+}
 </script>
 </body>
 </html>

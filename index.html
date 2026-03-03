@@ -414,39 +414,35 @@ function doSubmit(){
       $('suc-upload').textContent='📤 กำลังเตรียมอัปโหลดเอกสาร... กรุณาอย่าปิดหน้าต่างนี้';
       resetForm(); go('success');
 
-      // STEP 2: อัปโหลดไฟล์ด้วย XHR + แสดง %
+      // STEP 2: อัปโหลดไฟล์ — fetch + แสดง % ตามขนาดไฟล์จริง
       showUploadBar();
-      var uploadData={action:'upload_files',id:appId,credData:fileData.credData,credType:fileData.credType,credName:fileData.credName,idData:fileData.idData,idType:fileData.idType,idName:fileData.idName};
-      var body=JSON.stringify(uploadData);
-      var totalSize=body.length;
+      var uploadPayload={action:'upload_files',id:appId,credData:fileData.credData,credType:fileData.credType,credName:fileData.credName,idData:fileData.idData,idType:fileData.idType,idName:fileData.idName};
+      var bodyStr=JSON.stringify(uploadPayload);
+      var sizeMB=bodyStr.length/(1024*1024);
+      // คำนวณเวลาจากขนาดไฟล์: ~3 วิต่อ MB + 3 วิประมวลผล
+      var estSec=Math.max(sizeMB*3,2)+3;
+      var startT=Date.now();
       setUploadPct(0);
 
-      var xhr=new XMLHttpRequest();
-      xhr.upload.addEventListener('progress',function(ev){
-        if(ev.lengthComputable){
-          var pct=Math.round(ev.loaded/ev.total*95);
-          setUploadPct(pct);
-        }
-      });
-      xhr.upload.addEventListener('load',function(){setUploadPct(95,'กำลังบันทึกไฟล์...')});
-      xhr.addEventListener('load',function(){
-        setUploadPct(100,'เสร็จสิ้น!');
-        hideUploadBar();
-        try{
-          var r2=JSON.parse(xhr.responseText);
+      var uploadTimer=setInterval(function(){
+        var elapsed=(Date.now()-startT)/1000;
+        var pct=Math.min(Math.round((elapsed/estSec)*95),95);
+        if(pct<50) setUploadPct(pct,'กำลังส่งเอกสาร');
+        else if(pct<90) setUploadPct(pct,'กำลังอัปโหลด');
+        else setUploadPct(pct,'กำลังบันทึกไฟล์');
+      },300);
+
+      fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:bodyStr})
+        .then(function(r){return r.json()})
+        .then(function(r2){
+          clearInterval(uploadTimer);
+          setUploadPct(100,'เสร็จสิ้น!');hideUploadBar();
           if(r2.ok) $('suc-upload').innerHTML='✅ อัปโหลดเอกสารเรียบร้อย<br>สามารถปิดหน้าต่างได้';
           else $('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ — กรุณาติดต่อ HR';
-        }catch(e){
-          $('suc-upload').innerHTML='✅ ส่งข้อมูลเรียบร้อย<br>สามารถปิดหน้าต่างได้';
-        }
-      });
-      xhr.addEventListener('error',function(){
-        hideUploadBar();
-        $('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ — กรุณาติดต่อ HR';
-      });
-      xhr.open('POST',API);
-      xhr.setRequestHeader('Content-Type','text/plain;charset=utf-8');
-      xhr.send(body);
+        }).catch(function(e){
+          clearInterval(uploadTimer);hideUploadBar();
+          $('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ — กรุณาติดต่อ HR';
+        });
     } else msg('เกิดข้อผิดพลาด: '+(r.err||''),'terr');
   }).catch(function(e){btn.disabled=false;btn.innerHTML='📩 ส่งใบสมัคร';msg('Error: '+e,'terr')});
 }

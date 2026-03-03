@@ -341,7 +341,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 <div id="toast" class="toast hide"></div>
 
 <script>
-var API = "https://script.google.com/macros/s/AKfycbz5qn31nMV-7YlZjwU-nmfmgkLgF4NDMl3F-L1ISvzYqsGn0RKvTVnmeWc_2HDrJcg/exec";
+var API = "https://script.google.com/macros/s/AKfycbzb83N3zN23ieMVMke2zi2lMScqAvcme2RkVdpZ4-Vb4ffkL7Otli06xJ2_fuGwTjxZ/exec";
 
 function apiGet(p){var qs=Object.keys(p).map(function(k){return k+'='+encodeURIComponent(p[k])}).join('&');return fetch(API+'?'+qs).then(function(r){return r.json()})}
 function apiPost(d){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)}).then(function(r){return r.json()})}
@@ -549,8 +549,15 @@ function detail(id){
   $('A-main').classList.add('hide');$('A-det').classList.remove('hide');
 }
 function backList(){$('A-det').classList.add('hide');$('A-main').classList.remove('hide')}
-function chgSt(id,st){apiPost({action:'set_status',id:id,status:st}).then(function(r){if(r.ok){msg('อัปเดตสถานะเรียบร้อย','tok');ALL.forEach(function(a){if(a.id===id)a.status=st});stats()}else msg('ผิดพลาด','terr')}).catch(function(e){msg('Error: '+e,'terr')})}
-function delA(id){if(!confirm('ลบข้อมูลผู้สมัครนี้?'))return;apiPost({action:'del_app',id:id}).then(function(r){if(r.ok){msg('ลบเรียบร้อย','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}}).catch(function(e){msg('Error: '+e,'terr')})}
+function chgSt(id,st){apiPost({action:'set_status',id:String(id),status:st}).then(function(r){if(r&&r.ok){msg('อัปเดตสถานะเรียบร้อย','tok');ALL.forEach(function(a){if(a.id===id)a.status=st});stats()}else{msg('อัปเดตไม่สำเร็จ','terr');console.log('set_status:',r)}}).catch(function(e){msg('Error: '+e,'terr')})}
+function delA(id){
+  if(!confirm('ลบข้อมูลผู้สมัครนี้?'))return;
+  msg('กำลังลบ...','tinfo');
+  apiPost({action:'del_app',id:String(id)}).then(function(r){
+    if(r&&r.ok){msg('ลบเรียบร้อย','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}
+    else{msg('ลบไม่สำเร็จ: '+(r&&r.err||'ไม่พบข้อมูล'),'terr');console.log('del_app response:',r)}
+  }).catch(function(e){msg('ลบไม่สำเร็จ: '+e,'terr');console.error('del_app error:',e)});
+}
 
 /* ═══ POSITIONS ═══ */
 function renderPositions(){

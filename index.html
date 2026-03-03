@@ -316,7 +316,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 <div id="toast" class="toast hide"></div>
 
 <script>
-var API = "https://script.google.com/macros/s/AKfycbwVItQgdOHv6cgMNOeXPraY1YKAbaPLx7hTJGziC9yD981PT-4utfNuu-P6E7ulUfbW/exec";
+var API = "https://script.google.com/macros/s/AKfycby3PwKBWEn6g6MfLwAZba8nB54gf3C8KdFmJi5QgjVqjRphuRBl2aVeyo9e31X1wFA/exec";
 
 function apiGet(p){var qs=Object.keys(p).map(function(k){return k+'='+encodeURIComponent(p[k])}).join('&');return fetch(API+'?'+qs).then(function(r){return r.json()})}
 function apiPost(d){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)}).then(function(r){return r.json()})}
@@ -384,7 +384,7 @@ function doSubmit(){
     if(r.ok){
       var appId=r.id;
       $('suc-id').textContent='รหัสใบสมัคร: '+appId;
-      $('suc-upload').textContent='📤 กำลังอัปโหลดเอกสาร...';
+      $('suc-upload').textContent='📤 กำลังอัปโหลดเอกสาร... กรุณาอย่าปิดหน้าต่างนี้';
       resetForm(); go('success');
 
       // STEP 2: อัปโหลดไฟล์หลังบ้าน (ไม่ต้องรอ)
@@ -392,7 +392,7 @@ function doSubmit(){
       apiPost({action:'upload_files',id:appId,credData:fileData.credData,credType:fileData.credType,credName:fileData.credName,idData:fileData.idData,idType:fileData.idType,idName:fileData.idName
       }).then(function(r2){
         hideUploadBar();
-        if(r2.ok) $('suc-upload').textContent='✅ อัปโหลดเอกสารเรียบร้อย';
+        if(r2.ok) $('suc-upload').textContent='✅ อัปโหลดเอกสารเรียบร้อย สามารถปิดหน้าต่างได้';
         else $('suc-upload').textContent='⚠️ อัปโหลดเอกสารไม่สำเร็จ — กรุณาติดต่อ HR';
       }).catch(function(){hideUploadBar();$('suc-upload').textContent='⚠️ อัปโหลดเอกสารไม่สำเร็จ'});
     } else msg('เกิดข้อผิดพลาด: '+(r.err||''),'terr');

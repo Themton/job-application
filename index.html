@@ -464,8 +464,8 @@ function doFilter(){
   var f=ALL.filter(function(a){return [a.name,a.email,a.phone,a.position,a.education].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)});
   $('A-cnt').textContent='พบ '+f.length+' รายการ'+(q?' สำหรับ "'+q+'"':'');
   if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูลผู้สมัคร</p></div>';return}
-  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>ประสบการณ์</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่</th></tr></thead><tbody>';
-  f.forEach(function(a){var s=ST[a.status]||ST.new;h+='<tr onclick="detail(\''+a.id+'\')"><td><div class="nm">'+esc(a.name)+'</div><div class="em">'+esc(a.email||'')+'</div></td><td>'+esc(a.position)+'</td><td>'+esc(a.experience||'-')+'</td><td>'+(a.credLink?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.idLink?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td><td><span class="bg '+s.c+'">'+s.l+'</span></td><td>'+esc(String(a.date||'').substring(0,10))+'</td></tr>'});
+  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>ประสบการณ์</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่/เวลา</th></tr></thead><tbody>';
+  f.forEach(function(a){var s=ST[a.status]||ST.new;h+='<tr onclick="detail(\''+a.id+'\')"><td><div class="nm">'+esc(a.name)+'</div><div class="em">'+esc(a.email||'')+'</div></td><td>'+esc(a.position)+'</td><td>'+esc(a.experience||'-')+'</td><td>'+(a.credLink?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.idLink?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td><td><span class="bg '+s.c+'">'+s.l+'</span></td><td><div>'+esc(String(a.date||'').substring(0,10))+'</div><div class="em">'+esc(String(a.date||'').substring(10,16))+'</div></td></tr>'});
   $('A-tbl').innerHTML=h+'</tbody></table></div>';
 }
 
@@ -505,7 +505,7 @@ function detail(id){
     '<div class="dt"><div class="av">'+esc(a.name).charAt(0)+'</div><div style="flex:1"><div class="dn-nm">'+esc(a.name)+'</div><div class="dn-ps">'+esc(a.position)+'</div></div>'+
     '<div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px">เปลี่ยนสถานะ</div><select class="ssel" onchange="chgSt(\''+a.id+'\',this.value)">'+opts+'</select></div></div>'+
     '<div class="dg">'+
-      '<div class="dc"><h4>📋 ข้อมูลติดต่อ</h4><div class="dr"><span class="i">📧</span> '+esc(a.email||'-')+'</div><div class="dr"><span class="i">📱</span> '+esc(a.phone)+'</div><div class="dr"><span class="i">📅</span> '+esc(String(a.date||'').substring(0,16))+'</div></div>'+
+      '<div class="dc"><h4>📋 ข้อมูลติดต่อ</h4><div class="dr"><span class="i">📧</span> '+esc(a.email||'-')+'</div><div class="dr"><span class="i">📱</span> '+esc(a.phone)+'</div><div class="dr"><span class="i">📅</span> วันที่สมัคร: '+esc(String(a.date||'').substring(0,10))+' เวลา '+esc(String(a.date||'').substring(10,16))+'</div></div>'+
       '<div class="dc"><h4>🎓 คุณสมบัติ</h4><div class="dr"><span class="i">💼</span> '+esc(a.position)+'</div><div class="dr"><span class="i">📜</span> '+esc(a.education||'-')+'</div><div class="dr"><span class="i">⏱️</span> '+esc(a.experience||'-')+'</div></div>'+
     '</div>'+
     (a.intro?'<div class="dc" style="margin-bottom:16px"><h4>💬 แนะนำตัว</h4><div style="font-size:13px;line-height:1.8;color:var(--txt2)">'+esc(a.intro)+'</div></div>':'')+

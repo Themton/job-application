@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ระบบรับสมัครงาน</title>
+<title>ระบบสมัครงาน บริษัทเดอะเอ็มที</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3f0e8;--card:#fff;--pri:#1b2d45;--pri2:#2d5080;--acc:#c27a2c;--acc2:#d8923a;--txt:#1e293b;--txt2:#475569;--muted:#94a3b8;--bdr:#ddd8ce;--bdr2:#eee9e0;--inp:#faf8f5;--ok:#16a34a;--err:#dc2626;--sh:0 1px 3px rgba(0,0,0,.06);--sh2:0 4px 14px rgba(0,0,0,.08);--sh3:0 12px 30px rgba(0,0,0,.12)}
@@ -15,7 +15,8 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 .hdr{background:var(--pri);position:sticky;top:0;z-index:100}
 .hdr-in{max-width:960px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:11px}
-.logo{width:40px;height:40px;background:var(--acc);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0}
+.logo{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:transparent}
+.logo img{width:100%;height:100%;object-fit:contain}
 .brand h1{font-size:17px;color:#fff;font-weight:600}.brand small{display:block;font-size:10px;color:rgba(255,255,255,.4)}
 .nbtn{display:flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:rgba(255,255,255,.75);border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:.2s}
 .nbtn:hover{background:rgba(255,255,255,.14);color:#fff}.nbtn.on{background:var(--acc);border-color:var(--acc);color:#fff}
@@ -49,7 +50,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 .btn-d{background:rgba(220,38,38,.07);color:var(--err);border:1px solid rgba(220,38,38,.14)}.btn-d:hover{background:rgba(220,38,38,.14)}
 .lw{min-height:75vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .lb{background:var(--card);border-radius:16px;padding:38px 32px;width:100%;max-width:370px;box-shadow:var(--sh3);text-align:center}
-.lb .logo{width:52px;height:52px;font-size:18px;border-radius:14px;margin:0 auto 16px}
+.lb .logo{width:64px;height:64px;border-radius:14px;margin:0 auto 16px}
 .lb h2{font-size:19px;font-weight:700;color:var(--pri);margin-bottom:3px}.lb .s{font-size:12px;color:var(--muted);margin-bottom:22px}
 .lb .fld{text-align:left;margin-bottom:11px}.lb .btn{width:100%;justify-content:center;margin-top:6px;padding:12px}
 .lerr{background:rgba(220,38,38,.07);color:var(--err);padding:9px;border-radius:7px;font-size:12px;font-weight:500;margin-bottom:10px}
@@ -95,7 +96,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 .sp{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sn .6s linear infinite}
 @keyframes sn{to{transform:rotate(360deg)}}
 .ldp{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
-.ldp .logo{width:48px;height:48px;font-size:17px;border-radius:12px}
+.ldp .logo{width:56px;height:56px;border-radius:12px}
 .suc{text-align:center;padding:50px 20px}.suc .sico{font-size:56px;margin-bottom:14px}
 .suc h3{font-size:20px;font-weight:700;color:var(--pri);margin-bottom:6px}
 .suc p{font-size:14px;color:var(--txt2);margin-bottom:20px}
@@ -149,7 +150,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
   .wrap{padding:16px 14px 40px}
   .cd{padding:18px 16px}
   .ttl{font-size:19px}
-  .brand h1{font-size:15px}
+  .brand h1{font-size:13px}
   .dt{flex-direction:column;text-align:center}
   .dn-nm{font-size:18px}
   .fld input,.fld select,.fld textarea{font-size:16px;padding:11px 12px}
@@ -157,7 +158,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
   .brow{flex-direction:column}
   .btn-s{width:auto}
   .lb{padding:28px 20px}
-  .lb .logo{width:46px;height:46px;font-size:16px}
+  .lb .logo{width:56px;height:56px}
   .lb h2{font-size:17px}
   .navs{width:100%;justify-content:center}
   .nbtn{flex:1;justify-content:center;padding:9px 10px}
@@ -190,7 +191,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 <div id="upload-pct" class="upload-pct hide"><span class="sp2"></span> <span id="upload-txt">0%</span></div>
 
 <div class="hdr"><div class="hdr-in">
-  <div class="brand"><div class="logo">HR</div><div><h1>ระบบรับสมัครงาน</h1><small>Job Application System</small></div></div>
+  <div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="The MT"></div><div><h1>ระบบสมัครงาน</h1><small>บริษัทเดอะเอ็มที</small></div></div>
   <div class="navs">
     <button class="nbtn on" id="n1" onclick="go('form')">📝 สมัครงาน</button>
     <button class="nbtn hide" id="n2" onclick="go('login')">🔒 หลังบ้าน</button>
@@ -260,7 +261,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 
 <!-- LOGIN -->
 <div id="P-login" class="wrap hide"><div class="lw"><div class="lb">
-  <div class="logo">HR</div><h2>เข้าสู่ระบบหลังบ้าน</h2><p class="s">สำหรับเจ้าหน้าที่ HR เท่านั้น</p>
+  <div class="logo"><img src="LOGO_THEMT.png" alt="The MT"></div><h2>เข้าสู่ระบบหลังบ้าน</h2><p class="s">บริษัทเดอะเอ็มที</p>
   <div id="l-err" class="lerr hide"></div>
   <div class="fld"><label>ชื่อผู้ใช้</label><input id="i-user" placeholder="ชื่อผู้ใช้" onkeydown="if(event.key==='Enter')doLogin()"></div>
   <div class="fld"><label>รหัสผ่าน</label><input id="i-pass" type="password" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()"></div>
@@ -270,7 +271,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 
 <!-- ADMIN -->
 <div id="P-admin" class="wrap hide">
-  <div id="A-ld" class="ldp"><div class="logo">HR</div><div style="font-size:14px;font-weight:600;color:var(--pri)">กำลังโหลดข้อมูล...</div></div>
+  <div id="A-ld" class="ldp"><div class="logo"><img src="LOGO_THEMT.png" alt="The MT"></div><div style="font-size:14px;font-weight:600;color:var(--pri)">กำลังโหลดข้อมูล...</div></div>
   <div id="A-main" class="hide">
     <div class="atabs">
       <button class="atab on" id="tab-app" onclick="showTab('app')">📋 ผู้สมัครงาน</button>

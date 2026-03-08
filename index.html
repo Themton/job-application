@@ -232,7 +232,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
       <div class="fld"><label>ประสบการณ์ทำงาน</label>
         <select id="i-exp"><option value="">-- เลือก --</option><option>ไม่มีประสบการณ์</option><option>1-2 ปี</option><option>3-5 ปี</option><option>5-10 ปี</option><option>มากกว่า 10 ปี</option></select>
       </div>
-      <div class="fld fw"><label>แนะนำตัวเอง</label><textarea id="i-intro" rows="3" placeholder="บอกเล่าเกี่ยวกับตัวคุณ..."></textarea></div>
+
     </div>
   </div>
   <div class="cd"><div class="cd-t"><span class="dot"></span> แนบเอกสาร</div>
@@ -406,7 +406,7 @@ function doSubmit(){
 
   // STEP 1: บันทึกข้อมูลก่อน (เร็ว ~1 วิ)
   apiPost({action:'apply',name:nm,email:'',phone:ph,position:ps,
-    education:$('i-edu').value,experience:$('i-exp').value,intro:$('i-intro').value.trim()
+    education:$('i-edu').value,experience:$('i-exp').value,intro:''
   }).then(function(r){
     btn.disabled=false;btn.innerHTML='📩 ส่งใบสมัคร';
     if(r.ok){
@@ -461,7 +461,7 @@ function hideUploadBar(){
 }
 
 function resetForm(){
-  ['i-name','i-phone','i-intro'].forEach(function(x){$(x).value=''});
+  ['i-name','i-phone'].forEach(function(x){$(x).value=''});
   $('i-pos').selectedIndex=0;$('i-exp').selectedIndex=0;$('i-edu').selectedIndex=0;
   rmFile({stopPropagation:function(){}},'c');rmFile({stopPropagation:function(){}},'b');
 }
@@ -541,7 +541,7 @@ function detail(id){
       '<div class="dc"><h4>📋 ข้อมูลติดต่อ</h4><div class="dr"><span class="i">📱</span> '+esc(a.phone)+'</div><div class="dr"><span class="i">📅</span> วันที่สมัคร: '+esc(String(a.date||'').substring(0,10))+' เวลา '+esc(String(a.date||'').substring(10,16))+'</div></div>'+
       '<div class="dc"><h4>🎓 คุณสมบัติ</h4><div class="dr"><span class="i">💼</span> '+esc(a.position)+'</div><div class="dr"><span class="i">📜</span> '+esc(a.education||'-')+'</div><div class="dr"><span class="i">⏱️</span> '+esc(a.experience||'-')+'</div></div>'+
     '</div>'+
-    (a.intro?'<div class="dc" style="margin-bottom:16px"><h4>💬 แนะนำตัว</h4><div style="font-size:13px;line-height:1.8;color:var(--txt2)">'+esc(a.intro)+'</div></div>':'')+
+    
     '<div class="dg">'+
       '<div class="dc"><h4>📄 วุฒิการศึกษา</h4>'+docPreview(a.credLink,'วุฒิการศึกษา')+'</div>'+
       '<div class="dc"><h4>🪪 สำเนาบัตรประชาชน</h4>'+docPreview(a.idLink,'บัตรประชาชน')+'</div>'+

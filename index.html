@@ -342,12 +342,12 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 <div id="toast" class="toast hide"></div>
 
 <script>
-var API = "https://script.google.com/macros/s/AKfycbxtrxVWJzbBy-q1WdPobB3CfaHVYVCOz7MwhEFWYYOiUdenlL6bXay-JGU7cLQMc6Hy/exec";
+var API = "https://script.google.com/macros/s/AKfycbxzplfLKS08nHYvEEyhvaYkFTOCGlUgcyb438eiWXvMVXbahgf0SiEzNfnlAekMR-De/exec";
 
-function apiGet(p){var qs=Object.keys(p).map(function(k){return k+'='+encodeURIComponent(p[k])}).join('&');return fetch(API+'?'+qs).then(function(r){return r.json()})}
-function apiPost(d){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)}).then(function(r){return r.json()})}
+function apiGet(p){if(TOKEN)p.token=TOKEN;var qs=Object.keys(p).map(function(k){return k+'='+encodeURIComponent(p[k])}).join('&');return fetch(API+'?'+qs).then(function(r){return r.json()})}
+function apiPost(d){if(TOKEN)d.token=TOKEN;return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)}).then(function(r){return r.json()})}
 
-var ALL=[],POSITIONS=[],USERS=[],FI={c:null,b:null},editPosId=null,editUsrId=null;
+var ALL=[],POSITIONS=[],USERS=[],FI={c:null,b:null},editPosId=null,editUsrId=null,TOKEN="";
 var ST={new:{l:"ใหม่",c:"b-new"},reviewing:{l:"กำลังพิจารณา",c:"b-reviewing"},interview:{l:"นัดสัมภาษณ์",c:"b-interview"},accepted:{l:"ผ่าน",c:"b-accepted"},rejected:{l:"ไม่ผ่าน",c:"b-rejected"}};
 function $(id){return document.getElementById(id)}
 
@@ -470,7 +470,7 @@ function resetForm(){
 function doLogin(){
   var u=$('i-user').value.trim(),p=$('i-pass').value.trim();$('l-err').classList.add('hide');
   apiGet({type:'login',u:u,p:p}).then(function(r){
-    if(r.ok){$('n2').classList.remove('hide');go('admin')}
+    if(r.ok){TOKEN=r.token||'';$('n2').classList.remove('hide');go('admin')}
     else{$('l-err').textContent='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';$('l-err').classList.remove('hide')}
   }).catch(function(e){$('l-err').textContent='Error: '+e;$('l-err').classList.remove('hide')});
 }

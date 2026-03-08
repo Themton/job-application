@@ -342,7 +342,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 <div id="toast" class="toast hide"></div>
 
 <script>
-var API = "https://script.google.com/macros/s/AKfycbzb83N3zN23ieMVMke2zi2lMScqAvcme2RkVdpZ4-Vb4ffkL7Otli06xJ2_fuGwTjxZ/exec";
+var API = "https://script.google.com/macros/s/AKfycbxtrxVWJzbBy-q1WdPobB3CfaHVYVCOz7MwhEFWYYOiUdenlL6bXay-JGU7cLQMc6Hy/exec";
 
 function apiGet(p){var qs=Object.keys(p).map(function(k){return k+'='+encodeURIComponent(p[k])}).join('&');return fetch(API+'?'+qs).then(function(r){return r.json()})}
 function apiPost(d){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)}).then(function(r){return r.json()})}

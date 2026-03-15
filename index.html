@@ -181,7 +181,7 @@
 /* ═══ CONFIG ═══ */
 var SB="https://fnkohtdpwdwedjrtklre.supabase.co";
 var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZua29odGRwd2R3ZWRqcnRrbHJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTA3MjIsImV4cCI6MjA4ODkyNjcyMn0.AuotNxQWgKiSYpS7kLBMm3jOCFhJWsXy31yaqG6dwic";
-var DA="https://script.google.com/macros/s/AKfycbz-2FDCWkr5rJLvc3ueYhzwMesLZKelOC_qPv4dl6F2b2zaQ2UnDgjmfU8F2HXeZQkU/exec";
+var DA="https://script.google.com/macros/s/AKfycbzVjRs-R4Fs_hBPK3sQhFvSsYTHZ-1pV-t5kjBac86AbDBMGzYi96HPzL-QOqigEWCw/exec";
 var MODE=location.search.indexOf('admin')>-1?'admin':'public';
 
 /* ═══ Supabase ═══ */
@@ -259,11 +259,13 @@ function doSubmit(){
       var ut=setInterval(function(){var p=Math.min(Math.round(((Date.now()-st)/1000/est)*95),95);setUB(p)},300);
       fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body}).then(function(r){return r.json()}).then(function(r2){
         clearInterval(ut);setUB(100);hideUB();
-        if(r2&&r2.ok){sb("applications","PATCH",{cred_link:r2.credLink||'',id_link:r2.idLink||'',house_link:r2.houseLink||'',bank_link:r2.bankLink||''},"?id=eq."+id);$('suc-upload').innerHTML='✅ อัปโหลดเรียบร้อย<br>ปิดหน้าต่างได้'}
+        if(r2&&r2.ok){sb("applications","PATCH",{cred_link:r2.credLink||'',id_link:r2.idLink||'',house_link:r2.houseLink||'',bank_link:r2.bankLink||''},"?id=eq."+id);syncSheet({id:id,cred_link:r2.credLink||'',id_link:r2.idLink||'',house_link:r2.houseLink||'',bank_link:r2.bankLink||''});$('suc-upload').innerHTML='✅ อัปโหลดเรียบร้อย<br>ปิดหน้าต่างได้'}
         else $('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ — ติดต่อ HR';
       }).catch(function(){clearInterval(ut);hideUB();$('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ'});
       // Notify Telegram
-      fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'notify',text:"📩 <b>มีพนักงานใหม่!</b>\n\n👤 "+nm+"\n📱 "+ph+"\n💼 "+pos+"\n🎓 "+(edu||'-')+"\n🏦 "+bk+"\n💳 "+ba+"\n🔖 "+id})}).catch(function(){});
+      fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'notify',text:"📩 <b>มีพนักงานใหม่!</b>\n\n👤 "+nm+(nick?" ("+nick+")":"")+"\n📱 "+ph+"\n💼 "+pos+"\n🎓 "+(edu||'-')+"\n🏦 "+bk+"\n💳 "+ba+"\n🔖 "+id})}).catch(function(){});
+      // Sync to Google Sheets
+      syncSheet({id:id,name:nm,nickname:nick,phone:ph,position:pos,education:edu,bank:bk,bank_account:ba,status:'new'});
     }else{toast('เกิดข้อผิดพลาด','terr');console.log('submit error:',r)}
   }).catch(function(e){btn.disabled=false;btn.innerHTML='📩 บันทึกข้อมูล';toast('Error: '+e,'terr')});
 }
@@ -331,8 +333,8 @@ function detail(id){
 }
 function backList(){$('A-det').classList.add('hide');$('A-main').classList.remove('hide')}
 function setF(id,f,v){var u={};u[f]=v;sb("applications","PATCH",u,"?id=eq."+id).then(function(){toast('บันทึกแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a[f]=v});doFilter()}).catch(function(e){toast('Error: '+e,'terr')})}
-function chgSt(id,st){sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){toast('อัปเดตแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a.status=st});stats();doFilter()}).catch(function(e){toast('Error: '+e,'terr')})}
-function terminate(id){if(!confirm('ยืนยันพ้นสภาพพนักงาน?'))return;var now=new Date().toISOString();sb("applications","PATCH",{status:"terminated",terminated_at:now},"?id=eq."+id).then(function(){toast('พ้นสภาพแล้ว','tok');ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_at=now}});stats();doFilter();detail(id)}).catch(function(e){toast('Error: '+e,'terr')})}
+function chgSt(id,st){sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){toast('อัปเดตแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a.status=st});stats();doFilter();syncSheet({id:id,status:st})}).catch(function(e){toast('Error: '+e,'terr')})}
+function terminate(id){if(!confirm('ยืนยันพ้นสภาพพนักงาน?'))return;var now=new Date().toISOString();sb("applications","PATCH",{status:"terminated",terminated_at:now},"?id=eq."+id).then(function(){toast('พ้นสภาพแล้ว','tok');ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_at=now}});stats();doFilter();detail(id);syncSheet({id:id,status:'terminated'})}).catch(function(e){toast('Error: '+e,'terr')})}
 function delA(id){if(!confirm('ลบข้อมูลพนักงานนี้?'))return;sb("applications","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}).catch(function(e){toast('Error: '+e,'terr')})}
 
 /* ═══ POSITIONS ═══ */
@@ -366,6 +368,9 @@ function saveU(){
   else{if(!un||!pw){toast('กรอกชื่อผู้ใช้และรหัสผ่าน','terr');return}var id="USR-"+Date.now();sb("users","POST",{id:id,username:un,password:pw,display_name:dn||un,role:'admin'}).then(function(r){if(Array.isArray(r)&&r.length){toast('เพิ่มแล้ว','tok');USR.push({id:id,username:un,display_name:dn||un,role:'admin'});renderUsr();$('uf-box').classList.add('hide')}else{toast('เพิ่มไม่สำเร็จ - ชื่อซ้ำ?','terr');console.log(r)}}).catch(function(e){toast('Error: '+e,'terr')})}
 }
 function delU(id){if(USR.length<=1){toast('ต้องมีผู้ใช้อย่างน้อย 1 คน','terr');return}if(!confirm('ลบ?'))return;sb("users","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');USR=USR.filter(function(x){return x.id!==id});renderUsr()}).catch(function(e){toast('Error: '+e,'terr')})}
+
+/* ═══ SYNC SHEETS ═══ */
+function syncSheet(d){fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action:'sync_sheet'},d))}).catch(function(e){console.log('sync error:',e)})}
 
 /* ═══ UTILS ═══ */
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}

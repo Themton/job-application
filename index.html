@@ -199,13 +199,14 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
     <div class="g2">
       <div class="fld" id="F1"><label>ชื่อ - สกุล <span class="rq">*</span></label><input id="i-name" placeholder="กรอกชื่อ-สกุล"></div>
       <div class="fld" id="F2"><label>โทรศัพท์ <span class="rq">*</span></label><input id="i-phone" placeholder="08XXXXXXXX" maxlength="10" inputmode="tel"></div>
+      <div class="fld" id="F6"><label>ตำแหน่ง <span class="rq">*</span></label><input id="i-position" placeholder="เช่น พนักงานทั่วไป, ช่างเทคนิค"></div>
 
     </div>
   </div>
   <div class="cd"><div class="cd-t"><span class="dot"></span> คุณสมบัติ</div>
     <div class="g2">
       <div class="fld"><label>วุฒิการศึกษา</label>
-        <select id="i-edu"><option value="">-- เลือก --</option><option value="ไม่มีวุฒิการศึกษา">ไม่มีวุฒิการศึกษา</option><option value="ประถมศึกษา">ประถมศึกษา</option><option value="มัธยมศึกษาตอนต้น">มัธยมศึกษาตอนต้น (ม.3)</option><option value="มัธยมศึกษาตอนปลาย">มัธยมศึกษาตอนปลาย (ม.6)</option><option value="ปวช.">ปวช.</option><option value="ปวส.">ปวส.</option><option value="อนุปริญญา">อนุปริญญา</option><option value="ปริญญาตรี">ปริญญาตรี</option><option value="ปริญญาโท">ปริญญาโท</option><option value="ปริญญาเอก">ปริญญาเอก</option></select>
+        <select id="i-edu" onchange="toggleCredUpload()"><option value="">-- เลือก --</option><option value="ไม่มีวุฒิการศึกษา">ไม่มีวุฒิการศึกษา</option><option value="ประถมศึกษา">ประถมศึกษา</option><option value="มัธยมศึกษาตอนต้น">มัธยมศึกษาตอนต้น (ม.3)</option><option value="มัธยมศึกษาตอนปลาย">มัธยมศึกษาตอนปลาย (ม.6)</option><option value="ปวช.">ปวช.</option><option value="ปวส.">ปวส.</option><option value="อนุปริญญา">อนุปริญญา</option><option value="ปริญญาตรี">ปริญญาตรี</option><option value="ปริญญาโท">ปริญญาโท</option><option value="ปริญญาเอก">ปริญญาเอก</option></select>
       </div>
       <div class="fld"><label>ประสบการณ์ทำงาน</label>
         <select id="i-exp"><option value="">-- เลือก --</option><option>ไม่มีประสบการณ์</option><option>1-2 ปี</option><option>3-5 ปี</option><option>5-10 ปี</option><option>มากกว่า 10 ปี</option></select>
@@ -214,11 +215,14 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
   </div>
   <div class="cd"><div class="cd-t"><span class="dot"></span> แนบเอกสาร</div>
     <div class="g2">
-      <div class="fld"><label>วุฒิการศึกษา / Transcript <span class="rq">*</span></label>
+      <div class="fld" id="cred-wrap"><label>วุฒิการศึกษา / Transcript <span class="rq">*</span></label>
         <div class="uz" id="uz-c"><input type="file" accept="image/*,.pdf" onchange="pickFile(this,'c')"><div id="uz-c-e"><div class="ic">📄</div><div class="tx">คลิกเพื่ออัปโหลด</div><div class="hn">JPG, PNG, PDF ไม่เกิน 5MB</div></div><div id="uz-c-d" class="fok hide">✅ <span id="uz-c-n"></span> <button class="rm" onclick="rmFile(event,'c')">✕</button></div></div>
       </div>
       <div class="fld"><label>สำเนาบัตรประชาชน <span class="rq">*</span></label>
         <div class="uz" id="uz-b"><input type="file" accept="image/*,.pdf" onchange="pickFile(this,'b')"><div id="uz-b-e"><div class="ic">🪪</div><div class="tx">คลิกเพื่ออัปโหลด</div><div class="hn">JPG, PNG, PDF ไม่เกิน 5MB</div></div><div id="uz-b-d" class="fok hide">✅ <span id="uz-b-n"></span> <button class="rm" onclick="rmFile(event,'b')">✕</button></div></div>
+      </div>
+      <div class="fld"><label>สำเนาทะเบียนบ้าน <span class="rq">*</span></label>
+        <div class="uz" id="uz-h"><input type="file" accept="image/*,.pdf" onchange="pickFile(this,'h')"><div id="uz-h-e"><div class="ic">🏠</div><div class="tx">คลิกเพื่ออัปโหลด</div><div class="hn">JPG, PNG, PDF ไม่เกิน 5MB</div></div><div id="uz-h-d" class="fok hide">✅ <span id="uz-h-n"></span> <button class="rm" onclick="rmFile(event,'h')">✕</button></div></div>
       </div>
     </div>
   </div>
@@ -259,7 +263,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
       <button class="atab" id="tab-usr" onclick="showTab('usr')">👤 ผู้ใช้งาน</button>
     </div>
     <div id="T-app"><div class="sts" id="A-sts"></div>
-      <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ เบอร์โทร..." oninput="doFilter()"></div>
+      <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ เบอร์โทร ตำแหน่ง..." oninput="doFilter()"></div>
         <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="reviewing">กำลังพิจารณา</option><option value="interview">นัดสัมภาษณ์</option><option value="accepted">ผ่าน</option><option value="rejected">ไม่ผ่าน</option></select>
         <button class="btn btn-g btn-s" onclick="loadAdmin()">🔄</button>
       </div><div id="A-cnt" class="rcnt"></div><div id="A-tbl"></div>
@@ -280,7 +284,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 /* ═══ CONFIG ═══ */
 var SB_URL = "https://fnkohtdpwdwedjrtklre.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZua29odGRwd2R3ZWRqcnRrbHJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTA3MjIsImV4cCI6MjA4ODkyNjcyMn0.AuotNxQWgKiSYpS7kLBMm3jOCFhJWsXy31yaqG6dwic";
-var DRIVE_API = "ใส่_URL_APPS_SCRIPT_ตรงนี้";
+var DRIVE_API = "https://script.google.com/macros/s/AKfycby4bx4oZJVx7uBOzNhGZKthFGr4mn2mduoH-Tng4_7DJTQpU68nN_s-A_AjX95-YACs/exec";
 
 /* ═══ Supabase Helper ═══ */
 function sb(table,method,body,query){
@@ -291,7 +295,7 @@ function sb(table,method,body,query){
 }
 
 /* ═══ STATE ═══ */
-var ALL=[],USERS=[],FI={c:null,b:null,k:null},editUsrId=null,LOGGED=false;
+var ALL=[],USERS=[],FI={c:null,b:null,k:null,h:null},editUsrId=null,LOGGED=false;
 var ST={new:{l:"ใหม่",c:"b-new"},reviewing:{l:"กำลังพิจารณา",c:"b-reviewing"},interview:{l:"นัดสัมภาษณ์",c:"b-interview"},accepted:{l:"ผ่าน",c:"b-accepted"},rejected:{l:"ไม่ผ่าน",c:"b-rejected"}};
 function $(id){return document.getElementById(id)}
 
@@ -317,26 +321,29 @@ function rmFile(e,k){e.stopPropagation();FI[k]=null;$('uz-'+k).classList.remove(
 
 /* ═══ SUBMIT ═══ */
 function doSubmit(){
-  ['F1','F2','F4','F5'].forEach(function(x){$(x).classList.remove('er')});
-  var nm=$('i-name').value.trim(),ph=$('i-phone').value.trim();
+  ['F1','F2','F4','F5','F6'].forEach(function(x){$(x).classList.remove('er')});
+  var nm=$('i-name').value.trim(),ph=$('i-phone').value.trim(),pos=$('i-position').value.trim();
   var bk=$('i-bank').value,ba=$('i-baccount').value.trim();
   var bad=false;
   if(!nm){$('F1').classList.add('er');bad=true}
   if(!ph){$('F2').classList.add('er');msg('กรุณากรอกเบอร์โทร','terr');bad=true}
   else{var dg=ph.replace(/\D/g,'');if(dg.length!==10){$('F2').classList.add('er');msg('เบอร์โทรต้อง 10 หลัก (กรอก '+dg.length+')','terr');bad=true}}
-  if(!FI.c){msg('กรุณาแนบวุฒิการศึกษา','terr');bad=true}
+  if(!pos){$('F6').classList.add('er');msg('กรุณากรอกตำแหน่ง','terr');bad=true}
+  var noEdu=$('i-edu').value==='ไม่มีวุฒิการศึกษา';
+  if(!noEdu&&!FI.c){msg('กรุณาแนบวุฒิการศึกษา','terr');bad=true}
   if(!FI.b){msg('กรุณาแนบบัตรประชาชน','terr');bad=true}
   if(!bk){$('F4').classList.add('er');msg('กรุณาเลือกธนาคาร','terr');bad=true}
   if(!ba){$('F5').classList.add('er');msg('กรุณากรอกเลขบัญชี','terr');bad=true}
+  if(!FI.h){msg('กรุณาแนบสำเนาทะเบียนบ้าน','terr');bad=true}
   if(!FI.k){msg('กรุณาแนบรูป Book Bank','terr');bad=true}
   if(bad)return;
 
   var btn=$('btnSub');btn.disabled=true;btn.innerHTML='<span class="sp"></span> กำลังบันทึก...';
   var id="APP-"+Date.now();
-  var fileData={credData:FI.c?FI.c.d:'',credType:FI.c?FI.c.t:'',credName:FI.c?FI.c.n:'',idData:FI.b?FI.b.d:'',idType:FI.b?FI.b.t:'',idName:FI.b?FI.b.n:'',bankData:FI.k?FI.k.d:'',bankType:FI.k?FI.k.t:'',bankName:FI.k?FI.k.n:''};
+  var fileData={credData:FI.c?FI.c.d:'',credType:FI.c?FI.c.t:'',credName:FI.c?FI.c.n:'',idData:FI.b?FI.b.d:'',idType:FI.b?FI.b.t:'',idName:FI.b?FI.b.n:'',bankData:FI.k?FI.k.d:'',bankType:FI.k?FI.k.t:'',bankName:FI.k?FI.k.n:'',houseData:FI.h?FI.h.d:'',houseType:FI.h?FI.h.t:'',houseName:FI.h?FI.h.n:''};
 
   // STEP 1: บันทึก Supabase (เร็วมาก!)
-  sb("applications","POST",{id:id,name:nm,phone:ph,education:$('i-edu').value,experience:$('i-exp').value,bank:bk,bank_account:ba,status:"new"}).then(function(r){
+  sb("applications","POST",{id:id,name:nm,phone:ph,position:pos,education:$('i-edu').value,experience:$('i-exp').value,bank:bk,bank_account:ba,status:"new"}).then(function(r){
     btn.disabled=false;btn.innerHTML='📩 ส่งใบสมัคร';
     if(r&&r.length){
       $('suc-id').textContent='รหัสใบสมัคร: '+id;
@@ -353,7 +360,7 @@ function doSubmit(){
           clearInterval(ut);setUploadPct(100,'เสร็จสิ้น!');hideUploadBar();
           if(r2.ok){
             // บันทึกลิงก์ไฟล์กลับ Supabase
-            sb("applications","PATCH",{cred_link:r2.credLink||'',id_link:r2.idLink||'',bank_link:r2.bankLink||''},"?id=eq."+id);
+            sb("applications","PATCH",{cred_link:r2.credLink||'',id_link:r2.idLink||'',house_link:r2.houseLink||'',bank_link:r2.bankLink||''},"?id=eq."+id);
             $('suc-upload').innerHTML='✅ อัปโหลดเอกสารเรียบร้อย<br>สามารถปิดหน้าต่างได้';
           } else $('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ — กรุณาติดต่อ HR';
         }).catch(function(){clearInterval(ut);hideUploadBar();$('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ'});
@@ -367,7 +374,7 @@ function doSubmit(){
 function showUploadBar(){$('upload-bar').classList.remove('hide');$('upload-pct').classList.remove('hide');$('upload-inner').style.width='0';$('upload-txt').textContent='0%'}
 function setUploadPct(p,txt){$('upload-inner').style.width=p+'%';$('upload-txt').textContent=p+'%';$('suc-upload').textContent='📤 '+(txt||'กำลังอัปโหลด')+' '+p+'% — กรุณาอย่าปิดหน้าต่างนี้'}
 function hideUploadBar(){$('upload-inner').style.width='100%';$('upload-txt').textContent='100%';setTimeout(function(){$('upload-bar').classList.add('hide');$('upload-pct').classList.add('hide')},1000)}
-function resetForm(){['i-name','i-phone','i-baccount'].forEach(function(x){$(x).value=''});$('i-exp').selectedIndex=0;$('i-edu').selectedIndex=0;$('i-bank').selectedIndex=0;rmFile({stopPropagation:function(){}},'c');rmFile({stopPropagation:function(){}},'b');rmFile({stopPropagation:function(){}},'k')}
+function resetForm(){['i-name','i-phone','i-position','i-baccount'].forEach(function(x){$(x).value=''});$('i-exp').selectedIndex=0;$('i-edu').selectedIndex=0;$('i-bank').selectedIndex=0;rmFile({stopPropagation:function(){}},'c');rmFile({stopPropagation:function(){}},'b');rmFile({stopPropagation:function(){}},'h');rmFile({stopPropagation:function(){}},'k');toggleCredUpload()}
 
 /* ═══ LOGIN ═══ */
 function doLogin(){
@@ -397,11 +404,11 @@ function stats(){var t=ALL.length,w=0,iv=0,ac=0;ALL.forEach(function(a){if(a.sta
 /* ═══ FILTER ═══ */
 function doFilter(){
   var q=$('i-srch').value.toLowerCase(),st=$('f-st').value;
-  var f=ALL.filter(function(a){return [a.name,a.phone,a.education].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)});
+  var f=ALL.filter(function(a){return [a.name,a.phone,a.position,a.education].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)});
   $('A-cnt').textContent='พบ '+f.length+' รายการ';
   if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูล</p></div>';return}
-  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ประสบการณ์</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่/เวลา</th></tr></thead><tbody>';
-  f.forEach(function(a){var s=ST[a.status]||ST.new;var dt=String(a.created_at||'').substring(0,16).replace('T',' ');h+='<tr onclick="detail(\''+a.id+'\')"><td><div class="nm">'+esc(a.name)+'</div></td><td>'+esc(a.experience||'-')+'</td><td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td><td><span class="bg '+s.c+'">'+s.l+'</span></td><td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td></tr>'});
+  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>ประสบการณ์</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่/เวลา</th></tr></thead><tbody>';
+  f.forEach(function(a){var s=ST[a.status]||ST.new;var dt=String(a.created_at||'').substring(0,16).replace('T',' ');h+='<tr onclick="detail(\''+a.id+'\')"><td><div class="nm">'+esc(a.name)+'</div></td><td>'+esc(a.position||'-')+'</td><td>'+esc(a.experience||'-')+'</td><td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td><td><span class="bg '+s.c+'">'+s.l+'</span></td><td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td></tr>'});
   $('A-tbl').innerHTML=h+'</tbody></table></div>';
 }
 
@@ -428,7 +435,7 @@ function detail(id){
     '<div class="dc"><h4>🎓 คุณสมบัติ</h4><div class="dr"><span class="i">📜</span> วุฒิ: '+esc(a.education||'-')+'</div><div class="dr"><span class="i">⏱️</span> ประสบการณ์: '+esc(a.experience||'-')+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>🏦 ข้อมูลธนาคาร</h4><div class="dr"><span class="i">🏦</span> '+esc(a.bank||'-')+'</div><div class="dr"><span class="i">💳</span> '+esc(a.bank_account||'-')+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>📄 วุฒิการศึกษา</h4>'+docPreview(a.cred_link,'วุฒิการศึกษา')+'</div><div class="dc"><h4>🪪 บัตรประชาชน</h4>'+docPreview(a.id_link,'บัตรประชาชน')+'</div></div>'+
-    '<div class="dg"><div class="dc"><h4>🏦 สำเนา Book Bank</h4>'+docPreview(a.bank_link,'Book Bank')+'</div></div>';
+    '<div class="dg"><div class="dc"><h4>🏠 สำเนาทะเบียนบ้าน</h4>'+docPreview(a.house_link,'ทะเบียนบ้าน')+'</div><div class="dc"><h4>🏦 สำเนา Book Bank</h4>'+docPreview(a.bank_link,'Book Bank')+'</div></div>';
   $('A-main').classList.add('hide');$('A-det').classList.remove('hide');
 }
 function backList(){$('A-det').classList.add('hide');$('A-main').classList.remove('hide')}
@@ -446,6 +453,14 @@ function saveUsr(){
   else{if(!un||!pw){msg('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน','terr');return}var id="USR-"+Date.now();sb("users","POST",{id:id,username:un,password:pw,display_name:dn||un,role:'admin'}).then(function(){msg('เพิ่มเรียบร้อย','tok');USERS.push({id:id,username:un,display_name:dn||un,role:'admin'});renderUsers();cancelUsrForm()}).catch(function(e){msg('Error: '+e,'terr')})}
 }
 function removeUsr(id){if(USERS.length<=1){msg('ต้องมีผู้ใช้อย่างน้อย 1 คน','terr');return}if(!confirm('ลบผู้ใช้?'))return;sb("users","DELETE",null,"?id=eq."+id).then(function(){msg('ลบเรียบร้อย','tok');USERS=USERS.filter(function(x){return x.id!==id});renderUsers()}).catch(function(e){msg('Error: '+e,'terr')})}
+
+/* ═══ TOGGLE CREDENTIAL UPLOAD ═══ */
+function toggleCredUpload(){
+  var v=$('i-edu').value;
+  var wrap=$('cred-wrap');
+  if(v==='ไม่มีวุฒิการศึกษา'){wrap.classList.add('hide');rmFile({stopPropagation:function(){}},'c')}
+  else{wrap.classList.remove('hide')}
+}
 
 /* ═══ UTILS ═══ */
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}

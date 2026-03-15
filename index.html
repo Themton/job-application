@@ -516,11 +516,12 @@ function toggleCredUpload(){
 function loadPositions(){
   var sel=$('i-position');sel.innerHTML='<option value="">⏳ กำลังโหลด...</option>';
   sb("positions","GET",null,"?select=id,title&order=title").then(function(list){
-    POSITIONS=list||[];
+    if(!Array.isArray(list)){console.error('positions error:',list);sel.innerHTML='<option value="">-- โหลดไม่สำเร็จ --</option>';return}
+    POSITIONS=list;
     sel.innerHTML='<option value="">-- เลือกตำแหน่ง --</option>';
     if(!list.length){sel.innerHTML='<option value="">-- ยังไม่มีตำแหน่ง --</option>';return}
     list.forEach(function(p){var o=document.createElement('option');o.value=p.title;o.textContent=p.title;sel.appendChild(o)});
-  }).catch(function(){sel.innerHTML='<option value="">-- โหลดไม่สำเร็จ --</option>'});
+  }).catch(function(e){console.error('positions fetch error:',e);sel.innerHTML='<option value="">-- โหลดไม่สำเร็จ --</option>'});
 }
 
 /* ═══ UTILS ═══ */

@@ -529,7 +529,8 @@ function esc(s){var d=document.createElement('div');d.textContent=s||'';return d
 function msg(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinfo'?'📤 ':'❌ ')+t;el.className='toast '+c;el.classList.remove('hide');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.add('hide')},3500)}
 
 /* ═══ INIT ═══ */
-if(location.search.indexOf('admin')>-1){$('n2').classList.remove('hide');go('login')}
+var isAdmin=location.search.indexOf('admin')>-1;
+if(isAdmin){$('P-form').classList.add('hide');$('n2').classList.remove('hide');go('login')}
 else{loadPositions()}
 </script>
 </body>

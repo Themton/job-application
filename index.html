@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ระบบฐานข้อมูล บริษัทเดอะเอ็มที</title>
+<title>ระบบสมัครงาน บริษัทเดอะเอ็มที</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3f0e8;--card:#fff;--pri:#1b2d45;--pri2:#2d5080;--acc:#c27a2c;--acc2:#d8923a;--txt:#1e293b;--txt2:#475569;--muted:#94a3b8;--bdr:#ddd8ce;--bdr2:#eee9e0;--inp:#faf8f5;--ok:#16a34a;--err:#dc2626;--sh:0 1px 3px rgba(0,0,0,.06);--sh2:0 4px 14px rgba(0,0,0,.08);--sh3:0 12px 30px rgba(0,0,0,.12)}
@@ -184,7 +184,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 <div id="upload-pct" class="upload-pct hide"><span class="sp2"></span> <span id="upload-txt">0%</span></div>
 
 <div class="hdr"><div class="hdr-in">
-  <div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="The MT"></div><div><h1>SYSTEM EMPLOYEE</h1><small>บริษัทเดอะเอ็มที</small></div></div>
+  <div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="The MT"></div><div><h1>ระบบสมัครงาน</h1><small>บริษัทเดอะเอ็มที</small></div></div>
   <div class="navs">
     <button class="nbtn on hide" id="n1" onclick="go('form')">📝 สมัครงาน</button>
     <button class="nbtn hide" id="n2" onclick="go('login')">🔒 หลังบ้าน</button>
@@ -199,9 +199,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
     <div class="g2">
       <div class="fld" id="F1"><label>ชื่อ - สกุล <span class="rq">*</span></label><input id="i-name" placeholder="กรอกชื่อ-สกุล"></div>
       <div class="fld" id="F2"><label>โทรศัพท์ <span class="rq">*</span></label><input id="i-phone" placeholder="08XXXXXXXX" maxlength="10" inputmode="tel"></div>
-      <div class="fld" id="F3"><label>ตำแหน่งที่สมัคร <span class="rq">*</span></label>
-        <select id="i-pos"><option value="">⏳ กำลังโหลดตำแหน่ง...</option></select>
-      </div>
+
     </div>
   </div>
   <div class="cd"><div class="cd-t"><span class="dot"></span> คุณสมบัติ</div>
@@ -257,19 +255,14 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
   <div id="A-main" class="hide">
     <div class="atabs">
       <button class="atab on" id="tab-app" onclick="showTab('app')">📋 ผู้สมัครงาน</button>
-      <button class="atab" id="tab-pos" onclick="showTab('pos')">💼 ตำแหน่งงาน</button>
+
       <button class="atab" id="tab-usr" onclick="showTab('usr')">👤 ผู้ใช้งาน</button>
     </div>
     <div id="T-app"><div class="sts" id="A-sts"></div>
-      <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ เบอร์โทร ตำแหน่ง..." oninput="doFilter()"></div>
+      <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ เบอร์โทร..." oninput="doFilter()"></div>
         <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="reviewing">กำลังพิจารณา</option><option value="interview">นัดสัมภาษณ์</option><option value="accepted">ผ่าน</option><option value="rejected">ไม่ผ่าน</option></select>
         <button class="btn btn-g btn-s" onclick="loadAdmin()">🔄</button>
       </div><div id="A-cnt" class="rcnt"></div><div id="A-tbl"></div>
-    </div>
-    <div id="T-pos" class="hide">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div><span class="ttl" style="font-size:18px">จัดการตำแหน่งงาน</span><p class="sub" style="margin-bottom:0" id="pos-count"></p></div><button class="btn btn-a btn-s" onclick="showPosForm()">➕ เพิ่มตำแหน่ง</button></div>
-      <div id="pos-form" class="cd hide" style="margin-top:14px"><div class="cd-t"><span class="dot"></span> <span id="pf-title">เพิ่มตำแหน่งใหม่</span></div><div class="g3"><div class="fld"><label>ชื่อตำแหน่ง <span class="rq">*</span></label><input id="pf-name"></div><div class="fld"><label>แผนก <span class="rq">*</span></label><input id="pf-dept"></div><div class="fld"><label>จำนวนรับ</label><input id="pf-slots" type="number" min="1" value="1"></div></div><div class="brow" style="margin-top:12px"><button class="btn btn-g btn-s" onclick="cancelPosForm()">ยกเลิก</button><button class="btn btn-a btn-s" id="pf-btn" onclick="savePos()">เพิ่มตำแหน่ง</button></div></div>
-      <div id="pos-grid" class="pgrid"></div>
     </div>
     <div id="T-usr" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div><span class="ttl" style="font-size:18px">จัดการผู้ใช้งาน</span><p class="sub" style="margin-bottom:0" id="usr-count"></p></div><button class="btn btn-a btn-s" onclick="showUsrForm()">➕ เพิ่มผู้ใช้</button></div>
@@ -287,7 +280,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 /* ═══ CONFIG ═══ */
 var SB_URL = "https://fnkohtdpwdwedjrtklre.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZua29odGRwd2R3ZWRqcnRrbHJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTA3MjIsImV4cCI6MjA4ODkyNjcyMn0.AuotNxQWgKiSYpS7kLBMm3jOCFhJWsXy31yaqG6dwic";
-var DRIVE_API = "https://script.google.com/macros/s/AKfycbxJTytuBRNuDZRXUF-hcrcdifwWFax0kUaNLFv9NJ-L54wf5SIaqsdFM38ZeWZpYLo/exec";
+var DRIVE_API = "ใส่_URL_APPS_SCRIPT_ตรงนี้";
 
 /* ═══ Supabase Helper ═══ */
 function sb(table,method,body,query){
@@ -298,7 +291,7 @@ function sb(table,method,body,query){
 }
 
 /* ═══ STATE ═══ */
-var ALL=[],POSITIONS=[],USERS=[],FI={c:null,b:null,k:null},editPosId=null,editUsrId=null,LOGGED=false;
+var ALL=[],USERS=[],FI={c:null,b:null,k:null},editUsrId=null,LOGGED=false;
 var ST={new:{l:"ใหม่",c:"b-new"},reviewing:{l:"กำลังพิจารณา",c:"b-reviewing"},interview:{l:"นัดสัมภาษณ์",c:"b-interview"},accepted:{l:"ผ่าน",c:"b-accepted"},rejected:{l:"ไม่ผ่าน",c:"b-rejected"}};
 function $(id){return document.getElementById(id)}
 
@@ -308,24 +301,15 @@ function go(p){
   $('n1').classList.toggle('on',p==='form'||p==='success');
   $('n2').classList.toggle('on',p==='login'||p==='admin');
   if(p==='admin') loadAdmin();
-  if(p==='form') loadPosForForm();
   window.scrollTo(0,0);
 }
 function showTab(t){
-  $('tab-app').classList.toggle('on',t==='app');$('tab-pos').classList.toggle('on',t==='pos');$('tab-usr').classList.toggle('on',t==='usr');
-  $('T-app').classList.toggle('hide',t!=='app');$('T-pos').classList.toggle('hide',t!=='pos');$('T-usr').classList.toggle('hide',t!=='usr');
-  if(t==='pos') renderPositions();if(t==='usr') renderUsers();
+  $('tab-app').classList.toggle('on',t==='app');$('tab-usr').classList.toggle('on',t==='usr');
+  $('T-app').classList.toggle('hide',t!=='app');$('T-usr').classList.toggle('hide',t!=='usr');
+  if(t==='usr') renderUsers();
 }
 
-/* ═══ LOAD POSITIONS ═══ */
-function loadPosForForm(){
-  var sel=$('i-pos');sel.innerHTML='<option value="">⏳ กำลังโหลด...</option>';
-  sb("positions","GET",null,"?active=eq.true&select=title,dept").then(function(list){
-    sel.innerHTML='<option value="">-- เลือกตำแหน่ง --</option>';
-    if(!list.length){sel.innerHTML='<option value="">-- ยังไม่มีตำแหน่งเปิดรับ --</option>';return}
-    list.forEach(function(p){var o=document.createElement('option');o.value=p.title;o.textContent=p.title+' ('+p.dept+')';sel.appendChild(o)});
-  }).catch(function(){sel.innerHTML='<option value="">-- โหลดไม่สำเร็จ --</option>'});
-}
+
 
 /* ═══ FILE ═══ */
 function pickFile(inp,k){var f=inp.files[0];if(!f)return;if(f.size>5*1024*1024){msg('ไฟล์ใหญ่เกิน 5MB','terr');inp.value='';return}var r=new FileReader();r.onload=function(e){FI[k]={n:f.name,t:f.type,d:e.target.result.split(',')[1]};$('uz-'+k).classList.add('ok');$('uz-'+k+'-e').classList.add('hide');$('uz-'+k+'-d').classList.remove('hide');$('uz-'+k+'-n').textContent=f.name};r.readAsDataURL(f)}
@@ -333,14 +317,13 @@ function rmFile(e,k){e.stopPropagation();FI[k]=null;$('uz-'+k).classList.remove(
 
 /* ═══ SUBMIT ═══ */
 function doSubmit(){
-  ['F1','F2','F3','F4','F5'].forEach(function(x){$(x).classList.remove('er')});
-  var nm=$('i-name').value.trim(),ph=$('i-phone').value.trim(),ps=$('i-pos').value;
+  ['F1','F2','F4','F5'].forEach(function(x){$(x).classList.remove('er')});
+  var nm=$('i-name').value.trim(),ph=$('i-phone').value.trim();
   var bk=$('i-bank').value,ba=$('i-baccount').value.trim();
   var bad=false;
   if(!nm){$('F1').classList.add('er');bad=true}
   if(!ph){$('F2').classList.add('er');msg('กรุณากรอกเบอร์โทร','terr');bad=true}
   else{var dg=ph.replace(/\D/g,'');if(dg.length!==10){$('F2').classList.add('er');msg('เบอร์โทรต้อง 10 หลัก (กรอก '+dg.length+')','terr');bad=true}}
-  if(!ps){$('F3').classList.add('er');bad=true}
   if(!FI.c){msg('กรุณาแนบวุฒิการศึกษา','terr');bad=true}
   if(!FI.b){msg('กรุณาแนบบัตรประชาชน','terr');bad=true}
   if(!bk){$('F4').classList.add('er');msg('กรุณาเลือกธนาคาร','terr');bad=true}
@@ -353,7 +336,7 @@ function doSubmit(){
   var fileData={credData:FI.c?FI.c.d:'',credType:FI.c?FI.c.t:'',credName:FI.c?FI.c.n:'',idData:FI.b?FI.b.d:'',idType:FI.b?FI.b.t:'',idName:FI.b?FI.b.n:'',bankData:FI.k?FI.k.d:'',bankType:FI.k?FI.k.t:'',bankName:FI.k?FI.k.n:''};
 
   // STEP 1: บันทึก Supabase (เร็วมาก!)
-  sb("applications","POST",{id:id,name:nm,phone:ph,position:ps,education:$('i-edu').value,experience:$('i-exp').value,bank:bk,bank_account:ba,status:"new"}).then(function(r){
+  sb("applications","POST",{id:id,name:nm,phone:ph,education:$('i-edu').value,experience:$('i-exp').value,bank:bk,bank_account:ba,status:"new"}).then(function(r){
     btn.disabled=false;btn.innerHTML='📩 ส่งใบสมัคร';
     if(r&&r.length){
       $('suc-id').textContent='รหัสใบสมัคร: '+id;
@@ -376,7 +359,7 @@ function doSubmit(){
         }).catch(function(){clearInterval(ut);hideUploadBar();$('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ'});
 
       // แจ้ง Telegram (ไม่ต้องรอ)
-      fetch(DRIVE_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'notify',text:"📩 <b>มีผู้สมัครงานใหม่!</b>\n\n👤 "+nm+"\n📱 "+ph+"\n💼 "+ps+"\n🎓 "+($('i-edu').value||'-')+"\n⏱️ "+($('i-exp').value||'-')+"\n🏦 "+bk+"\n💳 "+ba+"\n🔖 "+id})}).catch(function(){});
+      fetch(DRIVE_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'notify',text:"📩 <b>มีผู้สมัครงานใหม่!</b>\n\n👤 "+nm+"\n📱 "+ph+"\n🎓 "+($('i-edu').value||'-')+"\n⏱️ "+($('i-exp').value||'-')+"\n🏦 "+bk+"\n💳 "+ba+"\n🔖 "+id})}).catch(function(){});
     } else msg('เกิดข้อผิดพลาด','terr');
   }).catch(function(e){btn.disabled=false;btn.innerHTML='📩 ส่งใบสมัคร';msg('Error: '+e,'terr')});
 }
@@ -384,7 +367,7 @@ function doSubmit(){
 function showUploadBar(){$('upload-bar').classList.remove('hide');$('upload-pct').classList.remove('hide');$('upload-inner').style.width='0';$('upload-txt').textContent='0%'}
 function setUploadPct(p,txt){$('upload-inner').style.width=p+'%';$('upload-txt').textContent=p+'%';$('suc-upload').textContent='📤 '+(txt||'กำลังอัปโหลด')+' '+p+'% — กรุณาอย่าปิดหน้าต่างนี้'}
 function hideUploadBar(){$('upload-inner').style.width='100%';$('upload-txt').textContent='100%';setTimeout(function(){$('upload-bar').classList.add('hide');$('upload-pct').classList.add('hide')},1000)}
-function resetForm(){['i-name','i-phone','i-baccount'].forEach(function(x){$(x).value=''});$('i-pos').selectedIndex=0;$('i-exp').selectedIndex=0;$('i-edu').selectedIndex=0;$('i-bank').selectedIndex=0;rmFile({stopPropagation:function(){}},'c');rmFile({stopPropagation:function(){}},'b');rmFile({stopPropagation:function(){}},'k')}
+function resetForm(){['i-name','i-phone','i-baccount'].forEach(function(x){$(x).value=''});$('i-exp').selectedIndex=0;$('i-edu').selectedIndex=0;$('i-bank').selectedIndex=0;rmFile({stopPropagation:function(){}},'c');rmFile({stopPropagation:function(){}},'b');rmFile({stopPropagation:function(){}},'k')}
 
 /* ═══ LOGIN ═══ */
 function doLogin(){
@@ -400,12 +383,11 @@ function loadAdmin(){
   $('A-ld').classList.remove('hide');$('A-main').classList.add('hide');$('A-det').classList.add('hide');
   Promise.all([
     sb("applications","GET",null,"?select=*&order=created_at.desc"),
-    sb("positions","GET",null,"?select=*"),
     sb("users","GET",null,"?select=id,username,display_name,role,created_at")
   ]).then(function(res){
-    ALL=res[0]||[];POSITIONS=res[1]||[];USERS=res[2]||[];
+    ALL=res[0]||[];USERS=res[1]||[];
     $('A-ld').classList.add('hide');$('A-main').classList.remove('hide');
-    stats();doFilter();renderPositions();renderUsers();
+    stats();doFilter();renderUsers();
   }).catch(function(e){$('A-ld').classList.add('hide');$('A-main').classList.remove('hide');msg('โหลดไม่สำเร็จ: '+e,'terr')});
 }
 
@@ -415,11 +397,11 @@ function stats(){var t=ALL.length,w=0,iv=0,ac=0;ALL.forEach(function(a){if(a.sta
 /* ═══ FILTER ═══ */
 function doFilter(){
   var q=$('i-srch').value.toLowerCase(),st=$('f-st').value;
-  var f=ALL.filter(function(a){return [a.name,a.phone,a.position,a.education].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)});
+  var f=ALL.filter(function(a){return [a.name,a.phone,a.education].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)});
   $('A-cnt').textContent='พบ '+f.length+' รายการ';
   if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูล</p></div>';return}
-  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>ประสบการณ์</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่/เวลา</th></tr></thead><tbody>';
-  f.forEach(function(a){var s=ST[a.status]||ST.new;var dt=String(a.created_at||'').substring(0,16).replace('T',' ');h+='<tr onclick="detail(\''+a.id+'\')"><td><div class="nm">'+esc(a.name)+'</div></td><td>'+esc(a.position)+'</td><td>'+esc(a.experience||'-')+'</td><td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td><td><span class="bg '+s.c+'">'+s.l+'</span></td><td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td></tr>'});
+  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ประสบการณ์</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่/เวลา</th></tr></thead><tbody>';
+  f.forEach(function(a){var s=ST[a.status]||ST.new;var dt=String(a.created_at||'').substring(0,16).replace('T',' ');h+='<tr onclick="detail(\''+a.id+'\')"><td><div class="nm">'+esc(a.name)+'</div></td><td>'+esc(a.experience||'-')+'</td><td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td><td><span class="bg '+s.c+'">'+s.l+'</span></td><td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td></tr>'});
   $('A-tbl').innerHTML=h+'</tbody></table></div>';
 }
 
@@ -441,9 +423,9 @@ function detail(id){
   var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
   $('A-det').innerHTML=
     '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button><button class="btn btn-d btn-s" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
-    '<div class="dt"><div class="av">'+esc(a.name).charAt(0)+'</div><div style="flex:1"><div class="dn-nm">'+esc(a.name)+'</div><div class="dn-ps">'+esc(a.position)+'</div></div><div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px">เปลี่ยนสถานะ</div><select class="ssel" onchange="chgSt(\''+a.id+'\',this.value)">'+opts+'</select></div></div>'+
+    '<div class="dt"><div class="av">'+esc(a.name).charAt(0)+'</div><div style="flex:1"><div class="dn-nm">'+esc(a.name)+'</div></div><div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px">เปลี่ยนสถานะ</div><select class="ssel" onchange="chgSt(\''+a.id+'\',this.value)">'+opts+'</select></div></div>'+
     '<div class="dg"><div class="dc"><h4>📋 ข้อมูลติดต่อ</h4><div class="dr"><span class="i">📱</span> '+esc(a.phone)+'</div><div class="dr"><span class="i">📅</span> วันที่สมัคร: '+esc(dt)+'</div></div>'+
-    '<div class="dc"><h4>🎓 คุณสมบัติ</h4><div class="dr"><span class="i">💼</span> '+esc(a.position)+'</div><div class="dr"><span class="i">📜</span> '+esc(a.education||'-')+'</div><div class="dr"><span class="i">⏱️</span> '+esc(a.experience||'-')+'</div></div></div>'+
+    '<div class="dc"><h4>🎓 คุณสมบัติ</h4><div class="dr"><span class="i">📜</span> วุฒิ: '+esc(a.education||'-')+'</div><div class="dr"><span class="i">⏱️</span> ประสบการณ์: '+esc(a.experience||'-')+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>🏦 ข้อมูลธนาคาร</h4><div class="dr"><span class="i">🏦</span> '+esc(a.bank||'-')+'</div><div class="dr"><span class="i">💳</span> '+esc(a.bank_account||'-')+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>📄 วุฒิการศึกษา</h4>'+docPreview(a.cred_link,'วุฒิการศึกษา')+'</div><div class="dc"><h4>🪪 บัตรประชาชน</h4>'+docPreview(a.id_link,'บัตรประชาชน')+'</div></div>'+
     '<div class="dg"><div class="dc"><h4>🏦 สำเนา Book Bank</h4>'+docPreview(a.bank_link,'Book Bank')+'</div></div>';
@@ -452,27 +434,6 @@ function detail(id){
 function backList(){$('A-det').classList.add('hide');$('A-main').classList.remove('hide')}
 function chgSt(id,st){sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){msg('อัปเดตสถานะเรียบร้อย','tok');ALL.forEach(function(a){if(a.id===id)a.status=st});stats()}).catch(function(e){msg('Error: '+e,'terr')})}
 function delA(id){if(!confirm('ลบข้อมูลผู้สมัครนี้?'))return;sb("applications","DELETE",null,"?id=eq."+id).then(function(){msg('ลบเรียบร้อย','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}).catch(function(e){msg('Error: '+e,'terr')})}
-
-/* ═══ POSITIONS ═══ */
-function renderPositions(){
-  var act=POSITIONS.filter(function(p){return p.active}).length;
-  $('pos-count').textContent=act+' เปิดรับ (ทั้งหมด '+POSITIONS.length+')';
-  if(!POSITIONS.length){$('pos-grid').innerHTML='<div class="emp"><div class="ei">💼</div><p>ยังไม่มีตำแหน่งงาน</p></div>';return}
-  var h='';POSITIONS.forEach(function(p){var cnt=ALL.filter(function(a){return a.position===p.title}).length;var pct=p.slots>0?Math.min(cnt/p.slots*100,100):0;
-    h+='<div class="pcard'+(p.active?'':' off')+'"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="ptitle">'+esc(p.title)+'</div><div class="pdept">'+esc(p.dept)+'</div></div><button class="tgl '+(p.active?'y':'n')+'" onclick="togglePos(\''+p.id+'\','+(!p.active)+')"></button></div><div class="pmeta"><span>👥 '+cnt+'</span><span>💼 รับ '+p.slots+'</span></div><div class="pbar"><div class="pbar-in" style="width:'+pct+'%;background:'+(cnt>=p.slots?'var(--ok)':'var(--pri2)')+'"></div></div><div class="pfoot">'+cnt+'/'+p.slots+'</div><div class="pacts"><button class="btn btn-g btn-s" onclick="editPos(\''+p.id+'\')">✏️ แก้ไข</button><button class="btn btn-d btn-s" onclick="removePos(\''+p.id+'\')">🗑️ ลบ</button></div></div>'});
-  $('pos-grid').innerHTML=h;
-}
-function showPosForm(){editPosId=null;$('pf-title').textContent='เพิ่มตำแหน่งใหม่';$('pf-btn').textContent='เพิ่มตำแหน่ง';$('pf-name').value='';$('pf-dept').value='';$('pf-slots').value='1';$('pos-form').classList.remove('hide');$('pf-name').focus()}
-function editPos(id){var p;POSITIONS.forEach(function(x){if(x.id===id)p=x});if(!p)return;editPosId=id;$('pf-title').textContent='แก้ไข';$('pf-btn').textContent='บันทึก';$('pf-name').value=p.title;$('pf-dept').value=p.dept;$('pf-slots').value=p.slots;$('pos-form').classList.remove('hide')}
-function cancelPosForm(){$('pos-form').classList.add('hide');editPosId=null}
-function savePos(){
-  var t=$('pf-name').value.trim(),d=$('pf-dept').value.trim(),s=parseInt($('pf-slots').value)||1;
-  if(!t||!d){msg('กรุณากรอกข้อมูล','terr');return}
-  if(editPosId){sb("positions","PATCH",{title:t,dept:d,slots:s},"?id=eq."+editPosId).then(function(){msg('แก้ไขเรียบร้อย','tok');POSITIONS.forEach(function(p){if(p.id===editPosId){p.title=t;p.dept=d;p.slots=s}});renderPositions();cancelPosForm()}).catch(function(e){msg('Error: '+e,'terr')})}
-  else{var id="POS-"+Date.now();sb("positions","POST",{id:id,title:t,dept:d,slots:s,active:true}).then(function(){msg('เพิ่มเรียบร้อย','tok');POSITIONS.push({id:id,title:t,dept:d,slots:s,active:true});renderPositions();cancelPosForm()}).catch(function(e){msg('Error: '+e,'terr')})}
-}
-function togglePos(id,val){sb("positions","PATCH",{active:val},"?id=eq."+id).then(function(){POSITIONS.forEach(function(p){if(p.id===id)p.active=val});renderPositions();msg(val?'เปิดรับแล้ว':'ปิดรับแล้ว','tok')}).catch(function(e){msg('Error: '+e,'terr')})}
-function removePos(id){if(!confirm('ลบ?'))return;sb("positions","DELETE",null,"?id=eq."+id).then(function(){msg('ลบเรียบร้อย','tok');POSITIONS=POSITIONS.filter(function(p){return p.id!==id});renderPositions()}).catch(function(e){msg('Error: '+e,'terr')})}
 
 /* ═══ USERS ═══ */
 function renderUsers(){$('usr-count').textContent='ทั้งหมด '+USERS.length+' คน';if(!USERS.length){$('usr-list').innerHTML='<div class="emp"><div class="ei">👤</div><p>ยังไม่มี</p></div>';return}var h='<div class="tw" style="margin-top:14px"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>สิทธิ์</th><th>จัดการ</th></tr></thead><tbody>';USERS.forEach(function(u){h+='<tr><td class="nm">'+esc(u.username)+'</td><td>'+esc(u.display_name)+'</td><td><span class="bg b-accepted">'+esc(u.role)+'</span></td><td><button class="btn btn-g btn-s" onclick="editUsr(\''+u.id+'\')">✏️</button> <button class="btn btn-d btn-s" onclick="removeUsr(\''+u.id+'\')">🗑️</button></td></tr>'});$('usr-list').innerHTML=h+'</tbody></table></div>'}
@@ -491,7 +452,6 @@ function esc(s){var d=document.createElement('div');d.textContent=s||'';return d
 function msg(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinfo'?'📤 ':'❌ ')+t;el.className='toast '+c;el.classList.remove('hide');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.add('hide')},3500)}
 
 /* ═══ INIT ═══ */
-loadPosForForm();
 if(location.search.indexOf('admin')>-1){$('n2').classList.remove('hide');go('login')}
 </script>
 </body>

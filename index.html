@@ -291,6 +291,15 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 <script>
 /* ═══ CONFIG ═══ */
 var SB_URL = "https://fnkohtdpwdwedjrtklre.supabase.co";
+
+/* ═══ ADMIN CHECK ═══ */
+var isAdmin=location.search.indexOf('admin')>-1;
+if(isAdmin){
+  document.getElementById('P-form').style.display='none';
+  document.getElementById('P-login').style.display='block';
+  document.getElementById('P-login').classList.remove('hide');
+  document.getElementById('n2').classList.remove('hide');
+}
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZua29odGRwd2R3ZWRqcnRrbHJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTA3MjIsImV4cCI6MjA4ODkyNjcyMn0.AuotNxQWgKiSYpS7kLBMm3jOCFhJWsXy31yaqG6dwic";
 var DRIVE_API = "ใส่_URL_APPS_SCRIPT_ตรงนี้";
 
@@ -508,8 +517,13 @@ function removeUsr(id){if(USERS.length<=1){msg('ต้องมีผู้ใ�
 function toggleCredUpload(){
   var v=$('i-edu').value;
   var wrap=$('cred-wrap');
-  if(v==='ไม่มีวุฒิการศึกษา'){wrap.classList.add('hide');rmFile({stopPropagation:function(){}},'c')}
-  else{wrap.classList.remove('hide')}
+  if(v==='ไม่มีวุฒิการศึกษา'){
+    wrap.style.display='none';
+    rmFile({stopPropagation:function(){}},'c');
+  } else {
+    wrap.style.display='';
+    wrap.classList.remove('hide');
+  }
 }
 
 /* ═══ LOAD POSITIONS FOR FORM ═══ */
@@ -529,9 +543,7 @@ function esc(s){var d=document.createElement('div');d.textContent=s||'';return d
 function msg(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinfo'?'📤 ':'❌ ')+t;el.className='toast '+c;el.classList.remove('hide');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.add('hide')},3500)}
 
 /* ═══ INIT ═══ */
-var isAdmin=location.search.indexOf('admin')>-1;
-if(isAdmin){$('P-form').classList.add('hide');$('n2').classList.remove('hide');go('login')}
-else{loadPositions()}
+if(!isAdmin){loadPositions()}
 </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ระบบสมัครงาน บริษัทเดอะเอ็มที</title>
+<title>ระบบข้อมูลพนักงาน บริษัทเดอะเอ็มที</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3f0e8;--card:#fff;--pri:#1b2d45;--pri2:#2d5080;--acc:#c27a2c;--acc2:#d8923a;--txt:#1e293b;--txt2:#475569;--muted:#94a3b8;--bdr:#ddd8ce;--bdr2:#eee9e0;--inp:#faf8f5;--ok:#16a34a;--err:#dc2626;--sh:0 1px 3px rgba(0,0,0,.06);--sh2:0 4px 14px rgba(0,0,0,.08);--sh3:0 12px 30px rgba(0,0,0,.12)}
@@ -70,10 +70,9 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 .nm{font-weight:600;color:var(--pri);font-size:13px}.em{font-size:10px;color:var(--muted)}
 .bg{display:inline-flex;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600}
 .b-new{background:rgba(59,130,246,.1);color:#3b82f6}
-.b-reviewing{background:rgba(245,158,11,.1);color:#f59e0b}
-.b-interview{background:rgba(139,92,246,.1);color:#8b5cf6}
-.b-accepted{background:rgba(22,163,74,.1);color:#16a34a}
-.b-rejected{background:rgba(220,38,38,.1);color:#dc2626}
+.b-daily{background:rgba(245,158,11,.1);color:#f59e0b}
+.b-monthly{background:rgba(22,163,74,.1);color:#16a34a}
+.b-terminated{background:rgba(107,114,128,.1);color:#6b7280}
 .dy{background:rgba(22,163,74,.08);color:var(--ok);padding:1px 7px;border-radius:8px;font-size:10px;font-weight:500}
 .dn2{background:rgba(220,38,38,.06);color:var(--err);padding:1px 7px;border-radius:8px;font-size:10px;font-weight:500}
 .dt{display:flex;align-items:center;gap:14px;margin-bottom:22px}
@@ -117,6 +116,11 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 .tgl.y{background:var(--ok)}.tgl.n{background:var(--bdr)}
 .tgl::after{content:'';position:absolute;top:2.5px;left:2.5px;width:17px;height:17px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
 .tgl.y::after{transform:translateX(18px)}
+
+.tmbtn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid;transition:.2s;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+.tmbtn-warn{background:rgba(220,38,38,.05);border-color:rgba(220,38,38,.3);color:var(--err)}.tmbtn-warn:hover{background:rgba(220,38,38,.12)}
+.emp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+@media(max-width:700px){.emp-grid{grid-template-columns:1fr}}
 .doc-box{border:1px solid var(--bdr);border-radius:10px;overflow:hidden;margin-top:8px;background:var(--inp)}
 .doc-box img{width:100%;max-height:360px;object-fit:contain;display:block;cursor:pointer;background:#fff}
 .doc-box .pdf-wrap{padding:28px 16px;text-align:center}
@@ -184,7 +188,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 <div id="upload-pct" class="upload-pct hide"><span class="sp2"></span> <span id="upload-txt">0%</span></div>
 
 <div class="hdr"><div class="hdr-in">
-  <div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="The MT"></div><div><h1>ระบบสมัครงาน</h1><small>บริษัทเดอะเอ็มที</small></div></div>
+  <div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="The MT"></div><div><h1>ระบบข้อมูลพนักงาน</h1><small>บริษัทเดอะเอ็มที</small></div></div>
   <div class="navs">
     <button class="nbtn on hide" id="n1" onclick="go('form')">📝 สมัครงาน</button>
     <button class="nbtn hide" id="n2" onclick="go('login')">🔒 หลังบ้าน</button>
@@ -193,8 +197,8 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
 
 <!-- FORM -->
 <div id="P-form" class="wrap">
-  <h2 class="ttl">ฟอร์มสมัครงาน</h2>
-  <p class="sub">กรอกข้อมูลให้ครบถ้วน พร้อมแนบเอกสารประกอบ</p>
+  <h2 class="ttl">แบบฟอร์มข้อมูลพนักงาน</h2>
+  <p class="sub">กรอกข้อมูลให้ครบถ้วน พร้อมแนบเอกสาร</p>
   <div class="cd"><div class="cd-t"><span class="dot"></span> ข้อมูลส่วนตัว</div>
     <div class="g2">
       <div class="fld" id="F1"><label>ชื่อ - สกุล <span class="rq">*</span></label><input id="i-name" placeholder="กรอกชื่อ-สกุล"></div>
@@ -208,9 +212,7 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
       <div class="fld"><label>วุฒิการศึกษา</label>
         <select id="i-edu" onchange="toggleCredUpload()"><option value="">-- เลือก --</option><option value="ไม่มีวุฒิการศึกษา">ไม่มีวุฒิการศึกษา</option><option value="ประถมศึกษา">ประถมศึกษา</option><option value="มัธยมศึกษาตอนต้น">มัธยมศึกษาตอนต้น (ม.3)</option><option value="มัธยมศึกษาตอนปลาย">มัธยมศึกษาตอนปลาย (ม.6)</option><option value="ปวช.">ปวช.</option><option value="ปวส.">ปวส.</option><option value="อนุปริญญา">อนุปริญญา</option><option value="ปริญญาตรี">ปริญญาตรี</option><option value="ปริญญาโท">ปริญญาโท</option><option value="ปริญญาเอก">ปริญญาเอก</option></select>
       </div>
-      <div class="fld"><label>ประสบการณ์ทำงาน</label>
-        <select id="i-exp"><option value="">-- เลือก --</option><option>ไม่มีประสบการณ์</option><option>1-2 ปี</option><option>3-5 ปี</option><option>5-10 ปี</option><option>มากกว่า 10 ปี</option></select>
-      </div>
+
     </div>
   </div>
   <div class="cd"><div class="cd-t"><span class="dot"></span> แนบเอกสาร</div>
@@ -237,11 +239,11 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
       </div>
     </div>
   </div>
-  <div class="brow"><button class="btn btn-a" id="btnSub" onclick="doSubmit()">📩 ส่งใบสมัคร</button></div>
+  <div class="brow"><button class="btn btn-a" id="btnSub" onclick="doSubmit()">📩 บันทึกข้อมูล</button></div>
 </div>
 
 <!-- SUCCESS -->
-<div id="P-success" class="wrap hide"><div class="suc"><div class="sico">🎉</div><h3>ส่งใบสมัครเรียบร้อยแล้ว!</h3><p id="suc-id"></p><p id="suc-upload" style="font-size:12px;color:var(--acc)"></p><button class="btn btn-a" onclick="go('form')" style="margin-top:12px">📝 สมัครอีกครั้ง</button></div></div>
+<div id="P-success" class="wrap hide"><div class="suc"><div class="sico">🎉</div><h3>บันทึกข้อมูลเรียบร้อยแล้ว!</h3><p id="suc-id"></p><p id="suc-upload" style="font-size:12px;color:var(--acc)"></p><button class="btn btn-a" onclick="go('form')" style="margin-top:12px">📝 กรอกข้อมูลใหม่</button></div></div>
 
 <!-- LOGIN -->
 <div id="P-login" class="wrap hide"><div class="lw"><div class="lb">
@@ -258,14 +260,14 @@ input,select,textarea{-webkit-appearance:none;appearance:none}
   <div id="A-ld" class="ldp"><div class="logo"><img src="LOGO_THEMT.png" alt="The MT"></div><div style="font-size:14px;font-weight:600;color:var(--pri)">กำลังโหลดข้อมูล...</div></div>
   <div id="A-main" class="hide">
     <div class="atabs">
-      <button class="atab on" id="tab-app" onclick="showTab('app')">📋 ผู้สมัครงาน</button>
+      <button class="atab on" id="tab-app" onclick="showTab('app')">📋 พนักงาน</button>
 
       <button class="atab" id="tab-pos" onclick="showTab('pos')">💼 ตำแหน่ง</button>
       <button class="atab" id="tab-usr" onclick="showTab('usr')">👤 ผู้ใช้งาน</button>
     </div>
     <div id="T-app"><div class="sts" id="A-sts"></div>
       <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ เบอร์โทร ตำแหน่ง..." oninput="doFilter()"></div>
-        <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="reviewing">กำลังพิจารณา</option><option value="interview">นัดสัมภาษณ์</option><option value="accepted">ผ่าน</option><option value="rejected">ไม่ผ่าน</option></select>
+        <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">พนักงานรายวัน</option><option value="monthly">พนักงานประจำ</option><option value="terminated">พ้นสภาพ</option></select>
         <button class="btn btn-g btn-s" onclick="loadAdmin()">🔄</button>
       </div><div id="A-cnt" class="rcnt"></div><div id="A-tbl"></div>
     </div>
@@ -302,7 +304,7 @@ function sb(table,method,body,query){
 
 /* ═══ STATE ═══ */
 var ALL=[],POSITIONS=[],USERS=[],FI={c:null,b:null,k:null,h:null},editUsrId=null,LOGGED=false;
-var ST={new:{l:"ใหม่",c:"b-new"},reviewing:{l:"กำลังพิจารณา",c:"b-reviewing"},interview:{l:"นัดสัมภาษณ์",c:"b-interview"},accepted:{l:"ผ่าน",c:"b-accepted"},rejected:{l:"ไม่ผ่าน",c:"b-rejected"}};
+var ST={new:{l:"ใหม่",c:"b-new"},daily:{l:"พนักงานรายวัน",c:"b-daily"},monthly:{l:"พนักงานประจำ",c:"b-monthly"},terminated:{l:"พ้นสภาพ",c:"b-terminated"}};
 function $(id){return document.getElementById(id)}
 
 /* ═══ NAV ═══ */
@@ -350,10 +352,10 @@ function doSubmit(){
   var fileData={credData:FI.c?FI.c.d:'',credType:FI.c?FI.c.t:'',credName:FI.c?FI.c.n:'',idData:FI.b?FI.b.d:'',idType:FI.b?FI.b.t:'',idName:FI.b?FI.b.n:'',bankData:FI.k?FI.k.d:'',bankType:FI.k?FI.k.t:'',bankName:FI.k?FI.k.n:'',houseData:FI.h?FI.h.d:'',houseType:FI.h?FI.h.t:'',houseName:FI.h?FI.h.n:''};
 
   // STEP 1: บันทึก Supabase (เร็วมาก!)
-  sb("applications","POST",{id:id,name:nm,phone:ph,position:pos,education:$('i-edu').value,experience:$('i-exp').value,bank:bk,bank_account:ba,status:"new"}).then(function(r){
-    btn.disabled=false;btn.innerHTML='📩 ส่งใบสมัคร';
+  sb("applications","POST",{id:id,name:nm,phone:ph,position:pos,education:$('i-edu').value,bank:bk,bank_account:ba,status:"new"}).then(function(r){
+    btn.disabled=false;btn.innerHTML='📩 บันทึกข้อมูล';
     if(r&&r.length){
-      $('suc-id').textContent='รหัสใบสมัคร: '+id;
+      $('suc-id').textContent='รหัสพนักงาน: '+id;
       $('suc-upload').textContent='📤 กำลังเตรียมอัปโหลดเอกสาร... กรุณาอย่าปิดหน้าต่างนี้';
       resetForm();go('success');
 
@@ -373,15 +375,15 @@ function doSubmit(){
         }).catch(function(){clearInterval(ut);hideUploadBar();$('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ'});
 
       // แจ้ง Telegram (ไม่ต้องรอ)
-      fetch(DRIVE_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'notify',text:"📩 <b>มีผู้สมัครงานใหม่!</b>\n\n👤 "+nm+"\n📱 "+ph+"\n🎓 "+($('i-edu').value||'-')+"\n⏱️ "+($('i-exp').value||'-')+"\n🏦 "+bk+"\n💳 "+ba+"\n🔖 "+id})}).catch(function(){});
+      fetch(DRIVE_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'notify',text:"📩 <b>มีพนักงานใหม่!</b>\n\n👤 "+nm+"\n📱 "+ph+"\n🎓 "+($('i-edu').value||'-')+"+"\n🏦 "+bk+"\n💳 "+ba+"\n🔖 "+id})}).catch(function(){});
     } else msg('เกิดข้อผิดพลาด','terr');
-  }).catch(function(e){btn.disabled=false;btn.innerHTML='📩 ส่งใบสมัคร';msg('Error: '+e,'terr')});
+  }).catch(function(e){btn.disabled=false;btn.innerHTML='📩 บันทึกข้อมูล';msg('Error: '+e,'terr')});
 }
 
 function showUploadBar(){$('upload-bar').classList.remove('hide');$('upload-pct').classList.remove('hide');$('upload-inner').style.width='0';$('upload-txt').textContent='0%'}
 function setUploadPct(p,txt){$('upload-inner').style.width=p+'%';$('upload-txt').textContent=p+'%';$('suc-upload').textContent='📤 '+(txt||'กำลังอัปโหลด')+' '+p+'% — กรุณาอย่าปิดหน้าต่างนี้'}
 function hideUploadBar(){$('upload-inner').style.width='100%';$('upload-txt').textContent='100%';setTimeout(function(){$('upload-bar').classList.add('hide');$('upload-pct').classList.add('hide')},1000)}
-function resetForm(){['i-name','i-phone','i-baccount'].forEach(function(x){$(x).value=''});$('i-position').selectedIndex=0;$('i-exp').selectedIndex=0;$('i-edu').selectedIndex=0;$('i-bank').selectedIndex=0;rmFile({stopPropagation:function(){}},'c');rmFile({stopPropagation:function(){}},'b');rmFile({stopPropagation:function(){}},'h');rmFile({stopPropagation:function(){}},'k');toggleCredUpload()}
+function resetForm(){['i-name','i-phone','i-baccount'].forEach(function(x){$(x).value=''});$('i-position').selectedIndex=0;$('i-edu').selectedIndex=0;$('i-bank').selectedIndex=0;rmFile({stopPropagation:function(){}},'c');rmFile({stopPropagation:function(){}},'b');rmFile({stopPropagation:function(){}},'h');rmFile({stopPropagation:function(){}},'k');toggleCredUpload()}
 
 /* ═══ LOGIN ═══ */
 function doLogin(){
@@ -407,16 +409,16 @@ function loadAdmin(){
 }
 
 /* ═══ STATS ═══ */
-function stats(){var t=ALL.length,w=0,iv=0,ac=0;ALL.forEach(function(a){if(a.status==='new'||a.status==='reviewing')w++;if(a.status==='interview')iv++;if(a.status==='accepted')ac++});$('A-sts').innerHTML='<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div><div class="st"><div class="l">รอพิจารณา</div><div class="v" style="color:#3b82f6">'+w+'</div></div><div class="st"><div class="l">นัดสัมภาษณ์</div><div class="v" style="color:#8b5cf6">'+iv+'</div></div><div class="st"><div class="l">ผ่านคัดเลือก</div><div class="v" style="color:var(--acc)">'+ac+'</div></div>'}
+function stats(){var t=ALL.length,dy=0,mt=0,nw=0,tm=0;ALL.forEach(function(a){if(a.status==='daily')dy++;if(a.status==='monthly')mt++;if(a.status==='new')nw++;if(a.status==='terminated')tm++});$('A-sts').innerHTML='<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div><div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div><div class="st"><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+mt+'</div></div><div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div>'}
 
 /* ═══ FILTER ═══ */
 function doFilter(){
   var q=$('i-srch').value.toLowerCase(),st=$('f-st').value;
   var f=ALL.filter(function(a){return [a.name,a.phone,a.position,a.education].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)});
   $('A-cnt').textContent='พบ '+f.length+' รายการ';
-  if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูล</p></div>';return}
-  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>ประสบการณ์</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่/เวลา</th></tr></thead><tbody>';
-  f.forEach(function(a){var s=ST[a.status]||ST.new;var dt=String(a.created_at||'').substring(0,16).replace('T',' ');h+='<tr onclick="detail(\''+a.id+'\')"><td><div class="nm">'+esc(a.name)+'</div></td><td>'+esc(a.position||'-')+'</td><td>'+esc(a.experience||'-')+'</td><td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td><td><span class="bg '+s.c+'">'+s.l+'</span></td><td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td></tr>'});
+  if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูลพนักงาน</p></div>';return}
+  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่/เวลา</th></tr></thead><tbody>';
+  f.forEach(function(a){var s=ST[a.status]||ST.new;var dt=String(a.created_at||'').substring(0,16).replace('T',' ');h+='<tr onclick="detail(\''+a.id+'\')"><td><div class="nm">'+esc(a.name)+'</div></td><td>'+esc(a.position||'-')+'</td><td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td><td><span class="bg '+s.c+'">'+s.l+'</span></td><td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td></tr>'});
   $('A-tbl').innerHTML=h+'</tbody></table></div>';
 }
 
@@ -436,19 +438,40 @@ function detail(id){
   var a;ALL.forEach(function(x){if(x.id===id)a=x});if(!a)return;
   var opts='';Object.keys(ST).forEach(function(k){opts+='<option value="'+k+'"'+(k===a.status?' selected':'')+'>'+ST[k].l+'</option>'});
   var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
+  var isTerm=a.status==='terminated';
+  var termBadge=isTerm?'<span class="bg b-terminated" style="padding:6px 14px;font-size:12px">⛔ พ้นสภาพแล้ว'+(a.terminated_at?' — '+String(a.terminated_at).substring(0,10):'')+'</span>':'<button class="tmbtn tmbtn-warn" onclick="terminateEmp(\''+a.id+'\')">⛔ พ้นสภาพพนักงาน</button>';
+
   $('A-det').innerHTML=
-    '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button><button class="btn btn-d btn-s" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
+    '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;align-items:center"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button>'+termBadge+'<button class="btn btn-d btn-s" style="margin-left:auto" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
     '<div class="dt"><div class="av">'+esc(a.name).charAt(0)+'</div><div style="flex:1"><div class="dn-nm">'+esc(a.name)+'</div></div><div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px">เปลี่ยนสถานะ</div><select class="ssel" onchange="chgSt(\''+a.id+'\',this.value)">'+opts+'</select></div></div>'+
-    '<div class="dg"><div class="dc"><h4>📋 ข้อมูลติดต่อ</h4><div class="dr"><span class="i">📱</span> '+esc(a.phone)+'</div><div class="dr"><span class="i">📅</span> วันที่สมัคร: '+esc(dt)+'</div></div>'+
-    '<div class="dc"><h4>🎓 คุณสมบัติ</h4><div class="dr"><span class="i">📜</span> วุฒิ: '+esc(a.education||'-')+'</div><div class="dr"><span class="i">⏱️</span> ประสบการณ์: '+esc(a.experience||'-')+'</div></div></div>'+
+    '<div class="emp-grid"><div class="dc"><h4>💼 ตำแหน่ง</h4><div style="font-size:14px;font-weight:600;color:var(--pri);margin-top:6px">'+esc(a.position||'-')+'</div></div><div class="dc"><h4>📅 วันที่เริ่มทำงาน</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.start_date||'')+'" onchange="setField(\''+a.id+'\',\'start_date\',this.value)"></div><div class="dc"><h4>👷 สถานะ</h4><div style="margin-top:6px">'+((ST[a.status]||ST.new).l?'<span class="bg '+(ST[a.status]||ST.new).c+'" style="padding:4px 12px;font-size:12px">'+(ST[a.status]||ST.new).l+'</span>':'')+'</div></div></div>'+
+    '<div class="dg"><div class="dc"><h4>📋 ข้อมูลติดต่อ</h4><div class="dr"><span class="i">📱</span> '+esc(a.phone)+'</div><div class="dr"><span class="i">📅</span> วันที่สมัคร: '+esc(dt)+'</div>'+(a.start_date?'<div class="dr"><span class="i">🗓️</span> เริ่มงาน: '+esc(a.start_date)+'</div>':'')+'</div>'+
+    '<div class="dc"><h4>🎓 คุณสมบัติ</h4><div class="dr"><span class="i">📜</span> วุฒิ: '+esc(a.education||'-')+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>🏦 ข้อมูลธนาคาร</h4><div class="dr"><span class="i">🏦</span> '+esc(a.bank||'-')+'</div><div class="dr"><span class="i">💳</span> '+esc(a.bank_account||'-')+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>📄 วุฒิการศึกษา</h4>'+docPreview(a.cred_link,'วุฒิการศึกษา')+'</div><div class="dc"><h4>🪪 บัตรประชาชน</h4>'+docPreview(a.id_link,'บัตรประชาชน')+'</div></div>'+
     '<div class="dg"><div class="dc"><h4>🏠 สำเนาทะเบียนบ้าน</h4>'+docPreview(a.house_link,'ทะเบียนบ้าน')+'</div><div class="dc"><h4>🏦 สำเนา Book Bank</h4>'+docPreview(a.bank_link,'Book Bank')+'</div></div>';
   $('A-main').classList.add('hide');$('A-det').classList.remove('hide');
 }
 function backList(){$('A-det').classList.add('hide');$('A-main').classList.remove('hide')}
+function setField(id,field,val){
+  var upd={};upd[field]=val;
+  sb("applications","PATCH",upd,"?id=eq."+id).then(function(){
+    msg('บันทึกเรียบร้อย','tok');
+    ALL.forEach(function(a){if(a.id===id)a[field]=val});
+    doFilter();
+  }).catch(function(e){msg('Error: '+e,'terr')});
+}
+function terminateEmp(id){
+  if(!confirm('ยืนยันพ้นสภาพพนักงานคนนี้?'))return;
+  var now=new Date().toISOString();
+  sb("applications","PATCH",{status:"terminated",terminated_at:now},"?id=eq."+id).then(function(){
+    msg('พ้นสภาพพนักงานเรียบร้อย','tok');
+    ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_at=now}});
+    stats();doFilter();detail(id);
+  }).catch(function(e){msg('Error: '+e,'terr')});
+}
 function chgSt(id,st){sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){msg('อัปเดตสถานะเรียบร้อย','tok');ALL.forEach(function(a){if(a.id===id)a.status=st});stats()}).catch(function(e){msg('Error: '+e,'terr')})}
-function delA(id){if(!confirm('ลบข้อมูลผู้สมัครนี้?'))return;sb("applications","DELETE",null,"?id=eq."+id).then(function(){msg('ลบเรียบร้อย','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}).catch(function(e){msg('Error: '+e,'terr')})}
+function delA(id){if(!confirm('ลบข้อมูลพนักงานนี้?'))return;sb("applications","DELETE",null,"?id=eq."+id).then(function(){msg('ลบเรียบร้อย','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}).catch(function(e){msg('Error: '+e,'terr')})}
 
 /* ═══ POSITIONS ═══ */
 var editPosId=null;
@@ -470,7 +493,7 @@ function savePos(){
 function removePos(id){if(!confirm('ลบตำแหน่งนี้?'))return;sb("positions","DELETE",null,"?id=eq."+id).then(function(){msg('ลบเรียบร้อย','tok');POSITIONS=POSITIONS.filter(function(p){return p.id!==id});renderPositions()}).catch(function(e){msg('Error: '+e,'terr')})}
 
 /* ═══ USERS ═══ */
-function renderUsers(){$('usr-count').textContent='ทั้งหมด '+USERS.length+' คน';if(!USERS.length){$('usr-list').innerHTML='<div class="emp"><div class="ei">👤</div><p>ยังไม่มี</p></div>';return}var h='<div class="tw" style="margin-top:14px"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>สิทธิ์</th><th>จัดการ</th></tr></thead><tbody>';USERS.forEach(function(u){h+='<tr><td class="nm">'+esc(u.username)+'</td><td>'+esc(u.display_name)+'</td><td><span class="bg b-accepted">'+esc(u.role)+'</span></td><td><button class="btn btn-g btn-s" onclick="editUsr(\''+u.id+'\')">✏️</button> <button class="btn btn-d btn-s" onclick="removeUsr(\''+u.id+'\')">🗑️</button></td></tr>'});$('usr-list').innerHTML=h+'</tbody></table></div>'}
+function renderUsers(){$('usr-count').textContent='ทั้งหมด '+USERS.length+' คน';if(!USERS.length){$('usr-list').innerHTML='<div class="emp"><div class="ei">👤</div><p>ยังไม่มี</p></div>';return}var h='<div class="tw" style="margin-top:14px"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>สิทธิ์</th><th>จัดการ</th></tr></thead><tbody>';USERS.forEach(function(u){h+='<tr><td class="nm">'+esc(u.username)+'</td><td>'+esc(u.display_name)+'</td><td><span class="bg b-monthly">'+esc(u.role)+'</span></td><td><button class="btn btn-g btn-s" onclick="editUsr(\''+u.id+'\')">✏️</button> <button class="btn btn-d btn-s" onclick="removeUsr(\''+u.id+'\')">🗑️</button></td></tr>'});$('usr-list').innerHTML=h+'</tbody></table></div>'}
 function showUsrForm(){editUsrId=null;$('uf-title').textContent='เพิ่มผู้ใช้ใหม่';$('uf-btn').textContent='เพิ่มผู้ใช้';$('uf-user').value='';$('uf-name').value='';$('uf-pass').value='';$('uf-user').disabled=false;$('uf-pw-label').innerHTML='รหัสผ่าน <span class="rq">*</span>';$('usr-form').classList.remove('hide')}
 function editUsr(id){var u;USERS.forEach(function(x){if(x.id===id)u=x});if(!u)return;editUsrId=id;$('uf-title').textContent='แก้ไข: '+u.username;$('uf-btn').textContent='บันทึก';$('uf-user').value=u.username;$('uf-user').disabled=true;$('uf-name').value=u.display_name;$('uf-pass').value='';$('uf-pw-label').innerHTML='รหัสผ่านใหม่ <span style="font-size:10px;color:var(--muted)">(เว้นว่างถ้าไม่เปลี่ยน)</span>';$('usr-form').classList.remove('hide')}
 function cancelUsrForm(){$('usr-form').classList.add('hide');editUsrId=null}

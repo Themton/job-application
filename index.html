@@ -135,7 +135,7 @@
 
 <!-- PAGE: LOGIN -->
 <div id="P-login" class="wrap hide"><div class="lw"><div class="lb">
-  <div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>เข้าสู่ระบบหลังบ้าน</h2><p class="s">บริษัทเดอะเอ็มที</p>
+  <div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>เข้าสู่ระบบเจ้าหน้าที่</h2><p class="s">บริษัทเดอะเอ็มที</p>
   <div id="l-err" class="lerr hide"></div>
   <div class="fld"><label>ชื่อผู้ใช้</label><input id="i-user" placeholder="ชื่อผู้ใช้" onkeydown="if(event.key==='Enter')doLogin()"></div>
   <div class="fld"><label>รหัสผ่าน</label><input id="i-pass" type="password" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()"></div>
@@ -305,7 +305,7 @@ function doFilter(){
   if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูล</p></div>';return}
   var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่</th></tr></thead><tbody>';
   f.forEach(function(a){var s=ST[a.status]||ST.new;var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
-    h+='<tr onclick="detail(\''+a.id+'\')"><td><div class="nm">'+esc(a.name)+'</div>'+(a.nickname?'<div class="em">'+esc(a.nickname)+'</div>':'')+'</td><td>'+esc(a.position||'-')+'</td><td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td><td><span class="bg '+s.c+'">'+s.l+'</span></td><td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td></tr>'});
+    h+='<tr onclick="detail(\''+a.id+'\')"><td class="nm">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'')+'</td><td>'+esc(a.position||'-')+'</td><td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td><td><span class="bg '+s.c+'">'+s.l+'</span></td><td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td></tr>'});
   $('A-tbl').innerHTML=h+'</tbody></table></div>';
 }
 
@@ -381,10 +381,10 @@ function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinf
 /* ═══ INIT ═══ */
 if(MODE==='admin'){
   page('login');
-  $('nav-btns').innerHTML='<button class="nbtn on" onclick="page(\'login\')">🔒 หลังบ้าน</button>';
+  $('nav-btns').innerHTML='<a href="." class="nbtn" style="text-decoration:none">📝 กรอกข้อมูลพนักงาน</a><a href="?admin" class="nbtn on" style="text-decoration:none">👤 สำหรับเจ้าหน้าที่</a>';
 }else{
   page('form');
-  $('nav-btns').innerHTML='<a href="?admin" class="nbtn" style="text-decoration:none">👤 สำหรับเจ้าหน้าที่</a>';
+  $('nav-btns').innerHTML='<a href="." class="nbtn" style="text-decoration:none">📝 กรอกข้อมูลพนักงาน</a><a href="?admin" class="nbtn" style="text-decoration:none">👤 สำหรับเจ้าหน้าที่</a>';
 }
 </script>
 </body>

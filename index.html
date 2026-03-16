@@ -88,7 +88,10 @@
 
 <div class="hdr"><div class="hdr-in">
   <div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><div><h1>ระบบข้อมูลพนักงาน</h1><small>บริษัทเดอะเอ็มที</small></div></div>
-  <div id="nav-btns" style="display:flex;gap:5px"></div>
+  <div id="nav-btns" style="display:flex;gap:5px">
+    <a href="." class="nbtn" style="text-decoration:none">📝 กรอกข้อมูลพนักงาน</a>
+    <a href="?admin" class="nbtn" style="text-decoration:none">👤 สำหรับเจ้าหน้าที่</a>
+  </div>
 </div></div>
 
 <!-- PAGE: FORM -->
@@ -459,10 +462,8 @@ function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinf
 /* ═══ INIT ═══ */
 if(MODE==='admin'){
   page('login');
-  $('nav-btns').innerHTML='<a href="." class="nbtn" style="text-decoration:none">📝 กรอกข้อมูลพนักงาน</a><a href="?admin" class="nbtn on" style="text-decoration:none">👤 สำหรับเจ้าหน้าที่</a>';
 }else{
   page('form');
-  $('nav-btns').innerHTML='<a href="." class="nbtn" style="text-decoration:none">📝 กรอกข้อมูลพนักงาน</a><a href="?admin" class="nbtn" style="text-decoration:none">👤 สำหรับเจ้าหน้าที่</a>';
 }
 </script>
 </body>

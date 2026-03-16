@@ -63,6 +63,17 @@
 .upload-bar{position:fixed;top:0;left:0;right:0;height:6px;z-index:200;background:rgba(0,0,0,.1)}.upload-bar .inner{height:100%;background:linear-gradient(90deg,#b8860b,#d4a73c);width:0;border-radius:0 3px 3px 0;transition:width .3s}
 .upload-pct{position:fixed;top:10px;right:20px;background:var(--pri);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;z-index:201;box-shadow:var(--sh3);display:flex;align-items:center;gap:6px}
 .upload-pct .sp2{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sn .6s linear infinite}
+.lv-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.lv-card{background:var(--inp);border:1px solid var(--bdr);border-radius:9px;padding:14px;text-align:center}
+.lv-card .lv-num{font-size:22px;font-weight:700}.lv-card .lv-label{font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+.lv-card .lv-bar{height:5px;border-radius:3px;background:var(--bdr2);margin-top:6px;overflow:hidden}.lv-card .lv-bar-in{height:100%;border-radius:3px;transition:width .4s}
+.lv-card.lv-ok .lv-num{color:var(--ok)}.lv-card.lv-warn .lv-num{color:#f59e0b}.lv-card.lv-full .lv-num{color:var(--err)}
+.lv-card.lv-absent .lv-num{color:var(--err)}
+.lv-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:flex-end}
+.lv-row .fld{flex:1;min-width:120px}
+.lv-list{margin-top:10px}.lv-list table{width:100%}
+.lv-del{background:none;border:none;color:var(--err);cursor:pointer;font-size:14px;padding:2px 6px}
+@media(max-width:700px){.lv-summary{grid-template-columns:1fr}.lv-row{flex-direction:column}.lv-row .fld{min-width:100%}}
 .tmbtn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid;transition:.2s;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
 .tmbtn-warn{background:rgba(220,38,38,.05);border-color:rgba(220,38,38,.3);color:var(--err)}.tmbtn-warn:hover{background:rgba(220,38,38,.12)}
 .emp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
@@ -330,14 +341,81 @@ function detail(id){
     '<div class="dg"><div class="dc"><h4>🎓 คุณสมบัติ</h4><div class="dr"><span class="i">📜</span> วุฒิการศึกษา: '+esc(a.education||'-')+'</div></div>'+
     '<div class="dc"><h4>🏦 ข้อมูลธนาคาร</h4><div class="dr"><span class="i">🏦</span> ธนาคาร: '+esc(a.bank||'-')+'</div><div class="dr"><span class="i">💳</span> เลขบัญชี: '+esc(a.bank_account||'-')+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>📄 วุฒิการศึกษา</h4>'+docPrev(a.cred_link,'วุฒิ')+'</div><div class="dc"><h4>🪪 บัตรประชาชน</h4>'+docPrev(a.id_link,'บัตร')+'</div></div>'+
-    '<div class="dg"><div class="dc"><h4>🏠 ทะเบียนบ้าน</h4>'+docPrev(a.house_link,'ทะเบียนบ้าน')+'</div><div class="dc"><h4>🏦 Book Bank</h4>'+docPrev(a.bank_link,'Book Bank')+'</div></div>';
+    '<div class="dg"><div class="dc"><h4>🏠 ทะเบียนบ้าน</h4>'+docPrev(a.house_link,'ทะเบียนบ้าน')+'</div><div class="dc"><h4>🏦 Book Bank</h4>'+docPrev(a.bank_link,'Book Bank')+'</div></div>'+
+    '<div class="dc" style="margin-top:16px"><h4>📋 ระบบลา / ขาดงาน</h4><div id="lv-area">กำลังโหลด...</div></div>';
   $('A-main').classList.add('hide');$('A-det').classList.remove('hide');
+  loadLeaves(id);
 }
 function backList(){$('A-det').classList.add('hide');$('A-main').classList.remove('hide')}
 function setF(id,f,v){var u={};u[f]=v;sb("applications","PATCH",u,"?id=eq."+id).then(function(){toast('บันทึกแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a[f]=v});doFilter()}).catch(function(e){toast('Error: '+e,'terr')})}
 function chgSt(id,st){sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){toast('อัปเดตแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a.status=st});stats();doFilter();syncSheet({id:id,status:st})}).catch(function(e){toast('Error: '+e,'terr')})}
 function terminate(id){if(!confirm('ยืนยันพ้นสภาพพนักงาน?'))return;var now=new Date().toISOString();sb("applications","PATCH",{status:"terminated",terminated_at:now},"?id=eq."+id).then(function(){toast('พ้นสภาพแล้ว','tok');ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_at=now}});stats();doFilter();detail(id);syncSheet({id:id,status:'terminated'})}).catch(function(e){toast('Error: '+e,'terr')})}
 function delA(id){if(!confirm('ลบข้อมูลพนักงานนี้?'))return;sb("applications","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}).catch(function(e){toast('Error: '+e,'terr')})}
+
+/* ═══ LEAVES ═══ */
+var LV_LIMITS={personal:6,sick:30,absent:999};
+var LV_LABELS={personal:'ลากิจ',sick:'ลาป่วย',absent:'ขาดงาน'};
+var LV_COLORS={personal:'#3b82f6',sick:'#f59e0b',absent:'var(--err)'};
+
+function loadLeaves(empId){
+  sb("leaves","GET",null,"?emp_id=eq."+empId+"&select=*&order=date.desc").then(function(list){
+    if(!Array.isArray(list))list=[];
+    renderLeaves(empId,list);
+  }).catch(function(){renderLeaves(empId,[])});
+}
+
+function renderLeaves(empId,list){
+  var cnt={personal:0,sick:0,absent:0};
+  list.forEach(function(l){if(cnt[l.type]!==undefined)cnt[l.type]++});
+
+  var h='<div class="lv-summary">';
+  ['personal','sick','absent'].forEach(function(t){
+    var used=cnt[t],max=LV_LIMITS[t],pct=max<999?Math.min(used/max*100,100):0;
+    var cls=t==='absent'?'lv-absent':used>=max?'lv-full':used>=max*0.7?'lv-warn':'lv-ok';
+    h+='<div class="lv-card '+cls+'"><div class="lv-label">'+LV_LABELS[t]+'</div><div class="lv-num">'+used+(max<999?'/'+max:'')+'</div>'+(max<999?'<div class="lv-bar"><div class="lv-bar-in" style="width:'+pct+'%;background:'+LV_COLORS[t]+'"></div></div>':'')+'</div>';
+  });
+  h+='</div>';
+
+  // Add form
+  h+='<div class="lv-row"><div class="fld"><label>ประเภท</label><select id="lv-type"><option value="personal">ลากิจ</option><option value="sick">ลาป่วย</option><option value="absent">ขาดงาน</option></select></div>';
+  h+='<div class="fld"><label>วันที่</label><input type="date" id="lv-date" value="'+new Date().toISOString().substring(0,10)+'"></div>';
+  h+='<div class="fld"><label>หมายเหตุ</label><input id="lv-note" placeholder="ระบุเหตุผล (ไม่บังคับ)"></div>';
+  h+='<button class="btn btn-a btn-s" style="margin-bottom:4px" onclick="addLeave(''+empId+'')">+ บันทึก</button></div>';
+
+  // List
+  if(list.length){
+    h+='<div class="lv-list"><div class="tw"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>';
+    list.forEach(function(l){
+      var bg=l.type==='personal'?'b-new':l.type==='sick'?'b-daily':'b-terminated';
+      h+='<tr><td>'+esc(l.date)+'</td><td><span class="bg '+bg+'">'+esc(LV_LABELS[l.type]||l.type)+'</span></td><td>'+esc(l.note||'-')+'</td><td><button class="lv-del" onclick="delLeave(''+l.id+'',''+empId+'')">✕</button></td></tr>';
+    });
+    h+='</tbody></table></div></div>';
+  }
+  $('lv-area').innerHTML=h;
+}
+
+function addLeave(empId){
+  var type=$('lv-type').value,date=$('lv-date').value,note=$('lv-note').value.trim();
+  if(!date){toast('กรุณาเลือกวันที่','terr');return}
+
+  // เช็คโควต้า
+  sb("leaves","GET",null,"?emp_id=eq."+empId+"&type=eq."+type+"&select=id").then(function(existing){
+    var used=Array.isArray(existing)?existing.length:0;
+    var max=LV_LIMITS[type];
+    if(used>=max){toast(LV_LABELS[type]+' ครบ '+max+' วันแล้ว ไม่สามารถเพิ่มได้','terr');return}
+
+    var id="LV-"+Date.now();
+    sb("leaves","POST",{id:id,emp_id:empId,type:type,date:date,note:note}).then(function(r){
+      if(Array.isArray(r)&&r.length){toast('บันทึกแล้ว','tok');loadLeaves(empId)}
+      else{toast('บันทึกไม่สำเร็จ','terr');console.log(r)}
+    }).catch(function(e){toast('Error: '+e,'terr')});
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function delLeave(lvId,empId){
+  if(!confirm('ลบรายการนี้?'))return;
+  sb("leaves","DELETE",null,"?id=eq."+lvId).then(function(){toast('ลบแล้ว','tok');loadLeaves(empId)}).catch(function(e){toast('Error: '+e,'terr')});
+}
 
 /* ═══ POSITIONS ═══ */
 function renderPos(){

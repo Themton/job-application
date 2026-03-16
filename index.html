@@ -383,14 +383,14 @@ function renderLeaves(empId,list){
   h+='<div class="lv-row"><div class="fld"><label>ประเภท</label><select id="lv-type"><option value="personal">ลากิจ</option><option value="sick">ลาป่วย</option><option value="absent">ขาดงาน</option></select></div>';
   h+='<div class="fld"><label>วันที่</label><input type="date" id="lv-date" value="'+new Date().toISOString().substring(0,10)+'"></div>';
   h+='<div class="fld"><label>หมายเหตุ</label><input id="lv-note" placeholder="ระบุเหตุผล (ไม่บังคับ)"></div>';
-  h+='<button class="btn btn-a btn-s" style="margin-bottom:4px" onclick="addLeave(''+empId+'')">+ บันทึก</button></div>';
+  h+='<button class="btn btn-a btn-s" style="margin-bottom:4px" onclick="addLeave(\''+empId+'\')">+ บันทึก</button></div>';
 
   // List
   if(list.length){
     h+='<div class="lv-list"><div class="tw"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>';
     list.forEach(function(l){
       var bg=l.type==='personal'?'b-new':l.type==='sick'?'b-daily':'b-terminated';
-      h+='<tr><td>'+esc(l.date)+'</td><td><span class="bg '+bg+'">'+esc(LV_LABELS[l.type]||l.type)+'</span></td><td>'+esc(l.note||'-')+'</td><td><button class="lv-del" onclick="delLeave(''+l.id+'',''+empId+'')">✕</button></td></tr>';
+      h+='<tr><td>'+esc(l.date)+'</td><td><span class="bg '+bg+'">'+esc(LV_LABELS[l.type]||l.type)+'</span></td><td>'+esc(l.note||'-')+'</td><td><button class="lv-del" onclick="delLeave(\''+l.id+'\',\''+empId+'\')">✕</button></td></tr>';
     });
     h+='</tbody></table></div></div>';
   }

@@ -74,6 +74,7 @@
 .lv-list{margin-top:10px}.lv-list table{width:100%}
 .lv-del{background:none;border:none;color:var(--err);cursor:pointer;font-size:14px;padding:2px 6px}
 @media(max-width:700px){.lv-summary{grid-template-columns:1fr}.lv-row{flex-direction:column}.lv-row .fld{min-width:100%}}
+.edit-form{margin-bottom:16px}.edit-form .g2{margin-bottom:12px}
 .tmbtn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid;transition:.2s;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
 .tmbtn-warn{background:rgba(220,38,38,.05);border-color:rgba(220,38,38,.3);color:var(--err)}.tmbtn-warn:hover{background:rgba(220,38,38,.12)}
 .emp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
@@ -336,7 +337,7 @@ function detail(id){
   var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
   var isTerm=a.status==='terminated';
   $('A-det').innerHTML=
-    '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;align-items:center"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button>'+(isTerm?'<span class="bg b-terminated" style="padding:6px 14px;font-size:12px">⛔ พ้นสภาพแล้ว'+(a.terminated_at?' — '+String(a.terminated_at).substring(0,10):'')+'</span>':'<button class="tmbtn tmbtn-warn" onclick="terminate(\''+a.id+'\')">⛔ พ้นสภาพพนักงาน</button>')+'<button class="btn btn-d btn-s" style="margin-left:auto" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
+    '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;align-items:center"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button><button class="btn btn-a btn-s" onclick="editEmp(\''+a.id+'\')">✏️ แก้ไขข้อมูล</button>'+(isTerm?'<span class="bg b-terminated" style="padding:6px 14px;font-size:12px">⛔ พ้นสภาพแล้ว'+(a.terminated_at?' — '+String(a.terminated_at).substring(0,10):'')+'</span>':'<button class="tmbtn tmbtn-warn" onclick="terminate(\''+a.id+'\')">⛔ พ้นสภาพพนักงาน</button>')+'<button class="btn btn-d btn-s" style="margin-left:auto" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
     '<div class="dt"><div class="av">'+esc(a.name).charAt(0)+'</div><div style="flex:1"><div class="dn-nm">'+esc(a.name)+(a.nickname?' <span style="font-size:14px;color:var(--acc)">('+esc(a.nickname)+')</span>':'')+'</div></div><div><select class="ssel" onchange="chgSt(\''+a.id+'\',this.value)">'+opts+'</select></div></div>'+
     '<div class="emp-grid"><div class="dc"><h4>💼 ตำแหน่ง</h4><div style="font-size:14px;font-weight:600;color:var(--pri);margin-top:6px">'+esc(a.position||'-')+'</div></div><div class="dc"><h4>📅 วันที่เริ่มทำงาน</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.start_date||'')+'" onchange="setF(\''+a.id+'\',\'start_date\',this.value)"></div><div class="dc"><h4>👷 สถานะ</h4><div style="margin-top:6px"><span class="bg '+(ST[a.status]||ST.new).c+'" style="padding:4px 12px;font-size:12px">'+(ST[a.status]||ST.new).l+'</span></div></div></div>'+
     '<div class="dg"><div class="dc"><h4>📋 ข้อมูลส่วนตัว</h4><div class="dr"><span class="i">👤</span> ชื่อ-สกุล: '+esc(a.name)+'</div>'+(a.nickname?'<div class="dr"><span class="i">😊</span> ชื่อเล่น: '+esc(a.nickname)+'</div>':'')+'<div class="dr"><span class="i">📱</span> โทรศัพท์: '+esc(a.phone)+'</div><div class="dr"><span class="i">💼</span> ตำแหน่ง: '+esc(a.position||'-')+'</div></div>'+
@@ -345,6 +346,7 @@ function detail(id){
     '<div class="dc"><h4>🏦 ข้อมูลธนาคาร</h4><div class="dr"><span class="i">🏦</span> ธนาคาร: '+esc(a.bank||'-')+'</div><div class="dr"><span class="i">💳</span> เลขบัญชี: '+esc(a.bank_account||'-')+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>📄 วุฒิการศึกษา</h4>'+docPrev(a.cred_link,'วุฒิ')+'</div><div class="dc"><h4>🪪 บัตรประชาชน</h4>'+docPrev(a.id_link,'บัตร')+'</div></div>'+
     '<div class="dg"><div class="dc"><h4>🏠 ทะเบียนบ้าน</h4>'+docPrev(a.house_link,'ทะเบียนบ้าน')+'</div><div class="dc"><h4>🏦 Book Bank</h4>'+docPrev(a.bank_link,'Book Bank')+'</div></div>'+
+    '<div id="edit-section"></div>'+
     '<div class="dc" style="margin-top:16px"><h4>📋 ระบบลา / ขาดงาน</h4><div id="lv-area">กำลังโหลด...</div></div>';
   $('A-main').classList.add('hide');$('A-det').classList.remove('hide');
   loadLeaves(id);
@@ -354,6 +356,54 @@ function setF(id,f,v){var u={};u[f]=v;sb("applications","PATCH",u,"?id=eq."+id).
 function chgSt(id,st){sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){toast('อัปเดตแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a.status=st});stats();doFilter();syncSheet({id:id,status:st})}).catch(function(e){toast('Error: '+e,'terr')})}
 function terminate(id){if(!confirm('ยืนยันพ้นสภาพพนักงาน?'))return;var now=new Date().toISOString();sb("applications","PATCH",{status:"terminated",terminated_at:now},"?id=eq."+id).then(function(){toast('พ้นสภาพแล้ว','tok');ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_at=now}});stats();doFilter();detail(id);syncSheet({id:id,status:'terminated'})}).catch(function(e){toast('Error: '+e,'terr')})}
 function delA(id){if(!confirm('ลบข้อมูลพนักงานนี้?'))return;sb("applications","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}).catch(function(e){toast('Error: '+e,'terr')})}
+
+/* ═══ EDIT EMPLOYEE ═══ */
+function editEmp(id){
+  var a;ALL.forEach(function(x){if(x.id===id)a=x});if(!a)return;
+  var posOpts='<option value="">-- เลือก --</option>';
+  POS.forEach(function(p){posOpts+='<option value="'+esc(p.title)+'"'+(p.title===a.position?' selected':'')+'>'+esc(p.title)+'</option>'});
+  var eduOpts='<option value="">-- เลือก --</option>';
+  ['ไม่มีวุฒิการศึกษา','ประถมศึกษา','มัธยมศึกษาตอนต้น (ม.3)','มัธยมศึกษาตอนปลาย (ม.6)','ปวช.','ปวส.','อนุปริญญา','ปริญญาตรี','ปริญญาโท','ปริญญาเอก'].forEach(function(e){eduOpts+='<option'+(e===a.education?' selected':'')+'>'+e+'</option>'});
+  var bankOpts='<option value="">-- เลือก --</option>';
+  ['กสิกรไทย (KBANK)','กรุงเทพ (BBL)','กรุงไทย (KTB)','ไทยพาณิชย์ (SCB)','กรุงศรีอยุธยา (BAY)','ทหารไทยธนชาต (TTB)','ออมสิน (GSB)','ธ.ก.ส. (BAAC)','เกียรตินาคินภัทร (KKP)','ซีไอเอ็มบี (CIMB)','ทิสโก้ (TISCO)','ยูโอบี (UOB)'].forEach(function(b){bankOpts+='<option'+(b===a.bank?' selected':'')+'>'+b+'</option>'});
+
+  $('edit-section').innerHTML=
+    '<div class="cd edit-form" style="border:2px solid var(--acc)"><div class="cd-t"><span class="dot"></span> ✏️ แก้ไขข้อมูลพนักงาน</div>'+
+    '<div class="g2">'+
+      '<div class="fld"><label>ชื่อ-สกุล</label><input id="ed-name" value="'+esc(a.name)+'"></div>'+
+      '<div class="fld"><label>ชื่อเล่น</label><input id="ed-nick" value="'+esc(a.nickname||'')+'"></div>'+
+      '<div class="fld"><label>โทรศัพท์</label><input id="ed-phone" value="'+esc(a.phone)+'" maxlength="10" inputmode="tel"></div>'+
+      '<div class="fld"><label>ตำแหน่ง</label><select id="ed-pos">'+posOpts+'</select></div>'+
+      '<div class="fld"><label>วุฒิการศึกษา</label><select id="ed-edu">'+eduOpts+'</select></div>'+
+      '<div class="fld"><label>ธนาคาร</label><select id="ed-bank">'+bankOpts+'</select></div>'+
+      '<div class="fld"><label>เลขบัญชี</label><input id="ed-baccount" value="'+esc(a.bank_account||'')+'" maxlength="15" inputmode="numeric"></div>'+
+    '</div>'+
+    '<div class="brow"><button class="btn btn-g btn-s" onclick="cancelEdit()">ยกเลิก</button><button class="btn btn-a btn-s" onclick="saveEmp(\''+a.id+'\')">💾 บันทึก</button></div></div>';
+  $('edit-section').scrollIntoView({behavior:'smooth'});
+}
+
+function cancelEdit(){$('edit-section').innerHTML=''}
+
+function saveEmp(id){
+  var d={
+    name:$('ed-name').value.trim(),
+    nickname:$('ed-nick').value.trim(),
+    phone:$('ed-phone').value.trim(),
+    position:$('ed-pos').value,
+    education:$('ed-edu').value,
+    bank:$('ed-bank').value,
+    bank_account:$('ed-baccount').value.trim()
+  };
+  if(!d.name){toast('กรุณากรอกชื่อ','terr');return}
+  if(!d.phone||d.phone.replace(/\D/g,'').length!==10){toast('เบอร์โทรต้อง 10 หลัก','terr');return}
+
+  sb("applications","PATCH",d,"?id=eq."+id).then(function(){
+    toast('บันทึกเรียบร้อย','tok');
+    ALL.forEach(function(a){if(a.id===id){a.name=d.name;a.nickname=d.nickname;a.phone=d.phone;a.position=d.position;a.education=d.education;a.bank=d.bank;a.bank_account=d.bank_account}});
+    doFilter();detail(id);
+    syncSheet({id:id,name:d.name,nickname:d.nickname,phone:d.phone,position:d.position,education:d.education,bank:d.bank,bank_account:d.bank_account});
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
 
 /* ═══ LEAVES ═══ */
 var LV_LIMITS={personal:6,sick:30,absent:999};

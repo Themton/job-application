@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบคิดเงินเดือน - บริษัทเดอะเอ็มที</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf6ee;--card:#fff;--pri:#5c4a1e;--pri2:#8b6914;--acc:#c6952b;--acc2:#d4a73c;--txt:#3d3520;--txt2:#706040;--muted:#a89870;--bdr:#e2d5b8;--bdr2:#f0e8d4;--inp:#fdf9f0;--ok:#6a8c2a;--err:#c43e2a;--sh:0 1px 4px rgba(92,74,30,.06);--sh2:0 4px 14px rgba(92,74,30,.1);--sh3:0 12px 30px rgba(92,74,30,.14)}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Noto Sans Thai',sans-serif;background:var(--bg);color:var(--txt);line-height:1.6}
+.hdr{background:linear-gradient(135deg,#5c4a1e 0%,#8b6914 50%,#c6952b 100%);position:sticky;top:0;z-index:100}
+.hdr-in{max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:11px}.logo{width:44px;height:44px;border-radius:10px;overflow:hidden;background:transparent;flex-shrink:0}.logo img{width:100%;height:100%;object-fit:contain}
+.brand h1{font-size:17px;color:#fff;font-weight:600}.brand small{display:block;font-size:10px;color:rgba(255,255,255,.4)}
+.nbtn{padding:7px 14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:rgba(255,255,255,.75);border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:.2s;display:flex;align-items:center;gap:6px;text-decoration:none}
+.nbtn:hover{background:rgba(255,255,255,.2);color:#fff}.nbtn.on{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.3);color:#fff}
+.wrap{max-width:1200px;margin:0 auto;padding:24px 20px 50px}
+.sts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:20px}
+.st{background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:14px 16px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.st .ic{position:absolute;top:8px;right:12px;font-size:20px;opacity:.12}.st .l{font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}.st .v{font-size:20px;font-weight:700;color:var(--pri)}
+.st .u{font-size:10px;color:var(--muted)}
+.tb{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.sb{flex:1;min-width:200px;position:relative}.sb input{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--bdr);border-radius:8px;font-size:13px;font-family:inherit;background:var(--card);box-shadow:var(--sh);outline:none}.sb::before{content:"🔍";position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px}
+.fbtn{padding:5px 12px;border:1px solid var(--bdr);border-radius:16px;font-size:11px;font-family:inherit;cursor:pointer;font-weight:500;background:var(--card);color:var(--txt2);transition:.2s;white-space:nowrap}
+.fbtn:hover{border-color:var(--acc)}.fbtn.on{background:linear-gradient(135deg,#b8860b,#d4a73c);color:#fff;border-color:#b8860b}
+.cbox{display:flex;align-items:center;gap:6px;background:var(--card);padding:6px 12px;border-radius:8px;border:1px solid var(--bdr);cursor:pointer;font-size:11px;color:var(--txt2);font-weight:500;font-family:inherit}
+.cbox input{accent-color:var(--acc)}
+.tw{background:var(--card);border:1px solid var(--bdr);border-radius:11px;overflow:hidden;box-shadow:var(--sh)}
+.tw table{width:100%;border-collapse:collapse}
+.tw th{text-align:left;padding:10px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--inp);border-bottom:1px solid var(--bdr);cursor:pointer;user-select:none;white-space:nowrap}
+.tw th:hover{color:var(--pri)}
+.tw td{padding:9px 12px;font-size:12px;border-bottom:1px solid var(--bdr2)}
+.tw tr:last-child td{border-bottom:none}.tw tbody tr{cursor:pointer;transition:.1s}.tw tbody tr:hover{background:rgba(194,122,44,.04)}
+.tw tfoot td{padding:10px 12px;font-weight:700;background:var(--inp);border-top:2px solid var(--bdr);font-size:12px}
+.nm{font-weight:600;color:var(--pri);font-size:13px}.nk{font-size:10px;color:var(--muted)}
+.bg{display:inline-flex;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-size:12px}
+.half-c{color:#d97706;font-weight:700}.absent-c{color:var(--err);font-weight:700}.ded-c{color:var(--err);font-weight:600}
+.strike{text-decoration:line-through;color:var(--muted);font-size:11px;margin-right:6px}
+.changed{color:#d97706;font-weight:700}
+.foot{color:var(--muted);font-size:10px;margin-top:12px;text-align:center;line-height:1.7}
+
+/* Modal */
+.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal{background:var(--card);border-radius:16px;padding:28px;max-width:940px;width:95%;max-height:92vh;overflow:auto;box-shadow:var(--sh3);border:1px solid var(--bdr)}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.modal-hdr h2{font-size:20px;font-weight:700;color:var(--pri);margin:0}
+.modal-hdr .sub{color:var(--txt2);font-size:13px}
+.close-btn{background:var(--inp);border:1px solid var(--bdr);color:var(--muted);border-radius:8px;padding:8px 16px;cursor:pointer;font-size:16px;font-family:inherit}
+.close-btn:hover{background:var(--bdr2)}
+.method-tag{background:rgba(198,149,43,.12);color:#b8860b;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:600;display:inline-block;margin-top:4px}
+.sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.sum-card{background:var(--inp);border:1px solid var(--bdr);border-radius:10px;padding:12px;text-align:center}
+.sum-card .sl{font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:2px}
+.sum-card .sv{font-size:20px;font-weight:700}.sum-card .su{font-size:9px;color:var(--muted)}
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.pay-box{background:var(--inp);border:1px solid var(--bdr);border-radius:12px;padding:14px}
+.pay-box h4{font-size:12px;font-weight:600;color:var(--ok);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--bdr2)}
+.pay-box.ded h4{color:var(--err)}
+.pay-row{display:flex;justify-content:space-between;padding:3px 0;font-size:13px}
+.pay-row .lbl{color:var(--txt2)}.pay-row .val{font-weight:500}
+.pay-row.total{border-top:1px solid var(--bdr);margin-top:4px;padding-top:6px;font-weight:700;font-size:14px}
+.pay-row .neg{color:var(--err)}.pay-row .pos{color:var(--ok)}
+.net-box{background:linear-gradient(135deg,#f0e8d4,#fdf9f0);border:2px solid var(--acc);border-radius:12px;padding:16px;text-align:center;margin-bottom:16px}
+.net-box .nl{font-size:12px;color:var(--muted)}.net-box .nv{font-size:32px;font-weight:800;color:var(--pri)}
+.net-box .comm{color:#d97706;font-size:14px;margin-top:4px}.net-box .diff{color:var(--txt2);font-size:12px;margin-top:4px}
+.cal-legend{display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.cal-legend span{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
+.cal-legend .dot{width:10px;height:10px;border-radius:3px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal .dh{text-align:center;font-size:10px;color:var(--muted);padding:3px}
+.cal .day{border:1px solid var(--bdr2);border-radius:5px;padding:3px;text-align:center;min-height:46px}
+.cal .day .dn{font-size:10px;color:var(--muted);font-weight:600}
+.cal .day .tin{font-size:9px}.cal .day .tout{font-size:9px;color:#3b82f6}
+.cal .day .tag{font-size:8px;font-weight:700;margin-top:1px}
+.day-full{background:rgba(106,140,42,.06);border-color:rgba(106,140,42,.2)!important}
+.day-half{background:rgba(217,119,6,.06);border-color:rgba(217,119,6,.25)!important}
+.day-absent{background:rgba(196,62,42,.05);border-color:rgba(196,62,42,.2)!important}
+.day-sun{background:rgba(0,0,0,.02);border-color:transparent!important}
+
+@media(max-width:700px){.sum-grid{grid-template-columns:1fr 1fr}.pay-grid{grid-template-columns:1fr}.hdr-in{flex-direction:column;gap:8px}.tb{flex-direction:column}.tw{overflow-x:auto}.tw table{min-width:700px}.wrap{padding:16px 14px 40px}.brand h1{font-size:14px}}
+</style>
+</head>
+<body>
+
+<div class="hdr"><div class="hdr-in">
+<div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><div><h1>ระบบคิดเงินเดือน</h1><small>บริษัทเดอะเอ็มที • มี.ค. 2569</small></div></div>
+<div style="display:flex;gap:5px">
+<a href="." class="nbtn" style="text-decoration:none">📝 กรอกข้อมูลพนักงาน</a>
+<a href="?admin" class="nbtn" style="text-decoration:none">👤 สำหรับเจ้าหน้าที่</a>
+<a href="payroll.html" class="nbtn on" style="text-decoration:none">💰 คิดเงินเดือน</a>
+</div>
+</div></div>
+
+<div class="wrap">
+
+<div class="sts" id="stats-bar"></div>
+
+<div class="tb">
+<div class="sb"><input id="searchInput" placeholder="ค้นหาชื่อ หรือชื่อเล่น..." oninput="render()"></div>
+<div id="filterBtns" style="display:flex;gap:3px;flex-wrap:wrap"></div>
+<label class="cbox"><input type="checkbox" id="showComp" onchange="render()"> เทียบเงินเดือนเดิม</label>
+</div>
+
+<div id="tableArea"></div>
+
+<div class="foot">
+คลิกแถวดูรายละเอียด+ปฏิทิน • รายวัน=352฿ ครึ่งวัน=176฿ • ประจำ หัก=400฿/วัน ครึ่งวัน=200฿<br>
+½วัน = ออกก่อน 14:00 / เข้าหลัง 12:00 / มีแสตมป์เดียว (ยกเว้น วันที่31)
+</div>
+</div>
+
+<div id="modalBg" class="modal-bg" style="display:none" onclick="closeModal()">
+<div class="modal" onclick="event.stopPropagation()" id="modalContent"></div>
+</div>
+
+<script>
+var RAW = {"employees":[{"name":"ศิวกร - สุขสวัสดิ์","nickname":"","bank":"กรุงไทย","account":"9824935916","position":"กรรมการ","salary":40000.0,"diligence":0,"totalIncome":40000.0,"tax3":0,"ss5":0,"loan":0,"advance":0,"totalDed":0.0,"net":40000.0,"commission":0,"remark":""},{"name":"ทัตพงค์ - สวัสดี","nickname":"","bank":"กรุงไทย","account":"9855887050","position":"กรรมการ","salary":40000.0,"diligence":0,"totalIncome":40000.0,"tax3":0,"ss5":0,"loan":0,"advance":0,"totalDed":0.0,"net":40000.0,"commission":0,"remark":""},{"name":"ประภัสสร - สุขสวัสดิ์","nickname":"","bank":"ออมสิน","account":"020065553099","position":"กรรมการ","salary":25000.0,"diligence":0,"totalIncome":25000.0,"tax3":0,"ss5":0,"loan":0,"advance":0,"totalDed":0.0,"net":25000.0,"commission":0,"remark":""},{"name":"สุนีย์ - สุขสวัสดิ์","nickname":"","bank":"ออมสิน","account":"020048600165","position":"กรรมการ","salary":25000.0,"diligence":0,"totalIncome":25000.0,"tax3":0,"ss5":0,"loan":0,"advance":0,"totalDed":0.0,"net":25000.0,"commission":0,"remark":""},{"name":"สมาน - สวัสดี","nickname":"","bank":"LHB","account":"8012511430","position":"กรรมการ","salary":25000.0,"diligence":0,"totalIncome":25000.0,"tax3":0,"ss5":0,"loan":0,"advance":0,"totalDed":0.0,"net":25000.0,"commission":0,"remark":""},{"name":"สุทธิพงษ์ ปลัดยศ","nickname":"ฟลุ๊ค","bank":"SCB","account":"4150647586","position":"พนักงานประจำ","salary":20000.0,"diligence":0,"totalIncome":20000.0,"tax3":0,"ss5":875.0,"loan":780.0,"advance":0,"totalDed":1655.0,"net":18345.0,"commission":0,"remark":""},{"name":"แสงระวี บุญประสิทธิ์","nickname":"แหม่ม","bank":"SCB","account":"6632665109","position":"พนักงานประจำ","salary":12000.0,"diligence":0,"totalIncome":12000.0,"tax3":0,"ss5":600.0,"loan":360.0,"advance":0,"totalDed":960.0,"net":11040.0,"commission":0,"remark":""},{"name":"ศศิวิมล ยังขยอ","nickname":"เป็ค","bank":"SCB","account":"4302150571","position":"พนักงานประจำ","salary":10560.0,"diligence":0,"totalIncome":10560.0,"tax3":0,"ss5":528.0,"loan":0,"advance":0,"totalDed":528.0,"net":10032.0,"commission":0,"remark":""},{"name":"เลอศักดิ์ หล่าสท้าน","nickname":"กวาง","bank":"SCB","account":"4302150068","position":"พนักงานประจำ","salary":10560.0,"diligence":0,"totalIncome":10560.0,"tax3":0,"ss5":528.0,"loan":0,"advance":0,"totalDed":528.0,"net":10032.0,"commission":0,"remark":""},{"name":"รสสุคนธ์  แก้วสุวรรณ","nickname":"เบลล์","bank":"SCB","account":"4302150783","position":"พนักงานประจำ","salary":10560.0,"diligence":0,"totalIncome":10560.0,"tax3":0,"ss5":528.0,"loan":0,"advance":0,"totalDed":528.0,"net":10032.0,"commission":0,"remark":""},{"name":"นาเดีย เสะ","nickname":"เดีย","bank":"SCB","account":"6554416987","position":"แอดมิน","salary":9000.0,"diligence":1000.0,"totalIncome":10000.0,"tax3":0,"ss5":500.0,"loan":0,"advance":0,"totalDed":500.0,"net":9500.0,"commission":2500.0,"remark":""},{"name":"พรฤดี  ก้อนเกียรติวงศ์","nickname":"ก้อย","bank":"SCB","account":"9964241598","position":"แอดมิน","salary":9000.0,"diligence":1000.0,"totalIncome":10000.0,"tax3":0,"ss5":500.0,"loan":0,"advance":0,"totalDed":500.0,"net":9500.0,"commission":2500.0,"remark":""},{"name":"กชกร สกุลแพทย์","nickname":"อร","bank":"SCB","account":"4111158130","position":"แอดมิน","salary":9000.0,"diligence":1000.0,"totalIncome":10000.0,"tax3":0,"ss5":500.0,"loan":0,"advance":0,"totalDed":500.0,"net":9500.0,"commission":2500.0,"remark":""},{"name":"นฤมล รอดบัวทอง","nickname":"กล้วย","bank":"SCB","account":"4332199993","position":"แอดมิน","salary":9000.0,"diligence":1000.0,"totalIncome":10000.0,"tax3":0,"ss5":500.0,"loan":0,"advance":0,"totalDed":500.0,"net":9500.0,"commission":2500.0,"remark":""},{"name":"ปวีณา  คำมีมา","nickname":"หมวย","bank":"SCB","account":"1722263320","position":"Telesales รายเดือน","salary":12000.0,"diligence":0,"totalIncome":12000.0,"tax3":0,"ss5":600.0,"loan":0,"advance":0,"totalDed":600.0,"net":11400.0,"commission":3091.0,"remark":""},{"name":"อรยา  น่วมนุ้ย","nickname":"อุ้ยอ้าย","bank":"SCB","account":"4403975175","position":"Telesales รายเดือน","salary":12000.0,"diligence":0,"totalIncome":12000.0,"tax3":0,"ss5":600.0,"loan":0,"advance":0,"totalDed":600.0,"net":11400.0,"commission":1921.0,"remark":"จ่ายเบิกล่างหน้าครบแล้ว"},{"name":"ธนากานต์ แสงรัตน์","nickname":"ปอนด์","bank":"SCB","account":"5882659782","position":"Telesales รายเดือน","salary":11250.0,"diligence":750.0,"totalIncome":12000.0,"tax3":0,"ss5":600.0,"loan":270.0,"advance":0,"totalDed":870.0,"net":11130.0,"commission":1743.0,"remark":""},{"name":"อรอนงค์ เรืองมณี","nickname":"อร","bank":"SCB","account":"4391120698","position":"Telesales รายเดือน","salary":12000.0,"diligence":0,"totalIncome":12000.0,"tax3":0,"ss5":600.0,"loan":0,"advance":0,"totalDed":600.0,"net":11400.0,"commission":6095.0,"remark":""},{"name":"วริยา จันทร์พลงาม","nickname":"โอ๋","bank":"SCB","account":"9392508661","position":"Telesales รายเดือน","salary":12000.0,"diligence":500.0,"totalIncome":12500.0,"tax3":0,"ss5":625.0,"loan":0,"advance":0,"totalDed":625.0,"net":11875.0,"commission":6188.0,"remark":""},{"name":"ขนิษฐ์ โตเกษม","nickname":"จิ๊บ","bank":"SCB","account":"5692594164","position":"Telesales รายเดือน","salary":12000.0,"diligence":500.0,"totalIncome":12500.0,"tax3":0,"ss5":625.0,"loan":0,"advance":0,"totalDed":625.0,"net":11875.0,"commission":1732.0,"remark":""},{"name":"ภัทธิรา กุจั่น","nickname":"อ๋อมแอ๋ม","bank":"กรุงไทย","account":"6777720189","position":"Telesales รายเดือน","salary":11250.0,"diligence":0,"totalIncome":11250.0,"tax3":0,"ss5":562.5,"loan":0,"advance":0,"totalDed":562.5,"net":10687.5,"commission":0,"remark":""},{"name":"อัจฉรา ดอนเล้าไพร","nickname":"ตาล","bank":"K-BANK","account":"2038576731","position":"Telesales รายเดือน","salary":11250.0,"diligence":0,"totalIncome":11250.0,"tax3":0,"ss5":562.5,"loan":0,"advance":0,"totalDed":562.5,"net":10687.5,"commission":0,"remark":""},{"name":"ณัฐณิชา มุกดา","nickname":"ป็อบ","bank":"SCB","account":"8494045107","position":"Telesales รายเดือน","salary":11250.0,"diligence":0,"totalIncome":11250.0,"tax3":0,"ss5":562.5,"loan":0,"advance":2000.0,"totalDed":2562.5,"net":8687.5,"commission":0,"remark":""},{"name":"กฤษณกร นพวรรณ","nickname":"ออย","bank":"SCB","account":"5882649004","position":"Telesales รายเดือน","salary":11250.0,"diligence":750.0,"totalIncome":12000.0,"tax3":0,"ss5":600.0,"loan":0,"advance":0,"totalDed":600.0,"net":11400.0,"commission":0,"remark":""},{"name":"วิชญาดา แสงสว่าง","nickname":"ส้ม","bank":"K-BANK","account":"1073977661","position":"Telesales รายเดือน","salary":11250.0,"diligence":750.0,"totalIncome":12000.0,"tax3":0,"ss5":600.0,"loan":0,"advance":0,"totalDed":600.0,"net":11400.0,"commission":0,"remark":""},{"name":"สุภัสสรา จีนศรีพานิช","nickname":"นุ่น","bank":"K-BANK","account":"1453907968","position":"Telesales รายวัน","salary":7568.0,"diligence":0,"totalIncome":7568.0,"tax3":227.04,"ss5":0,"loan":0,"advance":0,"totalDed":227.04,"net":7340.96,"commission":1958.0,"remark":"โอนรายวันก่อน รอบัญชีกระทบยอด ถ้าเกิน 40,000 จะทบยอดให้เป็นประจำ พร้อมโอนส่วนที่เหลือ"},{"name":"เจนจิรา เทศสิงห์","nickname":"เจน","bank":"K-BANK","account":"1211833293","position":"Telesales รายเดือน","salary":7744.0,"diligence":0,"totalIncome":7744.0,"tax3":232.32,"ss5":0,"loan":0,"advance":2000.0,"totalDed":2232.32,"net":5511.68,"commission":0,"remark":"โอนรายวันก่อน รอบัญชีกระทบยอด ถ้าเกิน 40,000 จะทบยอดให้เป็นประจำ พร้อมโอนส่วนที่เหลือ"},{"name":"ธนพร ใจสุกใส","nickname":"ขวัญ","bank":"ออมสิน","account":"020071280885","position":"Telesales รายเดือน","salary":8800.0,"diligence":0,"totalIncome":8800.0,"tax3":264.0,"ss5":0,"loan":0,"advance":0,"totalDed":264.0,"net":8536.0,"commission":0,"remark":"โอนรายวันก่อน รอบัญชีกระทบยอด ถ้าเกิน 40,000 จะทบยอดให้เป็นประจำ พร้อมโอนส่วนที่เหลือ"},{"name":"ธิดาธร อำนวยศักดิ์โสภณ","nickname":"อีพ","bank":"SCB","account":"4322146934","position":"Telesales รายเดือน","salary":7040.0,"diligence":0,"totalIncome":7040.0,"tax3":211.2,"ss5":0,"loan":0,"advance":0,"totalDed":211.2,"net":6828.8,"commission":0,"remark":"โอนรายวันก่อน รอบัญชีกระทบยอด ถ้าเกิน 40,000 จะทบยอดให้เป็นประจำ พร้อมโอนส่วนที่เหลือ"},{"name":"อังคณา วาวรัมย์","nickname":"อัง","bank":"K-BANK","account":"1251100072337","position":"Telesales รายเดือน","salary":8096.0,"diligence":0,"totalIncome":8096.0,"tax3":242.88,"ss5":0,"loan":0,"advance":3872.0,"totalDed":4114.88,"net":3981.12,"commission":0,"remark":"โอนรายวันก่อน รอบัญชีกระทบยอด ถ้าเกิน 40,000 จะทบยอดให้เป็นประจำ พร้อมโอนส่วนที่เหลือ"},{"name":"กนกเกศ สุวรรณโคตร","nickname":"","bank":"SCB","account":"7392741136","position":"Telesales รายเดือน","salary":0,"diligence":0,"totalIncome":0,"tax3":0,"ss5":0,"loan":0,"advance":0,"totalDed":0,"net":0,"commission":2246.0,"remark":"ออก"},{"name":"อัณชฎาพร กุดทิง","nickname":"มิ้นท์","bank":"SCB","account":"5692863157","position":"Telesales รายเดือน","salary":8800.0,"diligence":0,"totalIncome":8800.0,"tax3":0,"ss5":440.0,"loan":270.0,"advance":0,"totalDed":710.0,"net":8090.0,"commission":0,"remark":"ลดจากรายเดือนเป็นรายวันจ่ายตามวันที่มาทำงานแต่ยังจ่ายประกันสังคม"},{"name":"ภัชราภรณ์ มณีวงษ์","nickname":"เอิร์น","bank":"SCB","account":"4232252022","position":"Telesales รายเดือน","salary":7392.0,"diligence":0,"totalIncome":7392.0,"tax3":0,"ss5":369.6,"loan":0,"advance":0,"totalDed":369.6,"net":7022.4,"commission":0,"remark":"ลดจากรายเดือนเป็นรายวันจ่ายตามวันที่มาทำงานแต่ยังจ่ายประกันสังคม"},{"name":"มนัญญา คำไล้","nickname":"ออย","bank":"SCB","account":"4130798072","position":"Telesales รายเดือน","salary":7744.0,"diligence":0,"totalIncome":7744.0,"tax3":0,"ss5":387.20000000000005,"loan":0,"advance":0,"totalDed":387.20000000000005,"net":7356.8,"commission":0,"remark":"ลดจากรายเดือนเป็นรายวันจ่ายตามวันที่มาทำงานแต่ยังจ่ายประกันสังคม"},{"name":"ยุพา เงินสอาด","nickname":"กบ","bank":"SCB","account":"3612595952","position":"Telesales รายเดือน","salary":8800.0,"diligence":0,"totalIncome":8800.0,"tax3":0,"ss5":440.0,"loan":0,"advance":0,"totalDed":440.0,"net":8360.0,"commission":0,"remark":"ลดจากรายเดือนเป็นรายวันจ่ายตามวันที่มาทำงานแต่ยังจ่ายประกันสังคม"},{"name":"ศิริวรรณ ภูมิประยงศ์","nickname":"นุ่น","bank":"SCB","account":"4362228194","position":"Telesales รายเดือน","salary":8800.0,"diligence":0,"totalIncome":8800.0,"tax3":0,"ss5":440.0,"loan":0,"advance":0,"totalDed":440.0,"net":8360.0,"commission":0,"remark":"ลดจากรายเดือนเป็นรายวันจ่ายตามวันที่มาทำงานแต่ยังจ่ายประกันสังคม"},{"name":"สุจิตรา โชติรัตน์","nickname":"ตูน","bank":"scb","account":"5692866333","position":"Telesales รายเดือน","salary":8448.0,"diligence":0,"totalIncome":8448.0,"tax3":0,"ss5":422.40000000000003,"loan":0,"advance":0,"totalDed":422.40000000000003,"net":8025.6,"commission":0,"remark":"ลดจากรายเดือนเป็นรายวันจ่ายตามวันที่มาทำงานแต่ยังจ่ายประกันสังคม"},{"name":"ณิชาภัทร เมธาสุวรรณ์","nickname":"ดรีม","bank":"SCB","account":"4292181006","position":"Telesales รายเดือน","salary":8096.0,"diligence":0,"totalIncome":8096.0,"tax3":0,"ss5":404.8,"loan":75.0,"advance":0,"totalDed":479.8,"net":7616.2,"commission":0,"remark":"ลดจากรายเดือนเป็นรายวันจ่ายตามวันที่มาทำงานแต่ยังจ่ายประกันสังคม"},{"name":"พรนัชชา ขุนชอนรักษ์","nickname":"เนม","bank":"SCB","account":"7014188583","position":"Telesales รายวัน","salary":8096.0,"diligence":0,"totalIncome":8096.0,"tax3":242.88,"ss5":0,"loan":0,"advance":4048.0,"totalDed":4290.88,"net":3805.12,"commission":0,"remark":""},{"name":"ชิดชบา จันรุณ","nickname":"แป้ง","bank":"SCB","account":"9392245873","position":"Telesales รายวัน","salary":6688.0,"diligence":0,"totalIncome":6688.0,"tax3":200.64,"ss5":0,"loan":0,"advance":0,"totalDed":200.64,"net":6487.36,"commission":0,"remark":""},{"name":"ยุพารัตน์ สังสีแก้ว","nickname":"นิว","bank":"SCB","account":"5692794772","position":"Telesales รายวัน","salary":6336.0,"diligence":0,"totalIncome":6336.0,"tax3":190.07999999999998,"ss5":0,"loan":0,"advance":0,"totalDed":190.07999999999998,"net":6145.92,"commission":0,"remark":""},{"name":"นิราวรรณ บูรณะพันธ์","nickname":"น้ำตาล","bank":"ออมสิน","account":"020256555432","position":"Telesales รายวัน","salary":7744.0,"diligence":0,"totalIncome":7744.0,"tax3":232.32,"ss5":0,"loan":0,"advance":0,"totalDed":232.32,"net":7511.68,"commission":0,"remark":""},{"name":"นภัสสร ภู่หอม","nickname":"เทียร์","bank":"K-BANK","account":"0761154907","position":"Telesales รายวัน","salary":7744.0,"diligence":0,"totalIncome":7744.0,"tax3":232.32,"ss5":0,"loan":0,"advance":0,"totalDed":232.32,"net":7511.68,"commission":0,"remark":""},{"name":"อังสุมาลี ภุภาพันธ์","nickname":"น้ำ","bank":"กรุงไทย","account":"6240503908","position":"Telesales รายวัน","salary":5632.0,"diligence":0,"totalIncome":5632.0,"tax3":168.95999999999998,"ss5":0,"loan":0,"advance":0,"totalDed":168.95999999999998,"net":5463.04,"commission":0,"remark":""},{"name":"สาวิตรี สายใจ","nickname":"แตงโม","bank":"K-BANK","account":"1368466693","position":"Telesales รายวัน","salary":7920.0,"diligence":0,"totalIncome":7920.0,"tax3":237.6,"ss5":0,"loan":0,"advance":1000.0,"totalDed":1237.6,"net":6682.4,"commission":0,"remark":""},{"name":"ณัฐธิดา เอี้ยมตาล","nickname":"ปลา","bank":"K-BANK","account":"0241981991","position":"Telesales รายวัน","salary":2112.0,"diligence":0,"totalIncome":2112.0,"tax3":63.36,"ss5":0,"loan":0,"advance":0,"totalDed":63.36,"net":2048.64,"commission":0,"remark":""},{"name":"ปวิชญา สาระทวย","nickname":"ญา","bank":"K-BANK","account":"0453598160","position":"Telesales รายวัน","salary":2816.0,"diligence":0,"totalIncome":2816.0,"tax3":84.47999999999999,"ss5":0,"loan":0,"advance":0,"totalDed":84.47999999999999,"net":2731.52,"commission":0,"remark":""},{"name":"ณัฐกิจ สุขอ่วม","nickname":"หิน","bank":"ออมสิน","account":"020464027935","position":"Telesales รายวัน","salary":2816.0,"diligence":0,"totalIncome":2816.0,"tax3":84.47999999999999,"ss5":0,"loan":0,"advance":0,"totalDed":84.47999999999999,"net":2731.52,"commission":0,"remark":""},{"name":"ภานุวัฒน์ บุญชู","nickname":"ปลาม","bank":"ออมสิน","account":"020380522787","position":"Telesales รายวัน","salary":1232.0,"diligence":0,"totalIncome":1232.0,"tax3":36.96,"ss5":0,"loan":0,"advance":0,"totalDed":36.96,"net":1195.04,"commission":0,"remark":""},{"name":"ธนภรณ์  วนิชศิริ","nickname":"ฟิล์ม","bank":"K-BANK","account":"0252825843","position":"Telesales รายวัน","salary":3344.0,"diligence":0,"totalIncome":3344.0,"tax3":100.32,"ss5":0,"loan":0,"advance":0,"totalDed":100.32,"net":3243.68,"commission":0,"remark":""},{"name":"พิมพ์นภา ต่ายเมือง","nickname":"พิมพ์","bank":"SCB","account":"6502664623","position":"Telesales รายวัน","salary":3168.0,"diligence":0,"totalIncome":3168.0,"tax3":95.03999999999999,"ss5":0,"loan":0,"advance":0,"totalDed":95.03999999999999,"net":3072.96,"commission":0,"remark":""},{"name":"กนกวรรณ เนียมจันทร์","nickname":"ครีม","bank":"SCB","account":"9392507398","position":"Telesales รายวัน","salary":3520.0,"diligence":0,"totalIncome":3520.0,"tax3":105.6,"ss5":0,"loan":0,"advance":0,"totalDed":105.6,"net":3414.4,"commission":0,"remark":""},{"name":"ปาลิตา หอมสะอาด","nickname":"ใบเตย","bank":"กรุงไทย","account":"6602146890","position":"Telesales รายวัน","salary":2464.0,"diligence":0,"totalIncome":2464.0,"tax3":73.92,"ss5":0,"loan":0,"advance":0,"totalDed":73.92,"net":2390.08,"commission":0,"remark":""},{"name":"ศุภกานต์  วิบูลย์","nickname":"ทราย","bank":"K-BANK","account":"1491190481","position":"Telesales รายวัน","salary":2464.0,"diligence":0,"totalIncome":2464.0,"tax3":73.92,"ss5":0,"loan":0,"advance":0,"totalDed":73.92,"net":2390.08,"commission":0,"remark":""},{"name":"ศิริเบญจา อ้นอิ่ม","nickname":"เบญ","bank":"SCB","account":"5692864129","position":"Telesales รายวัน","salary":2112.0,"diligence":0,"totalIncome":2112.0,"tax3":63.36,"ss5":0,"loan":0,"advance":0,"totalDed":63.36,"net":2048.64,"commission":0,"remark":""},{"name":"อภิชญา จันทร์คุ้ม","nickname":"ปอ","bank":"SCB","account":"5692872156","position":"พนักงานแพ็คสินค้ารายวัน","salary":0,"diligence":0,"totalIncome":0.0,"tax3":0.0,"ss5":0,"loan":0,"advance":0,"totalDed":0.0,"net":0.0,"commission":0,"remark":""},{"name":"สุภัทรชัย บุญช่วยสุข","nickname":"ซีเกมส์","bank":"SCB","account":"9392545891","position":"พนักงานแพ็คสินค้ารายวัน","salary":0,"diligence":0,"totalIncome":0.0,"tax3":0.0,"ss5":0,"loan":0,"advance":0,"totalDed":0.0,"net":0.0,"commission":0,"remark":""}],"attendance":[{"code":"T000","name":"ศิวกร สุขสวัสดิ์","days":{},"workDays":0},{"code":"T002","name":"สุทธิพงษ์ ปลัดยศ ฟลุ๊ค","days":{"2":"08:55\n18:55","3":"08:48\n18:56","4":"08:48\n18:11\n18:44\n20:31","5":"08:56\n18:47","6":"08:56\n19:27","7":"08:58\n18:55","9":"08:55\n18:55\n19:54","10":"08:43\n19:34","11":"08:56\n19:13","12":"08:54\n19:40","13":"08:56\n19:48","14":"08:59\n19:23","16":"08:55\n19:04","17":"08:56\n19:24","18":"08:54\n19:14","19":"08:51\n18:55","20":"09:00\n18:30\n19:34","21":"09:00\n18:08","23":"09:00\n18:37\n18:52","24":"08:53\n19:30","25":"08:59\n19:22","26":"08:58\n19:34","27":"08:53\n19:20","28":"09:00\n17:23","30":"08:57\n19:04","31":"08:59:00"},"workDays":26},{"code":"T004","name":"วรยา จันทร์พลงาม โอ๋","days":{"2":"08:51\n18:01","3":"08:45\n17:08","4":"08:56\n17:15","5":"08:54\n17:04","6":"08:53\n17:08\n17:33","7":"08:53\n17:09","9":"08:55\n08:55\n18:02","10":"08:52\n08:52\n17:04","11":"08:58\n18:02","12":"08:52\n17:06","13":"08:55\n18:02","14":"08:52\n18:01","16":"08:37\n18:02","17":"08:49\n17:08","18":"08:51\n17:42","19":"08:45\n18:01","20":"08:50\n18:01","21":"08:48\n18:04","23":"08:39\n18:02","24":"08:44\n18:07","25":"08:31\n18:03","26":"08:43\n18:05","27":"08:49\n08:49\n18:05","28":"08:45\n18:03","30":"08:49\n18:00","31":"08:54:00"},"workDays":26},{"code":"T006","name":"อรยา น่วยนุ่ม อุ้ยอ้าย","days":{"5":"08:35\n09:12\n17:01","6":"08:27\n17:01","7":"08:44\n17:01","9":"08:10\n18:01","10":"08:11\n17:03","11":"08:39\n18:01","12":"08:53\n18:01","13":"08:33\n18:01","16":"08:27\n18:02","17":"08:42\n17:05","18":"08:39\n17:40","19":"08:35\n17:04","20":"08:38\n18:01","21":"08:48\n18:01","23":"08:11\n18:00","24":"08:20\n18:02","25":"08:07\n17:02","26":"08:21\n18:02","27":"08:28\n18:01","30":"08:32\n17:55","31":"08:41:00"},"workDays":21},{"code":"T007","name":"อรอนงค์ เรืองมณี อร","days":{"3":"08:30\n17:08","4":"08:29\n17:15","5":"08:27\n17:04","6":"08:29\n17:08","7":"08:28\n17:09","9":"08:49\n18:02","10":"08:36\n17:04","11":"08:32\n18:02","12":"08:32\n18:00","14":"08:21\n18:01","16":"08:35\n18:02","17":"08:34\n17:07","18":"08:25\n17:42","19":"08:27\n18:01","20":"08:16\n18:01","21":"08:24\n18:03","23":"08:38\n18:01","24":"08:26\n17:04","25":"08:23\n18:02","26":"18:05:00","27":"08:34\n18:04","28":"08:24\n17:09","30":"08:27\n17:55","31":"08:28:00"},"workDays":24},{"code":"T008","name":"สุจิตรา โชติรัตน์ ตูน","days":{"2":"08:53\n18:02","3":"08:50\n17:08","4":"08:54\n17:14","5":"08:51\n17:03","6":"08:52\n17:47","7":"08:45\n17:31","9":"08:38\n18:03","10":"08:37\n17:37","11":"08:16\n18:03","12":"08:48\n18:01","13":"08:40\n18:06","14":"18:04:00","16":"08:41\n18:02","17":"08:50\n17:08","18":"08:43\n18:02","19":"08:42\n18:17","21":"08:48\n18:28","23":"08:43\n18:08","24":"08:48\n18:06","25":"08:45\n18:03","26":"08:39\n18:06","27":"08:42\n18:04","30":"08:45\n17:57","31":"08:47:00"},"workDays":24},{"code":"T009","name":"อัณชฎาพร กุดทิง มิ้น","days":{"2":"08:55\n18:01","3":"09:07\n18:16","4":"08:57\n18:01","5":"08:46\n17:01","6":"09:02\n17:01","7":"08:57\n18:04","9":"09:10\n18:06","10":"09:15:00","11":"08:44\n18:04","12":"08:41\n18:03","13":"08:48\n18:01","16":"08:59\n18:00","17":"08:52\n18:01","18":"08:59\n18:03","19":"08:44\n18:00","20":"08:48\n18:01","21":"08:58\n17:10","23":"08:54\n18:04","24":"08:48\n18:00","25":"08:44\n17:04","26":"09:10\n18:01","27":"08:48\n18:01","28":"08:51\n18:01","30":"08:49\n17:06","31":"08:57:00"},"workDays":25},{"code":"T010","name":"มนัญญา คำไล้ ออย","days":{"2":"08:53\n18:02\n18:03","3":"08:55\n18:10","5":"17:08:00","9":"08:50\n18:11","10":"08:51\n18:02","11":"08:52\n18:04","12":"08:52:00","13":"08:54:00","14":"08:53\n18:07","17":"08:56\n18:03","18":"09:00\n18:07","19":"08:56:00","20":"18:03:00","21":"08:56\n18:11","23":"08:53:00","24":"08:53\n18:03","25":"08:56\n18:05","26":"08:55:00","27":"08:58\n18:09","28":"08:52\n18:03","30":"08:52\n18:15","31":"08:45:00"},"workDays":22},{"code":"T011","name":"ยุพา เงินสะอาด กบ","days":{"2":"07:09\n18:02","3":"07:08\n17:09","4":"07:04\n17:13","5":"07:04\n17:03","6":"07:07\n17:02","7":"07:04\n07:38\n17:31","9":"07:02\n18:02","10":"07:03\n17:33","11":"07:06\n18:01","12":"07:00\n18:01","13":"07:00\n18:04","14":"07:09\n18:02","16":"07:04\n18:01","17":"07:03\n17:09","18":"06:59\n17:40","19":"07:06\n18:07","20":"07:05\n18:30","21":"07:15\n18:03","24":"07:03\n14:01","25":"07:01\n18:30","26":"07:04\n18:04","27":"07:16\n18:05","28":"07:05\n18:03","30":"06:59\n17:58","31":"07:00:00"},"workDays":25},{"code":"T012","name":"ภัชราภรณ์ มณีวงษ์ เอิร์น","days":{"2":"08:44\n17:03","3":"09:28\n17:07","4":"08:58\n17:02","5":"08:48\n17:04","6":"09:00\n17:16","10":"08:44\n17:05","11":"08:55\n18:01","12":"09:02\n18:01","13":"08:52\n12:15","14":"08:58\n17:04","17":"08:49\n17:06","18":"08:52\n18:02","19":"09:00\n17:22","20":"08:54\n18:07","23":"08:59\n18:08","24":"08:44\n18:07","25":"08:58\n18:03","26":"08:43\n18:05","27":"08:55\n18:03","28":"08:51\n18:03","31":"08:45:00"},"workDays":21},{"code":"T014","name":"ศิริวรรณ ภูมิประยงศ์ นุ่น","days":{"2":"08:18\n17:24","3":"08:15\n17:11","4":"07:56\n17:03","5":"07:41\n16:13","6":"07:45\n17:03","7":"07:35\n17:02","9":"08:14\n18:01","10":"07:34\n17:06","12":"08:07\n17:26","13":"07:34\n17:34","14":"07:30\n17:35","16":"07:59\n17:38","17":"07:36\n17:03","18":"07:28\n17:45","19":"07:35\n18:02","20":"07:35\n18:04","21":"07:27\n18:04","23":"08:07\n18:02","24":"07:32\n18:03","25":"07:35\n18:02","26":"08:25\n18:02","27":"07:34\n18:03","28":"07:31\n18:03","30":"06:59\n17:55","31":"08:13:00"},"workDays":25},{"code":"T015","name":"ธนากานต์ แสงรัตน์ ปอนด์","days":{"2":"08:55\n18:09","3":"08:48\n18:28","4":"08:51\n18:14","5":"08:49\n18:16","6":"08:37\n18:06","7":"08:54\n18:05","9":"08:54\n18:08","10":"08:38\n18:05","11":"08:47\n18:03","12":"08:50\n18:07","13":"08:45\n18:09","14":"08:53\n18:03","16":"08:48\n18:03","17":"08:51\n18:03","18":"08:51\n18:07","19":"08:53\n18:12","20":"08:49\n18:03","21":"08:51\n18:11","23":"08:53\n18:04","24":"18:03:00","25":"08:45\n18:05","26":"08:51\n18:02","27":"08:48\n18:08","28":"08:45\n18:16","30":"08:46\n18:15","31":"08:50:00"},"workDays":26},{"code":"T017","name":"ณิชาภัทร เมธาสุวรรณ์ ดรีม","days":{"2":"08:51\n18:02","3":"08:44\n18:08","4":"08:48\n18:02","5":"08:49\n18:16","6":"08:49\n18:06","7":"08:50\n18:07","9":"08:50\n18:04\n18:10","10":"08:48\n18:01\n18:02","12":"08:47\n18:06","13":"08:52\n08:52\n17:24\n17:25","17":"08:56\n18:03","18":"08:53\n18:07","19":"09:00\n18:05","20":"08:49\n18:03","21":"08:52\n08:52\n18:11","23":"09:00:00","24":"08:57\n18:03","25":"08:58\n18:03","26":"08:55\n18:02","27":"08:52\n18:09","28":"08:51\n17:08","30":"08:53\n18:02\n18:15","31":"08:51\n08:51"},"workDays":23},{"code":"T018","name":"ขนิษฐ์ โตเกษม จิ๊บ","days":{"2":"08:40\n08:40\n08:40\n18:02\n18:02","3":"08:13\n08:13\n17:09\n17:09","4":"08:24\n08:24\n17:14\n17:14","5":"08:17\n08:18\n08:18\n17:04\n17:04","6":"08:30\n08:30\n08:30\n17:47\n17:47","7":"08:06\n08:06\n17:44\n17:44","9":"08:02\n08:02\n18:03\n18:03","10":"08:24\n08:24\n17:38","11":"08:23\n08:23\n18:03","12":"08:09\n08:09\n08:09\n08:49\n08:49\n18:01\n18:01","13":"08:32\n08:32\n18:06\n18:06","14":"08:35\n08:35\n18:03","16":"08:27\n08:27\n08:27\n18:03\n18:03","17":"08:33\n17:09\n17:09","18":"08:31\n08:31\n18:02","19":"08:27\n08:27\n18:17\n18:17","20":"08:20\n08:20\n18:30\n18:30","21":"08:21\n08:21\n18:28\n18:28","23":"08:22\n08:22\n18:09\n18:09","24":"08:18\n08:18\n08:18\n18:07\n18:07","25":"08:26\n08:26\n18:30\n18:31","26":"08:21\n08:22\n18:06\n18:06","27":"08:18\n08:18\n18:05\n18:05","28":"08:15\n08:15\n18:03\n18:03","30":"08:24\n08:24\n08:24\n18:01\n18:01\n18:01","31":"08:38\n08:38"},"workDays":26},{"code":"T019","name":"ปวีณา คำมีมา หมวย","days":{"2":"08:56\n17:17","3":"08:50\n17:14","4":"08:53\n18:02","5":"08:52\n17:02","7":"08:50\n17:02","9":"08:52\n17:46","10":"08:54\n17:10","11":"08:58\n17:07","12":"08:43\n18:00","13":"08:52\n17:04","16":"08:55\n18:01","17":"08:51\n18:02","18":"08:53\n18:01","19":"08:50\n18:01","20":"08:51\n17:28","21":"08:51\n18:00","23":"08:51\n17:46","24":"08:51\n18:00","25":"08:55\n18:00","26":"08:54\n17:22","28":"08:56\n17:19","30":"08:53\n17:12","31":"08:51:00"},"workDays":23},{"code":"T020","name":"วิไลวรรณ บัวอุไร ปู","days":{},"workDays":0},{"code":"T021","name":"ภัทธิรา กุจั่น อ๋อมแอ๋ม","days":{"2":"08:59\n17:13","3":"08:40\n17:03","4":"08:59\n18:08","5":"09:01\n17:01","6":"08:53\n14:07","9":"08:59\n17:47","10":"09:00\n17:11","11":"09:00\n18:02","12":"08:59\n18:00","13":"09:00\n17:07","14":"08:58\n18:03","16":"08:57\n18:01","18":"09:00\n18:02","19":"08:58\n18:03","20":"09:07\n18:01","21":"09:01\n18:00","23":"09:00\n18:03","24":"09:01\n18:03","26":"08:58\n18:02","27":"09:02\n18:02","28":"08:58\n17:05","30":"08:55\n18:01","31":"09:00:00"},"workDays":23},{"code":"T023","name":"อัจฉรา ดอนเล้าไพร ตาล","days":{"2":"08:49\n17:13","3":"08:47\n17:03","4":"08:47\n18:02","5":"08:50\n17:01","6":"08:34\n17:02","7":"08:33\n17:07","10":"08:27\n17:10","11":"08:29\n18:00","12":"08:32\n18:00","13":"08:35\n17:05","14":"08:48:00","16":"08:48\n18:03","17":"08:46\n18:02","18":"08:46\n18:01","20":"08:45\n08:45\n18:01","21":"08:48\n18:00","23":"08:57\n18:03","24":"08:39\n18:00","25":"08:36\n08:37\n18:00","26":"08:23\n18:01","27":"08:32\n08:32\n18:01\n18:01","28":"08:48\n18:00\n18:00","30":"08:43\n18:01\n18:01","31":"08:52:00"},"workDays":24},{"code":"T024","name":"ณัฐณิชา มุกดา ป็อบ","days":{"2":"08:37\n18:02","3":"08:29\n08:29\n17:09","4":"08:40\n17:10","5":"08:18\n17:02\n17:02","6":"08:39\n17:04","7":"08:49\n17:15","9":"08:42\n08:42\n18:03\n18:03","10":"08:44\n17:25","11":"08:39\n08:39\n18:03\n18:03","12":"08:48\n08:48\n18:01","13":"08:38\n17:26\n17:26","14":"08:45\n08:45\n18:03\n18:03","16":"08:27\n08:27\n18:02\n18:02","17":"08:32\n08:32\n17:04\n17:04","18":"08:46\n08:46\n17:28\n17:28","19":"08:46\n08:46\n18:02\n18:02","20":"08:45\n08:45\n18:08\n18:08","23":"08:32\n08:32\n18:02\n18:02","24":"08:33\n08:33\n17:34\n17:34","25":"08:49\n08:49\n18:01\n18:01","26":"08:51\n08:51\n18:02\n18:02","27":"08:53\n08:53\n18:02\n18:02","28":"08:52\n17:20","30":"08:42\n17:57\n17:57","31":"08:37:00"},"workDays":25},{"code":"T025","name":"วิชญาดา แสงสว่าง ส้ม","days":{"2":"08:47\n08:47\n18:01","3":"08:35\n17:08","4":"08:48\n17:14","5":"08:45\n17:02","6":"08:45\n17:08","7":"08:52\n17:01","9":"08:44\n18:00","10":"08:40\n17:04","11":"08:44\n18:01","12":"08:50\n17:06","13":"08:55\n18:02","14":"08:49\n17:14","16":"08:47\n18:02","17":"08:44\n17:05","18":"08:46\n17:42","19":"08:49\n18:01","20":"08:41\n18:01","21":"08:48\n18:28","23":"08:51\n18:01","24":"08:34\n17:04","25":"08:41\n18:02","26":"08:44\n18:05","27":"08:40\n18:04","28":"08:41\n17:09","30":"08:51\n17:58","31":"08:33:00"},"workDays":26},{"code":"T027","name":"ธนพร ใจสุกใส ขวัญ","days":{"2":"08:53\n18:09","3":"08:59\n18:08","4":"08:58\n18:02","5":"08:53\n18:16","6":"09:04\n18:13","7":"08:55\n18:05","9":"08:38\n18:09","10":"08:54\n18:06","11":"18:03:00","12":"08:43\n18:03","13":"08:53\n18:09","14":"08:51\n18:21","16":"08:58\n14:02","17":"08:57\n18:06","18":"08:58\n18:07","19":"08:55\n18:12","20":"08:59\n18:03","21":"08:52\n18:10","23":"09:02\n18:03","24":"08:59\n18:03","25":"09:02\n18:05","27":"09:00\n18:09","28":"09:00\n18:15","30":"08:58\n18:15","31":"08:59:00"},"workDays":25},{"code":"T028","name":"ธิดาธร อำนวยศักดิ์โสภณ อีฟ","days":{"2":"08:49\n17:01","4":"08:44\n17:03","5":"08:46\n17:01","6":"08:50\n17:02","7":"08:49\n14:00","9":"08:46\n18:00","10":"08:48\n18:00","12":"08:46\n17:16","13":"08:50\n18:00","14":"08:50\n18:00","16":"08:48\n17:01","18":"08:39\n17:03","19":"08:50\n17:01","20":"08:52\n17:00","21":"08:50\n18:00","23":"08:50\n17:09","24":"08:52\n17:01","25":"08:51\n18:00","30":"08:52\n17:03\n17:03","31":"08:49:00"},"workDays":20},{"code":"T029","name":"เจนจิรา เทศสิงห์ เจน","days":{"2":"08:52\n17:01","3":"08:52\n14:03","4":"08:57\n17:04","5":"08:49\n17:01","6":"08:55\n17:02","9":"08:48\n17:01","10":"08:43\n17:05","11":"08:43\n17:02","12":"08:52\n17:05","13":"08:54\n17:02","16":"08:53\n17:01","18":"08:45\n17:03","20":"08:58\n17:00","21":"08:55\n17:01","23":"09:03\n17:03","24":"08:53\n18:01","25":"09:00\n18:00","26":"08:58\n18:01","27":"08:58\n18:10","28":"08:48\n17:00","30":"08:57\n17:02","31":"08:55\n08:55"},"workDays":22},{"code":"T030","name":"ฉันท์สินี ยมมา จอย","days":{},"workDays":0},{"code":"T034","name":"สุจิณณา ปัจฉิม นุ่น","days":{"2":"08:45\n17:06","3":"08:44\n17:17","4":"08:44\n18:01","5":"08:47\n17:01","6":"08:32\n17:01","7":"08:53\n17:05","10":"08:59\n18:01","11":"08:48\n18:00","13":"08:58\n17:01","14":"08:51\n18:03","16":"08:57\n18:02","17":"08:50\n18:02","19":"08:57\n18:01","20":"08:45\n17:01","21":"08:45\n18:07","23":"08:56\n17:00","24":"08:55\n17:01","25":"08:44\n17:08","26":"08:50\n18:01","27":"08:50:00","30":"08:50\n18:02","31":"12:04:00"},"workDays":22},{"code":"T036","name":"พรนัชชา ขุนชอนรักษ์ เนม","days":{"2":"08:53\n18:01","3":"08:43\n17:02","4":"08:55\n17:15","5":"08:46\n17:02","6":"08:57\n17:09","7":"08:55\n17:08","9":"08:50\n18:02","10":"08:52\n17:04","11":"09:27\n18:01","12":"08:47\n18:02","13":"08:36\n18:02","14":"08:52\n08:54\n18:02","17":"08:36\n17:02","18":"08:51\n17:44","19":"08:45\n18:01","20":"08:50\n17:07","21":"08:44\n17:01","24":"08:49\n18:06","25":"08:44\n18:02","26":"08:52\n18:03","27":"08:53\n18:01","28":"08:57:00","30":"08:53\n17:58","31":"08:41:00"},"workDays":24},{"code":"T040","name":"น้ำเงิน ศรีคง ลูกน้ำ","days":{},"workDays":0},{"code":"T041","name":"ณัฐพล สุมคุ้ม อั้ม","days":{"2":"14:01:00"},"workDays":1},{"code":"T043","name":"กฤษณกร นพวรรณ ออย","days":{"2":"08:55\n18:09","3":"08:49\n18:29\n18:29","4":"08:50\n18:14","5":"08:49\n18:16","6":"08:37\n08:38\n18:13","7":"08:55\n08:55\n18:07","9":"08:54\n08:54\n18:09","10":"08:39\n18:02\n18:06","11":"08:48\n18:03","12":"08:51\n08:51\n18:07\n18:07","13":"08:46\n08:46\n18:09\n18:09","14":"08:54\n18:22","16":"08:48\n08:48\n18:03","17":"08:51\n08:51\n18:06","18":"08:52\n08:58\n18:08\n18:08","19":"08:53\n18:12","20":"08:50\n18:03","21":"08:52\n18:11\n18:11","23":"08:54\n18:04","24":"08:51\n18:03","25":"08:45\n18:05","26":"08:51\n08:51\n18:02","27":"08:48\n18:09","28":"08:45\n18:15\n18:16","30":"08:46\n08:46\n18:15\n18:15","31":"08:51:00"},"workDays":26},{"code":"T046","name":"อังสุมาลี ภุภาพันธ์ น้ำ","days":{"20":"18:01:00","21":"08:24\n18:03","23":"18:02:00"},"workDays":3},{"code":"T047","name":"นภัสสร ภู่หอม เทียร์","days":{"21":"15:36\n18:04","23":"08:11\n18:07","24":"08:12\n18:03","25":"08:54\n18:06","26":"08:13\n18:02","27":"08:12\n18:03","28":"08:10\n17:21","30":"08:11\n18:00","31":"08:10:00"},"workDays":9},{"code":"T048","name":"นิราวรรณ บูรณะพันธ์ น้ำตาล","days":{"21":"08:49\n18:03","23":"08:46\n18:07","24":"08:53\n18:03","25":"09:01\n18:06","26":"08:50\n18:01","27":"08:52\n18:03","28":"08:55\n18:01","30":"08:50\n18:00","31":"08:57:00"},"workDays":9},{"code":"T049","name":"ชิดชบา จันรุณ แป้ง","days":{},"workDays":0},{"code":"T050","name":"สาวิตรี สายใจ แตงโม","days":{"23":"09:06\n18:01\n18:01","24":"09:00\n09:00\n18:01\n18:01","25":"08:44\n08:44\n18:01\n18:01","26":"08:56\n08:56\n18:00\n18:01","27":"08:56\n08:56\n18:00\n18:00","28":"08:37\n08:37\n18:00\n18:00","30":"08:56\n08:56\n18:00\n18:00"},"workDays":7},{"code":"T051","name":"อังคณา วณารมณ์ อัง","days":{"21":"08:28\n08:28\n08:28\n17:01\n17:01","23":"08:30\n08:30\n08:30\n18:01\n18:01\n18:01","24":"08:30\n08:30\n08:30\n18:00\n18:00\n18:01","25":"08:29\n08:29\n08:29\n18:01\n18:01","26":"08:28\n08:28\n08:28\n18:02\n18:02","27":"08:32\n08:32\n08:32\n18:01\n18:01\n18:01","28":"08:28\n08:28\n08:28\n18:00\n18:00"},"workDays":7},{"code":"T052","name":"ยุพารัตน์ สังสีแก้ว นิว","days":{"23":"08:40\n17:03","24":"08:40\n17:01","25":"08:32\n17:08","28":"08:32:00","30":"08:42\n17:12","31":"08:38:00"},"workDays":6},{"code":"T053","name":"ธนภรณ์ วนิชศิริ ฟิล์ม","days":{"25":"08:58\n18:00","26":"08:51\n18:01","27":"08:52\n18:07","28":"08:54\n18:00","30":"08:55\n18:00","31":"08:52:00"},"workDays":6},{"code":"T054","name":"พิมพ์นภา ต่ายเมือง พิมพ์","days":{"25":"08:49\n18:00","26":"08:34\n18:01","28":"08:37\n17:01","31":"08:42:00"},"workDays":4},{"code":"T055","name":"ณัฐธิดา เอี่ยมตาล ปลา","days":{"24":"17:02:00","25":"08:47\n17:01","27":"08:52\n17:02","28":"08:55\n17:02","31":"08:47:00"},"workDays":5},{"code":"T056","name":"กนกวรรณ เนียมจันทร์ ครีม","days":{"24":"18:04:00","25":"08:45\n18:02","26":"08:29\n18:03","27":"08:49\n18:13","28":"08:53\n18:03","30":"08:55\n18:00","31":"08:52:00"},"workDays":7},{"code":"T057","name":"ปวิชญา สาระทวย ญา","days":{"24":"18:03:00","25":"08:10\n17:02","26":"08:21\n18:01\n18:01","27":"08:22\n08:22\n18:01\n18:01","28":"08:18\n08:19\n17:03\n17:03","30":"08:18\n08:18\n08:18\n17:02\n17:02","31":"08:19\n08:19"},"workDays":7},{"code":"T058","name":"ปาลิตา หอมสะอาด ใบเตย","days":{"24":"18:02:00","26":"08:57\n18:02","27":"08:57\n17:36","28":"08:56\n17:04","30":"08:59\n17:05","31":"08:57:00"},"workDays":6},{"code":"T059","name":"ศุภกานต์ วิบูรณ์ ทราย","days":{"24":"18:02:00","25":"08:47:00","26":"08:57\n18:02","27":"08:57\n17:35","28":"08:56\n17:04","31":"08:57:00"},"workDays":6},{"code":"T060","name":"ณัฐกิจ สุขอ่วม หิน","days":{"24":"18:03:00","25":"09:01\n18:06","26":"08:50\n18:02","27":"08:52\n18:01","28":"08:55\n18:01","30":"08:50\n18:00","31":"08:57:00"},"workDays":7},{"code":"T061","name":"ชิดชบา จันรุณ แป้ง","days":{"24":"17:04:00","25":"08:56\n18:02","26":"08:55\n18:02","30":"08:50\n18:02","31":"08:51:00"},"workDays":5}]};
+
+var SUNDAYS = [1,8,15,22,29], WORK_DAYS = 26, D_RATE = 352, P_RATE = 400;
+var POS_ORDER = ["กรรมการ","พนักงานประจำ","แอดมิน","Telesales รายเดือน","Telesales รายวัน","พนักงานแพ็คสินค้ารายวัน"];
+var POS_CLR = {"กรรมการ":"#c43e2a","พนักงานประจำ":"#2d5080","แอดมิน":"#7c3aed","Telesales รายเดือน":"#0284c7","Telesales รายวัน":"#0891b2","พนักงานแพ็คสินค้ารายวัน":"#059669"};
+var curFilter = "ทั้งหมด", sortBy = "name", sortDir = "asc";
+
+function fmt(n) { return n === 0 ? "-" : n.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function parseDay(s) {
+  if (!s) return null;
+  var times = [];
+  s.split("\n").forEach(function(p) {
+    var m = p.trim().match(/(\d{2}):(\d{2})/);
+    if (m) times.push({h:+m[1],m:+m[2],raw:p.trim()});
+  });
+  if (!times.length) return null;
+  times.sort(function(a,b){return a.h*60+a.m-(b.h*60+b.m)});
+  return {checkIn:times[0],checkOut:times.length>1?times[times.length-1]:null,all:times};
+}
+
+function classifyDay(d,s) {
+  if (SUNDAYS.indexOf(d)>=0) return "sunday";
+  var p = parseDay(s);
+  if (!p) return "absent";
+  if (d===31 && !p.checkOut) return "full";
+  if (!p.checkOut) return "half";
+  if (p.checkOut.h < 14) return "half";
+  if (p.checkIn.h >= 12) return "half";
+  var hrs = (p.checkOut.h*60+p.checkOut.m - p.checkIn.h*60-p.checkIn.m)/60;
+  if (hrs < 4) return "half";
+  return "full";
+}
+
+function analyzeAtt(att) {
+  if (!att) return {fullDays:0,halfDays:0,absentDays:WORK_DAYS,details:{}};
+  var f=0,h=0,a=0,det={};
+  for (var d=1;d<=31;d++) {
+    var cls = classifyDay(d, att.days[String(d)]||null);
+    det[d] = {cls:cls, parsed:parseDay(att.days[String(d)]||null)};
+    if (cls==="full") f++; else if (cls==="half") h++; else if (cls==="absent") a++;
+  }
+  return {fullDays:f,halfDays:h,absentDays:a,details:det};
+}
+
+function calcPayroll(emp, attA) {
+  if (emp.position==="กรรมการ") return {dailyRate:0,halfDayDed:0,absentDed:0,attendanceDed:0,adjSalary:emp.salary,totalIncome:emp.totalIncome,tax3:0,ss5:0,totalDed:0,net:emp.net,isDaily:false,method:"กรรมการ - ไม่หักเวลา"};
+  var daily = emp.position.indexOf("รายวัน")>=0;
+  if (daily) {
+    var ed = attA.fullDays + attA.halfDays*0.5;
+    var adj = ed * D_RATE;
+    var ti = adj + emp.diligence;
+    var t3 = emp.tax3>0 ? Math.round(ti*0.03*100)/100 : 0;
+    var s5 = emp.ss5>0 ? Math.min(Math.round(ti*0.05*100)/100,750) : 0;
+    var td = t3+s5+emp.loan+emp.advance;
+    return {dailyRate:D_RATE,halfDayDed:attA.halfDays*(D_RATE/2),absentDed:attA.absentDays*D_RATE,attendanceDed:Math.max(0,emp.salary-adj),adjSalary:adj,totalIncome:ti,tax3:t3,ss5:s5,totalDed:td,net:Math.max(0,ti-td),isDaily:true,effectiveDays:ed,method:"รายวัน "+D_RATE+" บ./วัน × "+ed+" วัน"};
+  } else {
+    var hdd = attA.halfDays*(P_RATE/2), abd = attA.absentDays*P_RATE, atd = hdd+abd;
+    var adj2 = Math.max(0,emp.salary-atd);
+    var ti2 = adj2+emp.diligence;
+    var t32 = emp.tax3>0 ? Math.round(ti2*0.03*100)/100 : 0;
+    var s52 = emp.ss5>0 ? Math.min(Math.round(ti2*0.05*100)/100,750) : 0;
+    var td2 = t32+s52+emp.loan+emp.advance;
+    return {dailyRate:P_RATE,halfDayDed:hdd,absentDed:abd,attendanceDed:atd,adjSalary:adj2,totalIncome:ti2,tax3:t32,ss5:s52,totalDed:td2,net:Math.max(0,ti2-td2),isDaily:false,method:"ประจำ หัก "+P_RATE+" บ./วัน"};
+  }
+}
+
+function matchAtt(emp, attendance) {
+  var en = emp.name.replace(/\s*-\s*/g," ").replace(/\s+/g," ").trim();
+  var parts = en.split(" ").filter(function(p){return p.length>1});
+  for (var i=0;i<attendance.length;i++) {
+    var an = attendance[i].name.replace(/\s+/g," ").trim(), mc=0;
+    for (var j=0;j<parts.length;j++) if (an.indexOf(parts[j])>=0) mc++;
+    if (mc>=2||(parts.length===1&&mc>=1)) return attendance[i];
+  }
+  if (emp.nickname) for (var k=0;k<attendance.length;k++) if (attendance[k].name.indexOf(emp.nickname)>=0) return attendance[k];
+  return null;
+}
+
+function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+
+// Build enriched data
+var EMPS = RAW.employees.map(function(emp) {
+  var att = matchAtt(emp, RAW.attendance);
+  var attA = analyzeAtt(att);
+  var payroll = calcPayroll(emp, attA);
+  return Object.assign({}, emp, {att:att, attA:attA, payroll:payroll});
+});
+
+function renderStats() {
+  var active = EMPS.filter(function(e){return e.salary>0});
+  var items = [
+    {l:"พนักงาน",v:active.length+" คน",c:"var(--pri)",ic:"👥"},
+    {l:"สุทธิเดิม",v:fmt(active.reduce(function(s,e){return s+e.net},0)),c:"var(--muted)",ic:"📋"},
+    {l:"หักจากเวลา",v:fmt(active.reduce(function(s,e){return s+e.payroll.attendanceDed},0)),c:"var(--err)",ic:"⏱"},
+    {l:"สุทธิใหม่",v:fmt(active.reduce(function(s,e){return s+e.payroll.net},0)),c:"var(--ok)",ic:"✅"},
+    {l:"ครึ่งวัน",v:active.reduce(function(s,e){return s+e.attA.halfDays},0)+" ครั้ง",c:"#d97706",ic:"½"},
+    {l:"ขาดงาน",v:active.reduce(function(s,e){return s+e.attA.absentDays},0)+" ครั้ง",c:"var(--err)",ic:"✗"},
+  ];
+  var h = "";
+  items.forEach(function(s){
+    h += '<div class="st"><div class="ic">'+s.ic+'</div><div class="l">'+s.l+'</div><div class="v" style="color:'+s.c+'">'+s.v+'</div></div>';
+  });
+  document.getElementById("stats-bar").innerHTML = h;
+}
+
+function renderFilters() {
+  var h = "";
+  ["ทั้งหมด"].concat(POS_ORDER).forEach(function(pos){
+    h += '<button class="fbtn'+(curFilter===pos?' on':'')+'" onclick="setFilter(\''+pos.replace(/'/g,"\\'")+'\')">'+pos+'</button>';
+  });
+  document.getElementById("filterBtns").innerHTML = h;
+}
+
+function setFilter(f) { curFilter=f; renderFilters(); render(); }
+function setSort(col) {
+  if (sortBy===col) sortDir = sortDir==="asc"?"desc":"asc";
+  else { sortBy=col; sortDir="asc"; }
+  render();
+}
+
+function render() {
+  var q = document.getElementById("searchInput").value.toLowerCase();
+  var showC = document.getElementById("showComp").checked;
+  var list = EMPS.filter(function(e){
+    if (curFilter!=="ทั้งหมด" && e.position!==curFilter) return false;
+    if (q && e.name.toLowerCase().indexOf(q)<0 && (!e.nickname||e.nickname.toLowerCase().indexOf(q)<0)) return false;
+    return true;
+  });
+  list.sort(function(a,b){
+    var va,vb;
+    switch(sortBy){
+      case "salary":va=a.salary;vb=b.salary;break;
+      case "net":va=a.payroll.net;vb=b.payroll.net;break;
+      case "halfDays":va=a.attA.halfDays;vb=b.attA.halfDays;break;
+      case "absentDays":va=a.attA.absentDays;vb=b.attA.absentDays;break;
+      case "attendanceDed":va=a.payroll.attendanceDed;vb=b.payroll.attendanceDed;break;
+      default:va=a.name;vb=b.name;
+    }
+    if (typeof va==="string") return sortDir==="asc"?va.localeCompare(vb):vb.localeCompare(va);
+    return sortDir==="asc"?va-vb:vb-va;
+  });
+
+  var si = function(col){return sortBy===col?(sortDir==="asc"?" ↑":" ↓"):" ↕";};
+  var h = '<div class="tw"><table><thead><tr>';
+  var cols = [
+    {k:"name",l:"ชื่อ-นามสกุล",a:"left"},{k:"pos",l:"ตำแหน่ง",a:"left"},
+    {k:"salary",l:"เงินเดือนเดิม",a:"right"},{k:"halfDays",l:"½วัน",a:"center"},
+    {k:"absentDays",l:"ขาด",a:"center"},{k:"attendanceDed",l:"หักเวลา",a:"right"},
+    {k:"net",l:showC?"เดิม → ใหม่":"สุทธิใหม่",a:"right"}
+  ];
+  cols.forEach(function(c){
+    h += '<th style="text-align:'+c.a+'" onclick="setSort(\''+c.k+'\')">'+c.l+'<span style="opacity:.4">'+si(c.k)+'</span></th>';
+  });
+  h += '</tr></thead><tbody>';
+
+  list.forEach(function(emp,i){
+    var pc = POS_CLR[emp.position]||"#666";
+    var hc = emp.payroll.attendanceDed > 0;
+    h += '<tr onclick="showDetail('+i+')">';
+    h += '<td><div class="nm">'+esc(emp.name)+'</div>'+(emp.nickname?'<div class="nk">('+esc(emp.nickname)+')</div>':'')+'</td>';
+    h += '<td><span class="bg" style="background:'+pc+'14;color:'+pc+';border:1px solid '+pc+'30">'+esc(emp.position)+'</span></td>';
+    h += '<td class="num">'+(emp.salary>0?fmt(emp.salary):"-")+'</td>';
+    h += '<td style="text-align:center" class="'+(emp.attA.halfDays>0?"half-c":"")+'">'+(emp.attA.halfDays||"-")+'</td>';
+    h += '<td style="text-align:center" class="'+(emp.attA.absentDays>0?"absent-c":"")+'">'+(emp.attA.absentDays||"-")+'</td>';
+    h += '<td class="num '+(hc?"ded-c":"")+'">'+(hc?"-"+fmt(emp.payroll.attendanceDed):"-")+'</td>';
+    if (showC && hc) {
+      h += '<td class="num"><span class="strike">'+fmt(emp.net)+'</span><span class="changed">'+fmt(emp.payroll.net)+'</span></td>';
+    } else {
+      h += '<td class="num" style="font-weight:700;'+(hc?"color:#d97706":"")+'">'+fmt(emp.payroll.net)+'</td>';
+    }
+    h += '</tr>';
+  });
+
+  h += '</tbody><tfoot><tr>';
+  h += '<td colspan="3" style="color:var(--pri)">รวม '+list.length+' คน</td>';
+  h += '<td style="text-align:center;color:#d97706">'+list.reduce(function(s,e){return s+e.attA.halfDays},0)+'</td>';
+  h += '<td style="text-align:center;color:var(--err)">'+list.reduce(function(s,e){return s+e.attA.absentDays},0)+'</td>';
+  h += '<td class="num" style="color:var(--err)">-'+fmt(list.reduce(function(s,e){return s+e.payroll.attendanceDed},0))+'</td>';
+  h += '<td class="num" style="color:var(--ok)">'+fmt(list.reduce(function(s,e){return s+e.payroll.net},0))+'</td>';
+  h += '</tr></tfoot></table></div>';
+
+  document.getElementById("tableArea").innerHTML = h;
+  window._filteredList = list;
+}
+
+function showDetail(idx) {
+  var emp = window._filteredList[idx];
+  if (!emp) return;
+  var p = emp.payroll, a = emp.attA, att = emp.att;
+  var dayNames = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."];
+  var clsColor = {full:"var(--ok)",half:"#d97706",absent:"var(--err)",sunday:"#999"};
+  var clsLabel = {full:"เต็มวัน",half:"ครึ่งวัน",absent:"ขาด",sunday:"หยุด"};
+
+  var h = '<div class="modal-hdr"><div><h2>'+esc(emp.name)+'</h2>';
+  h += '<div class="sub">'+(emp.nickname?'('+esc(emp.nickname)+') • ':'')+esc(emp.position)+'</div>';
+  h += '<div class="method-tag">'+esc(p.method)+'</div></div>';
+  h += '<button class="close-btn" onclick="closeModal()">✕</button></div>';
+
+  // Summary cards
+  h += '<div class="sum-grid">';
+  [{l:"เต็มวัน",v:a.fullDays,c:"var(--ok)",u:"วัน"},{l:"ครึ่งวัน",v:a.halfDays,c:"#d97706",u:"วัน"},{l:"ขาดงาน",v:a.absentDays,c:"var(--err)",u:"วัน"},{l:p.isDaily?"วันทำงานรวม":"หักจากเวลา",v:p.isDaily?p.effectiveDays:fmt(p.attendanceDed),c:p.isDaily?"#0284c7":"var(--err)",u:p.isDaily?"วัน":"บาท"}].forEach(function(s){
+    h += '<div class="sum-card"><div class="sl">'+s.l+'</div><div class="sv" style="color:'+s.c+'">'+s.v+'</div><div class="su">'+s.u+'</div></div>';
+  });
+  h += '</div>';
+
+  // Payroll breakdown
+  h += '<div class="pay-grid"><div class="pay-box"><h4>💰 รายรับ</h4>';
+  if (p.isDaily) {
+    h += '<div class="pay-row"><span class="lbl">อัตราวันละ</span><span class="val">'+fmt(D_RATE)+' บ.</span></div>';
+    h += '<div class="pay-row"><span class="lbl">เต็มวัน × '+a.fullDays+'</span><span class="val pos">'+fmt(a.fullDays*D_RATE)+'</span></div>';
+    if (a.halfDays>0) h += '<div class="pay-row"><span class="lbl">ครึ่งวัน × '+a.halfDays+'</span><span class="val" style="color:#d97706">'+fmt(a.halfDays*D_RATE/2)+'</span></div>';
+  } else {
+    h += '<div class="pay-row"><span class="lbl">เงินเดือนเดิม</span><span class="val">'+fmt(emp.salary)+'</span></div>';
+    if (p.halfDayDed>0) h += '<div class="pay-row"><span class="lbl">หักครึ่งวัน ('+a.halfDays+'×'+P_RATE/2+')</span><span class="val neg">-'+fmt(p.halfDayDed)+'</span></div>';
+    if (p.absentDed>0) h += '<div class="pay-row"><span class="lbl">หักขาด ('+a.absentDays+'×'+P_RATE+')</span><span class="val neg">-'+fmt(p.absentDed)+'</span></div>';
+  }
+  h += '<div class="pay-row"><span class="lbl">เงินเดือนหลังหัก</span><span class="val" style="color:#d97706;font-weight:600">'+fmt(p.adjSalary)+'</span></div>';
+  if (emp.diligence>0) h += '<div class="pay-row"><span class="lbl">เบี้ยขยัน</span><span class="val pos">+'+fmt(emp.diligence)+'</span></div>';
+  h += '<div class="pay-row total"><span>รวมรายรับ</span><span class="pos">'+fmt(p.totalIncome)+'</span></div></div>';
+
+  h += '<div class="pay-box ded"><h4>📉 รายหัก</h4>';
+  if (p.tax3>0) h += '<div class="pay-row"><span class="lbl">ภาษี 3%</span><span class="val neg">'+fmt(p.tax3)+'</span></div>';
+  if (p.ss5>0) h += '<div class="pay-row"><span class="lbl">ประกันสังคม 5%</span><span class="val neg">'+fmt(p.ss5)+'</span></div>';
+  if (emp.loan>0) h += '<div class="pay-row"><span class="lbl">กยศ.</span><span class="val neg">'+fmt(emp.loan)+'</span></div>';
+  if (emp.advance>0) h += '<div class="pay-row"><span class="lbl">เบิกล่วงหน้า</span><span class="val neg">'+fmt(emp.advance)+'</span></div>';
+  h += '<div class="pay-row total"><span>รวมหัก</span><span class="neg">'+fmt(p.totalDed)+'</span></div></div></div>';
+
+  // Net
+  h += '<div class="net-box"><div class="nl">เงินเดือนสุทธิ</div><div class="nv">฿'+fmt(p.net)+'</div>';
+  if (emp.commission>0) h += '<div class="comm">+ คอมมิชชั่น ฿'+fmt(emp.commission)+'</div>';
+  if (p.attendanceDed>0) h += '<div class="diff">เดิม ฿'+fmt(emp.net)+' → หักเวลา ฿'+fmt(p.attendanceDed)+' → ใหม่ ฿'+fmt(p.net)+'</div>';
+  h += '</div>';
+
+  // Calendar
+  if (att) {
+    h += '<h3 style="color:var(--pri);margin-bottom:8px;font-size:15px">📅 ปฏิทินเข้างาน มี.ค. 2569</h3>';
+    h += '<div class="cal-legend">';
+    [{c:"var(--ok)",l:"เต็มวัน"},{c:"#d97706",l:"ครึ่งวัน"},{c:"var(--err)",l:"ขาด"},{c:"#ccc",l:"หยุด"}].forEach(function(x){
+      h += '<span><div class="dot" style="background:'+x.c+'"></div>'+x.l+'</span>';
+    });
+    h += '</div><div class="cal">';
+    dayNames.forEach(function(dn){h += '<div class="dh">'+dn+'</div>';});
+    var dow = new Date(2026,2,1).getDay();
+    for (var pad=0;pad<dow;pad++) h += '<div></div>';
+    for (var d=1;d<=31;d++) {
+      var info = a.details[d];
+      var cls = info?info.cls:"sunday";
+      var parsed = info?info.parsed:null;
+      var late = parsed&&parsed.checkIn&&(parsed.checkIn.h>9||(parsed.checkIn.h===9&&parsed.checkIn.m>5));
+      h += '<div class="day day-'+cls+'"><div class="dn">'+d+'</div>';
+      if (parsed&&parsed.checkIn) h += '<div class="tin" style="color:'+(late?"#d97706":"var(--ok)")+'">'+String(parsed.checkIn.h).padStart(2,"0")+':'+String(parsed.checkIn.m).padStart(2,"0")+'</div>';
+      if (parsed&&parsed.checkOut) h += '<div class="tout">'+String(parsed.checkOut.h).padStart(2,"0")+':'+String(parsed.checkOut.m).padStart(2,"0")+'</div>';
+      if (cls==="half") h += '<div class="tag" style="color:#d97706">½</div>';
+      else if (cls==="absent") h += '<div class="tag" style="color:var(--err)">✗</div>';
+      else if (cls==="sunday") h += '<div class="tag" style="color:#bbb">−</div>';
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+
+  document.getElementById("modalContent").innerHTML = h;
+  document.getElementById("modalBg").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+function closeModal() {
+  document.getElementById("modalBg").style.display = "none";
+  document.body.style.overflow = "";
+}
+
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeModal()});
+
+// Init
+renderStats();
+renderFilters();
+render();
+</script>
+</body>
+</html>

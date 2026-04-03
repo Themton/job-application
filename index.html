@@ -304,6 +304,7 @@
 var SB="https://fnkohtdpwdwedjrtklre.supabase.co";
 var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZua29odGRwd2R3ZWRqcnRrbHJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTA3MjIsImV4cCI6MjA4ODkyNjcyMn0.AuotNxQWgKiSYpS7kLBMm3jOCFhJWsXy31yaqG6dwic";
 var DA="https://script.google.com/macros/s/AKfycbzVjRs-R4Fs_hBPK3sQhFvSsYTHZ-1pV-t5kjBac86AbDBMGzYi96HPzL-QOqigEWCw/exec";
+var EM="https://script.google.com/macros/s/AKfycbz6nnagsn--jFkJM68tuE5O_Mp0AJoWKTMcc-8wamUmK3vHmko5kCox6yL4Zm7MTQW-/exec";
 var MODE=location.search.indexOf('admin')>-1?'admin':'public';
 
 /* ═══ Supabase ═══ */
@@ -1053,7 +1054,7 @@ function slipSendOne(i){
   var subject='สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด';
   var htmlBody=slipBuildBody(e);
 
-  fetch(DA,{
+  fetch(EM,{
     method:'POST',
     headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify({action:'send_email',to:email,subject:subject,htmlBody:htmlBody})
@@ -1088,7 +1089,7 @@ function slipSendAll(){
     var email=SLIP_EMAILS[ii],e=SLIP_EMPS[ii];
     SLIP_STATUS[ii]={s:'sending',m:'กำลังส่ง...'};slipRender();
 
-    fetch(DA,{
+    fetch(EM,{
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({action:'send_email',to:email,subject:'สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด',htmlBody:slipBuildBody(e)})

@@ -913,7 +913,7 @@ function slipRender(){
     if(st&&st.s==='ok'){h+='<span style="color:var(--ok);font-size:12px;font-weight:600">✅ ส่งแล้ว</span>';}
     else if(st&&st.s==='sending'){h+='<span style="color:var(--acc);font-size:12px">⏳ กำลังส่ง...</span>';}
     else if(st&&st.s==='error'){h+='<span style="color:var(--err);font-size:11px">❌ '+esc(st.m)+'</span>';}
-    else{h+='<button class="btn btn-g btn-s" onclick="slipPreview('+i+')" style="font-size:11px" title="ดูตัวอย่าง">👁️</button> <button class="btn btn-g btn-s" onclick="slipCopyOne('+i+')" style="font-size:11px" title="คัดลอก">📋</button> <button class="btn btn-a btn-s" onclick="slipSendOne('+i+')" style="font-size:11px" title="เปิด Gmail">📧 ส่ง</button>';}
+    else{h+='<button class="btn btn-g btn-s" onclick="slipPreview('+i+')" style="font-size:11px">👁️</button> <button class="btn btn-a btn-s" onclick="slipSendOne('+i+')" style="font-size:11px">📧 ส่งอัตโนมัติ</button>';}
     h+='</td></tr>';
   });
   h+='</tbody></table></div>';
@@ -1044,79 +1044,62 @@ function slipBuildBody(e){
     +'</div></div>';
 }
 
-function slipBuildPlainBody(e){
-  var f=slipFmt;var lines=[];
-  lines.push('สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด');
-  lines.push('');
-  lines.push('เรียน คุณ'+e.name+(e.nickname?' ('+e.nickname+')':''));
-  lines.push('ตำแหน่ง: '+e.position);
-  lines.push('');
-  lines.push('━━━ รายรับ ━━━');
-  lines.push('เงินเดือน: '+f(e.salary)+' บาท');
-  if(e.diligence>0)lines.push('เบี้ยขยัน: '+f(e.diligence)+' บาท');
-  lines.push('รวมรายรับ: '+f(e.totalIncome)+' บาท');
-  lines.push('');
-  lines.push('━━━ รายหัก ━━━');
-  if(e.tax3>0)lines.push('ภาษีหัก ณ ที่จ่าย 3%: '+f(e.tax3)+' บาท');
-  if(e.ss5>0)lines.push('ประกันสังคม 5%: '+f(e.ss5)+' บาท');
-  if(e.loan>0)lines.push('หัก กยศ.: '+f(e.loan)+' บาท');
-  if(e.advance>0)lines.push('เบิกล่วงหน้า: '+f(e.advance)+' บาท');
-  if(e.totalDed===0)lines.push('ไม่มีรายการหัก');
-  lines.push('รวมรายหัก: '+f(e.totalDed)+' บาท');
-  lines.push('');
-  lines.push('══════════════════');
-  lines.push('เงินเดือนสุทธิ: '+f(e.net)+' บาท');
-  lines.push('══════════════════');
-  if(e.commission>0)lines.push('ค่าคอมมิชชั่น: '+f(e.commission)+' บาท');
-  lines.push('');
-  lines.push('หากมีข้อสงสัยกรุณาติดต่อฝ่ายบุคคล');
-  lines.push('บริษัท เดอะ เอ็มที จำกัด');
-  return lines.join('\n');
-}
-
 function slipSendOne(i){
   var email=SLIP_EMAILS[i];
   if(!email||email.indexOf('@')<0){toast('กรุณากรอกอีเมลให้ถูกต้อง','terr');return}
   var e=SLIP_EMPS[i];
+  SLIP_STATUS[i]={s:'sending',m:'กำลังส่ง...'};slipRender();
 
   var subject='สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด';
-  var body=slipBuildPlainBody(e);
+  var htmlBody=slipBuildBody(e);
 
-  // Open Gmail compose
-  var gmailUrl='https://mail.google.com/mail/?view=cm'
-    +'&to='+encodeURIComponent(email)
-    +'&su='+encodeURIComponent(subject)
-    +'&body='+encodeURIComponent(body);
-
-  window.open(gmailUrl,'_blank');
-  SLIP_STATUS[i]={s:'ok',m:'เปิด Gmail แล้ว'};
-  slipRender();
-  toast('เปิด Gmail compose สำหรับ '+e.name,'tok');
-}
-
-function slipCopyOne(i){
-  var e=SLIP_EMPS[i];
-  var text='ถึง: '+SLIP_EMAILS[i]+'\nหัวข้อ: สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด\n\n'+slipBuildPlainBody(e);
-  navigator.clipboard.writeText(text).then(function(){
-    toast('คัดลอกสลิปของ '+e.name+' แล้ว','tok');
-  }).catch(function(){
-    // Fallback
-    var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
-    toast('คัดลอกแล้ว','tok');
+  fetch(DA,{
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({action:'send_email',to:email,subject:subject,htmlBody:htmlBody})
+  }).then(function(r){return r.json()}).then(function(data){
+    if(data&&data.ok){
+      SLIP_STATUS[i]={s:'ok',m:'ส่งแล้ว ✅'};toast('ส่งให้ '+e.name+' แล้ว','tok');
+    }else{
+      SLIP_STATUS[i]={s:'error',m:data.error||'ส่งไม่สำเร็จ'};
+    }
+    slipRender();
+  }).catch(function(err){
+    SLIP_STATUS[i]={s:'error',m:'เชื่อมต่อไม่ได้ — ตรวจสอบ Apps Script'};slipRender();
   });
 }
 
 function slipSendAll(){
   var toSend=[];
   SLIP_EMPS.forEach(function(_,i){if(SLIP_EMAILS[i]&&SLIP_EMAILS[i].indexOf('@')>=0&&(!SLIP_STATUS[i]||SLIP_STATUS[i].s!=='ok'))toSend.push(i)});
-  if(!toSend.length){toast('ไม่มีรายการที่ต้องส่ง','terr');return}
-  if(!confirm('จะเปิด Gmail compose '+toSend.length+' หน้าต่าง\nกด Send ในแต่ละหน้าต่างเพื่อส่ง\n\nดำเนินการ?'))return;
+  if(!toSend.length){toast('ไม่มีรายการที่ต้องส่ง (กรอกอีเมลก่อน)','terr');return}
+  if(!confirm('ยืนยันส่งสลิปอัตโนมัติให้ '+toSend.length+' คน?'))return;
 
-  var idx=0;
+  $('slip-send-all').disabled=true;$('slip-send-all').textContent='⏳ กำลังส่ง...';
+  var idx=0,ok=0,fail=0;
   function next(){
-    if(idx>=toSend.length){toast('เปิด Gmail ครบ '+toSend.length+' คนแล้ว — กด Send ในแต่ละแท็บ','tok');return}
-    slipSendOne(toSend[idx]);
-    idx++;setTimeout(next,800);
+    if(idx>=toSend.length){
+      $('slip-send-all').disabled=false;$('slip-send-all').textContent='📨 ส่งทั้งหมด';
+      toast('ส่งครบแล้ว! สำเร็จ '+ok+' คน'+(fail?' ล้มเหลว '+fail+' คน':''),'tok');
+      return;
+    }
+    $('slip-send-all').textContent='⏳ ส่ง '+(idx+1)+'/'+toSend.length+'...';
+    var ii=toSend[idx];
+    var email=SLIP_EMAILS[ii],e=SLIP_EMPS[ii];
+    SLIP_STATUS[ii]={s:'sending',m:'กำลังส่ง...'};slipRender();
+
+    fetch(DA,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'send_email',to:email,subject:'สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด',htmlBody:slipBuildBody(e)})
+    }).then(function(r){return r.json()}).then(function(data){
+      if(data&&data.ok){SLIP_STATUS[ii]={s:'ok',m:'ส่งแล้ว ✅'};ok++}
+      else{SLIP_STATUS[ii]={s:'error',m:data.error||'ไม่สำเร็จ'};fail++}
+      slipRender();idx++;setTimeout(next,1500);
+    }).catch(function(){
+      SLIP_STATUS[ii]={s:'error',m:'เชื่อมต่อไม่ได้'};fail++;
+      slipRender();idx++;setTimeout(next,1500);
+    });
   }
   next();
 }

@@ -57,7 +57,7 @@
 .sp{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sn .6s linear infinite}@keyframes sn{to{transform:rotate(360deg)}}
 .ldp{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}.ldp .logo{width:56px;height:56px;border-radius:12px}
 .suc{text-align:center;padding:50px 20px}.suc .sico{font-size:56px;margin-bottom:14px}.suc h3{font-size:20px;font-weight:700;color:var(--pri);margin-bottom:6px}.suc p{font-size:14px;color:var(--txt2);margin-bottom:20px}
-.atabs{display:flex;gap:6px;margin-bottom:22px;border-bottom:2px solid var(--bdr2)}.atab{padding:10px 18px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.2s}.atab:hover{color:var(--txt)}.atab.on{color:#b8860b;border-bottom-color:#b8860b}
+.atabs{display:flex;gap:6px;margin-bottom:22px;border-bottom:2px solid var(--bdr2);overflow-x:auto;-webkit-overflow-scrolling:touch}.atab{padding:10px 18px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.2s;white-space:nowrap;flex-shrink:0}.atab:hover{color:var(--txt)}.atab.on{color:#b8860b;border-bottom-color:#b8860b}
 .doc-box{border:1px solid var(--bdr);border-radius:10px;overflow:hidden;margin-top:8px;background:var(--inp)}.doc-box img{width:100%;max-height:360px;object-fit:contain;display:block;cursor:pointer;background:#fff}
 .doc-label{font-size:11px;color:var(--muted);font-weight:600;padding:8px 12px;border-top:1px solid var(--bdr2);display:flex;justify-content:space-between}.doc-label a{font-size:11px}.doc-na{padding:20px;text-align:center;color:var(--muted);font-size:13px}
 .lbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;cursor:pointer}.lbox img{max-width:100%;max-height:90vh;object-fit:contain;border-radius:8px}.lbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:28px;font-weight:700;cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);border-radius:50%;border:none}
@@ -263,13 +263,13 @@
       <div id="slip-stats" style="margin-top:14px"></div>
       <div id="slip-table" style="margin-top:10px"></div>
     </div>
-
-    <!-- Slip Preview Modal -->
-    <div id="slip-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:1001;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)" onclick="$('slip-modal').style.display='none'">
-      <div id="slip-modal-in" style="background:var(--card);border-radius:16px;padding:24px;max-width:560px;width:100%;max-height:85vh;overflow:auto;box-shadow:var(--sh3);border:1px solid var(--bdr)" onclick="event.stopPropagation()"></div>
-    </div>
   </div>
   <div id="A-det" class="hide"></div>
+</div>
+
+<!-- Slip Preview Modal -->
+<div id="slip-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:1001;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)" onclick="$('slip-modal').style.display='none'">
+  <div id="slip-modal-in" style="background:var(--card);border-radius:16px;padding:24px;max-width:560px;width:100%;max-height:85vh;overflow:auto;box-shadow:var(--sh3);border:1px solid var(--bdr)" onclick="event.stopPropagation()"></div>
 </div>
 
 <div id="lbox" class="lbox hide" onclick="closeLB()"><button class="lbox-close" onclick="closeLB()">✕</button><img id="lbox-img" src=""></div>

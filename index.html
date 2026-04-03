@@ -1051,21 +1051,21 @@ function slipSendOne(i){
   SLIP_STATUS[i]={s:'sending',m:''};slipRender();
 
   var subject='สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด';
-  var body=slipBuildBody(e);
+  var htmlBody=slipBuildBody(e);
 
-  fetch('https://api.anthropic.com/v1/messages',{
+  fetch(DA,{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',
-      max_tokens:1024,
-      messages:[{role:'user',content:'ส่งอีเมลเป็น HTML ไปที่ '+email+' หัวข้อ: "'+subject+'" เนื้อหา HTML:\n\n'+body}],
-      mcp_servers:[{type:'url',url:'https://gmail.mcp.claude.com/mcp',name:'gmail'}]
-    })
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({action:'send_email',to:email,subject:subject,htmlBody:htmlBody})
   }).then(function(r){return r.json()}).then(function(data){
-    SLIP_STATUS[i]={s:'ok',m:'ส่งแล้ว'};slipRender();
+    if(data&&data.ok){
+      SLIP_STATUS[i]={s:'ok',m:'ส่งแล้ว ✅'};
+    }else{
+      SLIP_STATUS[i]={s:'error',m:data.error||'ส่งไม่สำเร็จ'};
+    }
+    slipRender();
   }).catch(function(err){
-    SLIP_STATUS[i]={s:'error',m:err.message||'ไม่สำเร็จ'};slipRender();
+    SLIP_STATUS[i]={s:'error',m:err.message||'เชื่อมต่อไม่ได้'};slipRender();
   });
 }
 

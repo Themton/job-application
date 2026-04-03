@@ -168,6 +168,7 @@
       <button class="atab" id="tab-usr" onclick="showTab('usr')">👤 ผู้ใช้</button>
       <button class="atab" id="tab-rpt" onclick="showTab('rpt')">📊 รายงาน</button>
       <button class="atab" id="tab-pay" onclick="showTab('pay')">💰 เงินเดือน</button>
+      <button class="atab" id="tab-slip" onclick="showTab('slip')">📧 ส่งสลิป</button>
     </div>
     <!-- TAB: Employees -->
     <div id="T-app"><div class="sts" id="A-sts"></div>
@@ -243,6 +244,30 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB: Payslip Email -->
+    <div id="T-slip" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span class="ttl" style="font-size:18px">📧 ส่งสลิปเงินเดือนทางอีเมล</span>
+        <button class="btn btn-a btn-s" id="slip-send-all" onclick="slipSendAll()" style="display:none">📨 ส่งทั้งหมด</button>
+      </div>
+
+      <div class="cd" id="slip-upload">
+        <div class="cd-t"><span class="dot"></span> อัปโหลดตารางเงินเดือน</div>
+        <div class="uz" id="uz-slip"><input type="file" accept=".xlsx,.xls,.csv" onchange="slipPickFile(this)">
+          <div id="uz-slip-e"><div class="ic">💰</div><div class="tx">ตารางเงินเดือน (.xlsx)</div><div class="hn">ระบบจะอ่านข้อมูลและสร้างสลิปให้แต่ละคน</div></div>
+          <div id="uz-slip-d" class="fok hide">✅ <span id="uz-slip-n"></span> <button class="rm" onclick="slipRmFile(event)">✕</button></div>
+        </div>
+      </div>
+
+      <div id="slip-stats" style="margin-top:14px"></div>
+      <div id="slip-table" style="margin-top:10px"></div>
+    </div>
+
+    <!-- Slip Preview Modal -->
+    <div id="slip-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:1001;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)" onclick="$('slip-modal').style.display='none'">
+      <div id="slip-modal-in" style="background:var(--card);border-radius:16px;padding:24px;max-width:560px;width:100%;max-height:85vh;overflow:auto;box-shadow:var(--sh3);border:1px solid var(--bdr)" onclick="event.stopPropagation()"></div>
+    </div>
   </div>
   <div id="A-det" class="hide"></div>
 </div>
@@ -276,7 +301,7 @@ function page(p){
 }
 
 function showTab(t){
-  ['app','pos','usr','rpt','pay'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
+  ['app','pos','usr','rpt','pay','slip'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();
 }
 
@@ -758,6 +783,177 @@ function payShowDetail(idx){
   // Show in modal (reuse lbox area)
   if(!$('pay-modal')){var d=document.createElement('div');d.id='pay-modal';d.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';d.onclick=function(ev){if(ev.target===d){d.style.display='none';document.body.style.overflow=''}};d.innerHTML='<div id="pay-modal-in" style="background:var(--card);border-radius:16px;padding:24px;max-width:920px;width:100%;max-height:90vh;overflow:auto;box-shadow:var(--sh3);border:1px solid var(--bdr)" onclick="event.stopPropagation()"></div>';document.body.appendChild(d)}
   $('pay-modal-in').innerHTML=h;$('pay-modal').style.display='flex';document.body.style.overflow='hidden';
+}
+
+/* ═══ PAYSLIP EMAIL ═══ */
+var SLIP_FILE=null,SLIP_EMPS=[],SLIP_EMAILS={},SLIP_STATUS={};
+
+function slipPickFile(inp){
+  var f=inp.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    SLIP_FILE={name:f.name,data:new Uint8Array(e.target.result)};
+    $('uz-slip').classList.add('ok');$('uz-slip-e').classList.add('hide');$('uz-slip-d').classList.remove('hide');$('uz-slip-n').textContent=f.name;
+    slipParse();
+  };r.readAsArrayBuffer(f);
+}
+function slipRmFile(e){e.stopPropagation();SLIP_FILE=null;SLIP_EMPS=[];$('uz-slip').classList.remove('ok');$('uz-slip').querySelector('input').value='';$('uz-slip-e').classList.remove('hide');$('uz-slip-d').classList.add('hide');$('slip-stats').innerHTML='';$('slip-table').innerHTML='';$('slip-send-all').style.display='none'}
+
+function slipParse(){
+  try{
+    var wb=XLSX.read(SLIP_FILE.data,{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]],rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    var hI=0;for(var i=0;i<Math.min(rows.length,5);i++){if(rows[i].join(' ').indexOf('เงินเดือน')>=0||rows[i].join(' ').indexOf('SAL')>=0){hI=i;break}}
+    SLIP_EMPS=[];SLIP_EMAILS={};SLIP_STATUS={};
+    for(var i=hI+1;i<rows.length;i++){var r=rows[i],nm=String(r[0]||'').trim();if(!nm||nm==='รวม')continue;var sal=parseFloat(r[6])||0;if(sal<=0&&!(parseFloat(r[15])>0))continue;
+      SLIP_EMPS.push({name:nm,nickname:String(r[2]||'').trim(),position:String(r[5]||'').trim(),salary:sal,diligence:parseFloat(r[7])||0,totalIncome:parseFloat(r[8])||0,tax3:parseFloat(r[10])||0,ss5:parseFloat(r[11])||0,loan:parseFloat(r[12])||0,advance:parseFloat(r[13])||0,totalDed:parseFloat(r[14])||0,net:parseFloat(r[15])||0,commission:parseFloat(r[16])||0});
+    }
+    $('slip-send-all').style.display='inline-flex';
+    slipRender();
+    toast('อ่านไฟล์สำเร็จ '+SLIP_EMPS.length+' คน','tok');
+  }catch(e){toast('อ่านไฟล์ไม่สำเร็จ: '+e.message,'terr')}
+}
+
+function slipFmt(n){if(n===0)return"-";return n.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2})}
+
+function slipRender(){
+  var sent=0,hasEmail=0;
+  SLIP_EMPS.forEach(function(_,i){if(SLIP_STATUS[i]&&SLIP_STATUS[i].s==='ok')sent++;if(SLIP_EMAILS[i])hasEmail++});
+
+  $('slip-stats').innerHTML=
+    '<div class="sts" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">'+
+    '<div class="st"><div class="ic">👥</div><div class="l">พนักงาน</div><div class="v">'+SLIP_EMPS.length+'</div><div class="u">คน</div></div>'+
+    '<div class="st"><div class="ic">✉️</div><div class="l">กรอกอีเมล</div><div class="v" style="color:#0077b6">'+hasEmail+'</div><div class="u">คน</div></div>'+
+    '<div class="st"><div class="ic">✅</div><div class="l">ส่งแล้ว</div><div class="v" style="color:var(--ok)">'+sent+'</div><div class="u">คน</div></div>'+
+    '<div class="st"><div class="ic">⏳</div><div class="l">รอส่ง</div><div class="v" style="color:var(--err)">'+(hasEmail-sent)+'</div><div class="u">คน</div></div>'+
+    '</div>';
+
+  var h='<div class="tw"><table><thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th><th style="text-align:right">สุทธิ</th><th style="min-width:200px">อีเมล</th><th style="text-align:center;min-width:120px">จัดการ</th></tr></thead><tbody>';
+  SLIP_EMPS.forEach(function(e,i){
+    var st=SLIP_STATUS[i];
+    h+='<tr>';
+    h+='<td><div class="nm">'+esc(e.name)+'</div>'+(e.nickname?'<div class="em">('+esc(e.nickname)+')</div>':'')+'</td>';
+    h+='<td style="font-size:11px;color:var(--txt2)">'+esc(e.position)+'</td>';
+    h+='<td style="text-align:right;font-weight:700;color:var(--pri);font-variant-numeric:tabular-nums">'+slipFmt(e.net)+'</td>';
+    h+='<td><input id="slip-email-'+i+'" value="'+esc(SLIP_EMAILS[i]||'')+'" onchange="SLIP_EMAILS['+i+']=this.value;slipRender()" placeholder="email@example.com" style="width:100%;padding:6px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:12px;font-family:inherit;background:'+(st&&st.s==='ok'?'rgba(106,140,42,.06)':'var(--inp)')+';outline:none"></td>';
+    h+='<td style="text-align:center;white-space:nowrap">';
+    if(st&&st.s==='ok'){h+='<span style="color:var(--ok);font-size:12px;font-weight:600">✅ ส่งแล้ว</span>';}
+    else if(st&&st.s==='sending'){h+='<span style="color:var(--acc);font-size:12px">⏳ กำลังส่ง...</span>';}
+    else if(st&&st.s==='error'){h+='<span style="color:var(--err);font-size:11px">❌ '+esc(st.m)+'</span>';}
+    else{h+='<button class="btn btn-g btn-s" onclick="slipPreview('+i+')" style="font-size:11px">👁️</button> <button class="btn btn-a btn-s" onclick="slipSendOne('+i+')" style="font-size:11px">📧 ส่ง</button>';}
+    h+='</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  $('slip-table').innerHTML=h;
+}
+
+function slipPreview(i){
+  var e=SLIP_EMPS[i];
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="margin:0;font-size:16px;color:var(--pri)">ตัวอย่างสลิป</h3><button onclick="$(\'slip-modal\').style.display=\'none\'" style="background:var(--inp);border:1px solid var(--bdr);border-radius:8px;padding:4px 12px;cursor:pointer;font-size:14px;color:var(--muted)">✕</button></div>';
+
+  h+='<div style="background:linear-gradient(135deg,#fdf9f0,#f0e8d4);border:2px solid var(--acc);border-radius:12px;padding:20px">';
+  h+='<div style="text-align:center;margin-bottom:14px"><div style="font-size:16px;font-weight:700;color:var(--pri)">บริษัท เดอะ เอ็มที จำกัด</div><div style="font-size:13px;color:var(--acc);font-weight:600">สลิปเงินเดือน</div></div>';
+
+  h+='<div style="background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid var(--bdr)">';
+  h+='<div style="font-size:14px;font-weight:700;color:var(--pri)">'+esc(e.name)+(e.nickname?' ('+esc(e.nickname)+')':'')+'</div>';
+  h+='<div style="font-size:12px;color:var(--txt2)">ตำแหน่ง: '+esc(e.position)+'</div></div>';
+
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+  // Income
+  h+='<div style="background:#fff;border-radius:10px;padding:12px;border:1px solid var(--bdr)">';
+  h+='<div style="font-size:11px;font-weight:600;color:var(--ok);margin-bottom:6px">💰 รายรับ</div>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:var(--txt2)">เงินเดือน</span><span>'+slipFmt(e.salary)+'</span></div>';
+  if(e.diligence>0)h+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:var(--txt2)">เบี้ยขยัน</span><span>'+slipFmt(e.diligence)+'</span></div>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-top:1px solid var(--bdr2);margin-top:4px;font-weight:700"><span>รวม</span><span style="color:var(--ok)">'+slipFmt(e.totalIncome)+'</span></div></div>';
+  // Deductions
+  h+='<div style="background:#fff;border-radius:10px;padding:12px;border:1px solid var(--bdr)">';
+  h+='<div style="font-size:11px;font-weight:600;color:var(--err);margin-bottom:6px">📉 รายหัก</div>';
+  if(e.tax3>0)h+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:var(--txt2)">ภาษี 3%</span><span>'+slipFmt(e.tax3)+'</span></div>';
+  if(e.ss5>0)h+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:var(--txt2)">ปกส. 5%</span><span>'+slipFmt(e.ss5)+'</span></div>';
+  if(e.loan>0)h+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:var(--txt2)">กยศ.</span><span>'+slipFmt(e.loan)+'</span></div>';
+  if(e.advance>0)h+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:var(--txt2)">เบิกล่วงหน้า</span><span>'+slipFmt(e.advance)+'</span></div>';
+  if(e.totalDed===0)h+='<div style="font-size:12px;color:var(--muted);padding:4px 0">ไม่มีรายการหัก</div>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-top:1px solid var(--bdr2);margin-top:4px;font-weight:700"><span>รวม</span><span style="color:var(--err)">'+slipFmt(e.totalDed)+'</span></div></div>';
+  h+='</div>';
+
+  // Net
+  h+='<div style="background:linear-gradient(135deg,#5c4a1e,#8b6914);border-radius:10px;padding:14px;text-align:center">';
+  h+='<div style="color:rgba(255,255,255,.6);font-size:11px">เงินเดือนสุทธิ</div>';
+  h+='<div style="color:#fff;font-size:26px;font-weight:800">฿'+slipFmt(e.net)+'</div>';
+  if(e.commission>0)h+='<div style="color:#d4a73c;font-size:13px;margin-top:4px">+ คอมมิชชั่น ฿'+slipFmt(e.commission)+'</div>';
+  h+='</div></div>';
+
+  $('slip-modal-in').innerHTML=h;
+  $('slip-modal').style.display='flex';
+}
+
+function slipBuildBody(e){
+  var lines=[];
+  lines.push('สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด');
+  lines.push('');
+  lines.push('เรียน คุณ'+e.name+(e.nickname?' ('+e.nickname+')':''));
+  lines.push('ตำแหน่ง: '+e.position);
+  lines.push('');
+  lines.push('━━━ รายรับ ━━━');
+  lines.push('เงินเดือน: '+slipFmt(e.salary)+' บาท');
+  if(e.diligence>0)lines.push('เบี้ยขยัน: '+slipFmt(e.diligence)+' บาท');
+  lines.push('รวมรายรับ: '+slipFmt(e.totalIncome)+' บาท');
+  lines.push('');
+  lines.push('━━━ รายหัก ━━━');
+  if(e.tax3>0)lines.push('ภาษีหัก ณ ที่จ่าย 3%: '+slipFmt(e.tax3)+' บาท');
+  if(e.ss5>0)lines.push('ประกันสังคม 5%: '+slipFmt(e.ss5)+' บาท');
+  if(e.loan>0)lines.push('หัก กยศ.: '+slipFmt(e.loan)+' บาท');
+  if(e.advance>0)lines.push('เบิกล่วงหน้า: '+slipFmt(e.advance)+' บาท');
+  if(e.totalDed===0)lines.push('ไม่มีรายการหัก');
+  lines.push('รวมรายหัก: '+slipFmt(e.totalDed)+' บาท');
+  lines.push('');
+  lines.push('════════════════════');
+  lines.push('เงินเดือนสุทธิ: '+slipFmt(e.net)+' บาท');
+  lines.push('════════════════════');
+  if(e.commission>0)lines.push('ค่าคอมมิชชั่น: '+slipFmt(e.commission)+' บาท');
+  lines.push('');
+  lines.push('หากมีข้อสงสัยกรุณาติดต่อฝ่ายบุคคล');
+  lines.push('บริษัท เดอะ เอ็มที จำกัด');
+  return lines.join('\n');
+}
+
+function slipSendOne(i){
+  var email=SLIP_EMAILS[i];
+  if(!email||email.indexOf('@')<0){toast('กรุณากรอกอีเมลให้ถูกต้อง','terr');return}
+  var e=SLIP_EMPS[i];
+  SLIP_STATUS[i]={s:'sending',m:''};slipRender();
+
+  var subject='สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด';
+  var body=slipBuildBody(e);
+
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1024,
+      messages:[{role:'user',content:'ส่งอีเมลไปที่ '+email+' หัวข้อ: "'+subject+'" เนื้อหา:\n\n'+body}],
+      mcp_servers:[{type:'url',url:'https://gmail.mcp.claude.com/mcp',name:'gmail'}]
+    })
+  }).then(function(r){return r.json()}).then(function(data){
+    SLIP_STATUS[i]={s:'ok',m:'ส่งแล้ว'};slipRender();
+  }).catch(function(err){
+    SLIP_STATUS[i]={s:'error',m:err.message||'ไม่สำเร็จ'};slipRender();
+  });
+}
+
+function slipSendAll(){
+  var toSend=[];
+  SLIP_EMPS.forEach(function(_,i){if(SLIP_EMAILS[i]&&SLIP_EMAILS[i].indexOf('@')>=0&&(!SLIP_STATUS[i]||SLIP_STATUS[i].s!=='ok'))toSend.push(i)});
+  if(!toSend.length){toast('ไม่มีรายการที่ต้องส่ง','terr');return}
+  if(!confirm('ยืนยันส่งสลิปให้ '+toSend.length+' คน?'))return;
+
+  var idx=0;
+  function next(){
+    if(idx>=toSend.length){toast('ส่งครบ '+toSend.length+' คนแล้ว','tok');return}
+    slipSendOne(toSend[idx]);
+    idx++;setTimeout(next,2000);
+  }
+  next();
 }
 
 /* ═══ REPORT ═══ */

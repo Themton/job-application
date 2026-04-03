@@ -1006,43 +1006,44 @@ function slipPreview(i){
 
 function slipBuildBody(e){
   var f=slipFmt;
-  var row=function(l,v){return '<tr><td style="padding:4px 0;color:#706040;font-size:13px">'+l+'</td><td style="padding:4px 0;text-align:right;font-size:13px">'+v+' บาท</td></tr>'};
+  var row=function(l,v){return '<tr><td style="padding:4px 0;color:#706040;font-size:13px">'+l+'</td><td style="padding:4px 0;text-align:right;font-size:13px">'+v+'</td></tr>'};
   var dedRows='';
-  if(e.tax3>0)dedRows+=row('ภาษีหัก ณ ที่จ่าย 3%',f(e.tax3));
-  if(e.ss5>0)dedRows+=row('ประกันสังคม 5%',f(e.ss5));
-  if(e.loan>0)dedRows+=row('หัก กยศ.',f(e.loan));
-  if(e.advance>0)dedRows+=row('เบิกล่วงหน้า',f(e.advance));
-  if(!dedRows)dedRows='<tr><td colspan="2" style="padding:4px 0;color:#a89870;font-size:13px">ไม่มีรายการหัก</td></tr>';
+  if(e.tax3>0)dedRows+=row('&#3616;&#3634;&#3625;&#3637;&#3627;&#3633;&#3585; &#3603; &#3607;&#3637;&#3656;&#3592;&#3656;&#3634;&#3618; 3%',f(e.tax3));
+  if(e.ss5>0)dedRows+=row('&#3611;&#3619;&#3632;&#3585;&#3633;&#3609;&#3626;&#3633;&#3591;&#3588;&#3617; 5%',f(e.ss5));
+  if(e.loan>0)dedRows+=row('&#3627;&#3633;&#3585; &#3585;&#3618;&#3624;.',f(e.loan));
+  if(e.advance>0)dedRows+=row('&#3648;&#3610;&#3636;&#3585;&#3621;&#3656;&#3623;&#3591;&#3627;&#3609;&#3657;&#3634;',f(e.advance));
+  if(!dedRows)dedRows='<tr><td colspan="2" style="padding:4px 0;color:#a89870;font-size:13px">&#3652;&#3617;&#3656;&#3617;&#3637;&#3619;&#3634;&#3618;&#3585;&#3634;&#3619;&#3627;&#3633;&#3585;</td></tr>';
 
-  return '<div style="max-width:500px;margin:0 auto;font-family:sans-serif;color:#3d3520">'
+  return '<html><head><meta charset="utf-8"></head><body style="margin:0;padding:0">'
+    +'<div style="max-width:500px;margin:0 auto;font-family:sans-serif;color:#3d3520">'
     +'<div style="background:linear-gradient(135deg,#5c4a1e,#8b6914,#c6952b);padding:20px;text-align:center;border-radius:12px 12px 0 0">'
     +'<img src="'+LOGO_URL+'" width="50" height="50" style="border-radius:10px;margin-bottom:6px"><br>'
-    +'<span style="color:#fff;font-size:16px;font-weight:700">บริษัท เดอะ เอ็มที จำกัด</span><br>'
-    +'<span style="color:rgba(255,255,255,.6);font-size:12px">สลิปเงินเดือน</span>'
+    +'<span style="color:#fff;font-size:16px;font-weight:700">&#3610;&#3619;&#3636;&#3625;&#3633;&#3607; &#3648;&#3604;&#3629;&#3632; &#3648;&#3629;&#3655;&#3617;&#3607;&#3637; &#3592;&#3635;&#3585;&#3633;&#3604;</span><br>'
+    +'<span style="color:rgba(255,255,255,.6);font-size:12px">&#3626;&#3621;&#3636;&#3611;&#3648;&#3591;&#3636;&#3609;&#3648;&#3604;&#3639;&#3629;&#3609;</span>'
     +'</div>'
     +'<div style="background:#fdf9f0;padding:20px;border:1px solid #e2d5b8;border-top:none">'
     +'<div style="background:#fff;border:1px solid #e2d5b8;border-radius:8px;padding:12px;margin-bottom:14px">'
     +'<div style="font-size:15px;font-weight:700;color:#5c4a1e">'+e.name+(e.nickname?' ('+e.nickname+')':'')+'</div>'
-    +'<div style="font-size:12px;color:#706040">ตำแหน่ง: '+e.position+'</div></div>'
+    +'<div style="font-size:12px;color:#706040">'+e.position+'</div></div>'
     +'<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px">'
-    +'<tr><td colspan="2" style="font-size:12px;font-weight:600;color:#6a8c2a;padding-bottom:6px;border-bottom:1px solid #e2d5b8">💰 รายรับ</td></tr>'
-    +row('เงินเดือน',f(e.salary))
-    +(e.diligence>0?row('เบี้ยขยัน',f(e.diligence)):'')
-    +'<tr><td style="padding:6px 0;font-weight:700;border-top:1px solid #e2d5b8">รวมรายรับ</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#6a8c2a;border-top:1px solid #e2d5b8">'+f(e.totalIncome)+' บาท</td></tr>'
+    +'<tr><td colspan="2" style="font-size:12px;font-weight:600;color:#6a8c2a;padding-bottom:6px;border-bottom:1px solid #e2d5b8">&#9654; &#3619;&#3634;&#3618;&#3619;&#3633;&#3610;</td></tr>'
+    +row('&#3648;&#3591;&#3636;&#3609;&#3648;&#3604;&#3639;&#3629;&#3609;',f(e.salary))
+    +(e.diligence>0?row('&#3648;&#3610;&#3637;&#3657;&#3618;&#3586;&#3618;&#3633;&#3609;',f(e.diligence)):'')
+    +'<tr><td style="padding:6px 0;font-weight:700;border-top:1px solid #e2d5b8">&#3619;&#3623;&#3617;&#3619;&#3634;&#3618;&#3619;&#3633;&#3610;</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#6a8c2a;border-top:1px solid #e2d5b8">'+f(e.totalIncome)+'</td></tr>'
     +'</table>'
     +'<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px">'
-    +'<tr><td colspan="2" style="font-size:12px;font-weight:600;color:#c43e2a;padding-bottom:6px;border-bottom:1px solid #e2d5b8">📉 รายหัก</td></tr>'
+    +'<tr><td colspan="2" style="font-size:12px;font-weight:600;color:#c43e2a;padding-bottom:6px;border-bottom:1px solid #e2d5b8">&#9654; &#3619;&#3634;&#3618;&#3627;&#3633;&#3585;</td></tr>'
     +dedRows
-    +'<tr><td style="padding:6px 0;font-weight:700;border-top:1px solid #e2d5b8">รวมรายหัก</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#c43e2a;border-top:1px solid #e2d5b8">'+f(e.totalDed)+' บาท</td></tr>'
+    +'<tr><td style="padding:6px 0;font-weight:700;border-top:1px solid #e2d5b8">&#3619;&#3623;&#3617;&#3619;&#3634;&#3618;&#3627;&#3633;&#3585;</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#c43e2a;border-top:1px solid #e2d5b8">'+f(e.totalDed)+'</td></tr>'
     +'</table>'
     +'<div style="background:linear-gradient(135deg,#5c4a1e,#8b6914);border-radius:8px;padding:14px;text-align:center">'
-    +'<div style="color:rgba(255,255,255,.6);font-size:11px">เงินเดือนสุทธิ</div>'
-    +'<div style="color:#fff;font-size:24px;font-weight:800">฿'+f(e.net)+'</div>'
-    +(e.commission>0?'<div style="color:#d4a73c;font-size:12px;margin-top:4px">+ คอมมิชชั่น ฿'+f(e.commission)+'</div>':'')
+    +'<div style="color:rgba(255,255,255,.6);font-size:11px">&#3648;&#3591;&#3636;&#3609;&#3648;&#3604;&#3639;&#3629;&#3609;&#3626;&#3640;&#3607;&#3608;&#3636;</div>'
+    +'<div style="color:#fff;font-size:24px;font-weight:800">&#3647;'+f(e.net)+'</div>'
+    +(e.commission>0?'<div style="color:#d4a73c;font-size:12px;margin-top:4px">+ &#3588;&#3629;&#3617;&#3617;&#3636;&#3594;&#3594;&#3633;&#3656;&#3609; &#3647;'+f(e.commission)+'</div>':'')
     +'</div></div>'
     +'<div style="background:#f0e8d4;padding:12px;text-align:center;font-size:10px;color:#a89870;border-radius:0 0 12px 12px;border:1px solid #e2d5b8;border-top:none">'
-    +'หากมีข้อสงสัยกรุณาติดต่อฝ่ายบุคคล • บริษัท เดอะ เอ็มที จำกัด'
-    +'</div></div>';
+    +'&#3627;&#3634;&#3585;&#3617;&#3637;&#3586;&#3657;&#3629;&#3626;&#3591;&#3626;&#3633;&#3618;&#3585;&#3619;&#3640;&#3603;&#3634;&#3605;&#3636;&#3604;&#3605;&#3656;&#3629;&#3613;&#3656;&#3634;&#3618;&#3610;&#3640;&#3588;&#3588;&#3621;'
+    +'</div></div></body></html>';
 }
 
 function slipSendOne(i){

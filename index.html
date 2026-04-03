@@ -311,6 +311,12 @@ function sb(t,m,b,q){var u=SB+"/rest/v1/"+t+(q||"");var o={method:m||"GET",heade
 
 /* ═══ STATE ═══ */
 var ALL=[],POS=[],USR=[],FI={c:null,b:null,h:null,k:null},editPID=null,editUID=null;
+
+/* ═══ EMAIL CACHE (localStorage) ═══ */
+function emailCache(){try{return JSON.parse(localStorage.getItem('mt_emails')||'{}')}catch(e){return{}}}
+function emailSet(name,email){if(!email)return;var c=emailCache();c[name.trim()]=email.trim();try{localStorage.setItem('mt_emails',JSON.stringify(c))}catch(e){}}
+function emailGet(name){var c=emailCache();return c[name.trim()]||''}
+function emailSyncFromAll(){ALL.forEach(function(a){if(a.email)emailSet(a.name,a.email)})}
 var ST={new:{l:"ใหม่",c:"b-new"},daily:{l:"พนักงานรายวัน",c:"b-daily"},monthly:{l:"พนักงานประจำ",c:"b-monthly"},terminated:{l:"พ้นสภาพ",c:"b-terminated"}};
 function $(id){return document.getElementById(id)}
 function pf(id){return $(id)}
@@ -412,7 +418,7 @@ function loadAdmin(){
   $('A-ld').classList.remove('hide');$('A-main').classList.add('hide');$('A-det').classList.add('hide');
   Promise.all([sb("applications","GET",null,"?select=*&order=created_at.desc"),sb("positions","GET",null,"?select=*&order=title"),sb("users","GET",null,"?select=id,username,display_name,role,created_at")]).then(function(r){
     ALL=Array.isArray(r[0])?r[0]:[];POS=Array.isArray(r[1])?r[1]:[];USR=Array.isArray(r[2])?r[2]:[];
-    $('A-ld').classList.add('hide');$('A-main').classList.remove('hide');stats();doFilter();renderPos();renderUsr();
+    $('A-ld').classList.add('hide');$('A-main').classList.remove('hide');emailSyncFromAll();stats();doFilter();renderPos();renderUsr();
   }).catch(function(e){$('A-ld').classList.add('hide');$('A-main').classList.remove('hide');toast('โหลดไม่สำเร็จ: '+e,'terr')});
 }
 
@@ -508,10 +514,16 @@ function saveEmp(id){
 
   sb("applications","PATCH",d,"?id=eq."+id).then(function(){
     toast('บันทึกเรียบร้อย','tok');
+    if(d.email)emailSet(d.name,d.email);
     ALL.forEach(function(a){if(a.id===id){a.name=d.name;a.nickname=d.nickname;a.phone=d.phone;a.email=d.email;a.position=d.position;a.education=d.education;a.bank=d.bank;a.bank_account=d.bank_account}});
     doFilter();detail(id);
     syncSheet({id:id,name:d.name,nickname:d.nickname,phone:d.phone,position:d.position,education:d.education,bank:d.bank,bank_account:d.bank_account});
-  }).catch(function(e){toast('Error: '+e,'terr')});
+  }).catch(function(e){
+    // Even if Supabase fails (email column missing), still cache locally
+    if(d.email)emailSet(d.name,d.email);
+    ALL.forEach(function(a){if(a.id===id){a.name=d.name;a.nickname=d.nickname;a.phone=d.phone;a.email=d.email;a.position=d.position;a.education=d.education;a.bank=d.bank;a.bank_account=d.bank_account}});
+    toast('บันทึกแล้ว (อีเมลเก็บในเครื่อง)','tok');doFilter();detail(id);
+  });
 }
 
 /* ═══ LEAVES ═══ */
@@ -833,11 +845,22 @@ function slipParse(){
     for(var i=hI+1;i<rows.length;i++){var r=rows[i],nm=String(r[0]||'').trim();if(!nm||nm==='รวม')continue;var sal=parseFloat(r[6])||0;if(sal<=0&&!(parseFloat(r[15])>0))continue;
       SLIP_EMPS.push({name:nm,nickname:String(r[2]||'').trim(),position:String(r[5]||'').trim(),salary:sal,diligence:parseFloat(r[7])||0,totalIncome:parseFloat(r[8])||0,tax3:parseFloat(r[10])||0,ss5:parseFloat(r[11])||0,loan:parseFloat(r[12])||0,advance:parseFloat(r[13])||0,totalDed:parseFloat(r[14])||0,net:parseFloat(r[15])||0,commission:parseFloat(r[16])||0});
     }
-    // Auto-match emails from ALL (Supabase employee data)
+    // Auto-match emails from ALL (Supabase) + localStorage cache
     var matched=0;
     SLIP_EMPS.forEach(function(emp,i){
+      // Try Supabase first
       var found=slipMatchDB(emp);
-      if(found&&found.email){SLIP_EMAILS[i]=found.email;matched++}
+      if(found&&found.email){SLIP_EMAILS[i]=found.email;matched++;return}
+      // Try localStorage cache
+      var cached=emailGet(emp.name);
+      if(cached){SLIP_EMAILS[i]=cached;matched++;return}
+      // Try matching by name variations in cache
+      var cache=emailCache();
+      var en=emp.name.replace(/\s*-\s*/g,' ').trim();
+      for(var k in cache){
+        var kn=k.replace(/\s*-\s*/g,' ').trim();
+        if(en===kn||en.indexOf(kn)>=0||kn.indexOf(en)>=0){SLIP_EMAILS[i]=cache[k];matched++;return}
+      }
     });
     $('slip-send-all').style.display='inline-flex';
     slipRender();
@@ -884,7 +907,7 @@ function slipRender(){
     h+='<td><div class="nm">'+esc(e.name)+'</div>'+(e.nickname?'<div class="em">('+esc(e.nickname)+')</div>':'')+'</td>';
     h+='<td style="font-size:11px;color:var(--txt2)">'+esc(e.position)+'</td>';
     h+='<td style="text-align:right;font-weight:700;color:var(--pri);font-variant-numeric:tabular-nums">'+slipFmt(e.net)+'</td>';
-    h+='<td><input id="slip-email-'+i+'" value="'+esc(SLIP_EMAILS[i]||'')+'" onchange="SLIP_EMAILS['+i+']=this.value;slipRender()" placeholder="email@example.com" style="width:100%;padding:6px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:12px;font-family:inherit;background:'+(st&&st.s==='ok'?'rgba(106,140,42,.06)':'var(--inp)')+';outline:none"></td>';
+    h+='<td><input id="slip-email-'+i+'" value="'+esc(SLIP_EMAILS[i]||'')+'" onchange="SLIP_EMAILS['+i+']=this.value;emailSet(SLIP_EMPS['+i+'].name,this.value);slipRender()" placeholder="email@example.com" style="width:100%;padding:6px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:12px;font-family:inherit;background:'+(st&&st.s==='ok'?'rgba(106,140,42,.06)':'var(--inp)')+';outline:none"></td>';
     h+='<td style="text-align:center">'+src+'</td>';
     h+='<td style="text-align:center;white-space:nowrap">';
     if(st&&st.s==='ok'){h+='<span style="color:var(--ok);font-size:12px;font-weight:600">✅ ส่งแล้ว</span>';}
@@ -906,7 +929,7 @@ function slipBulkApply(){
     SLIP_EMPS.forEach(function(e,i){
       var en=e.name.replace(/\s*-\s*/g,' ');
       if(en.indexOf(name)>=0||name.indexOf(en.split(' ')[0])>=0||(e.nickname&&name.indexOf(e.nickname)>=0)){
-        SLIP_EMAILS[i]=email;count++;
+        SLIP_EMAILS[i]=email;emailSet(e.name,email);count++;
       }
     });
   });
@@ -915,7 +938,7 @@ function slipBulkApply(){
 
 function slipBulkClear(){
   if(!confirm('ล้างอีเมลทั้งหมด?'))return;
-  SLIP_EMAILS={};slipRender();toast('ล้างแล้ว','tok');
+  SLIP_EMAILS={};try{localStorage.removeItem('mt_emails')}catch(e){}slipRender();toast('ล้างแล้ว','tok');
 }
 
 function slipAutoEmail(){
@@ -926,7 +949,7 @@ function slipAutoEmail(){
   SLIP_EMPS.forEach(function(e,i){
     if(SLIP_EMAILS[i])return;
     var nick=e.nickname||'';
-    if(nick){SLIP_EMAILS[i]=nick.toLowerCase().replace(/\s+/g,'')+domain;count++}
+    if(nick){var em=nick.toLowerCase().replace(/\s+/g,'')+domain;SLIP_EMAILS[i]=em;emailSet(e.name,em);count++}
   });
   slipRender();toast('สร้างอีเมลอัตโนมัติ '+count+' คน','tok');
 }

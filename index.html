@@ -931,25 +931,32 @@ function slipAutoEmail(){
   slipRender();toast('สร้างอีเมลอัตโนมัติ '+count+' คน','tok');
 }
 
+var LOGO_URL='https://raw.githubusercontent.com/Themton/job-application/main/LOGO_THEMT.png';
+
 function slipPreview(i){
   var e=SLIP_EMPS[i];
   var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="margin:0;font-size:16px;color:var(--pri)">ตัวอย่างสลิป</h3><button onclick="$(\'slip-modal\').style.display=\'none\'" style="background:var(--inp);border:1px solid var(--bdr);border-radius:8px;padding:4px 12px;cursor:pointer;font-size:14px;color:var(--muted)">✕</button></div>';
 
   h+='<div style="background:linear-gradient(135deg,#fdf9f0,#f0e8d4);border:2px solid var(--acc);border-radius:12px;padding:20px">';
-  h+='<div style="text-align:center;margin-bottom:14px"><div style="font-size:16px;font-weight:700;color:var(--pri)">บริษัท เดอะ เอ็มที จำกัด</div><div style="font-size:13px;color:var(--acc);font-weight:600">สลิปเงินเดือน</div></div>';
+
+  // Logo + Company header
+  h+='<div style="text-align:center;margin-bottom:16px">';
+  h+='<img src="LOGO_THEMT.png" onerror="this.src=\''+LOGO_URL+'\'" style="width:60px;height:60px;border-radius:12px;object-fit:contain;margin-bottom:8px">';
+  h+='<div style="font-size:16px;font-weight:700;color:var(--pri)">บริษัท เดอะ เอ็มที จำกัด</div>';
+  h+='<div style="font-size:13px;color:var(--acc);font-weight:600">สลิปเงินเดือน</div>';
+  h+='<div style="font-size:11px;color:var(--muted);margin-top:2px">เอกสารนี้ออกโดยระบบอัตโนมัติ</div>';
+  h+='</div>';
 
   h+='<div style="background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid var(--bdr)">';
   h+='<div style="font-size:14px;font-weight:700;color:var(--pri)">'+esc(e.name)+(e.nickname?' ('+esc(e.nickname)+')':'')+'</div>';
   h+='<div style="font-size:12px;color:var(--txt2)">ตำแหน่ง: '+esc(e.position)+'</div></div>';
 
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
-  // Income
   h+='<div style="background:#fff;border-radius:10px;padding:12px;border:1px solid var(--bdr)">';
   h+='<div style="font-size:11px;font-weight:600;color:var(--ok);margin-bottom:6px">💰 รายรับ</div>';
   h+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:var(--txt2)">เงินเดือน</span><span>'+slipFmt(e.salary)+'</span></div>';
   if(e.diligence>0)h+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:var(--txt2)">เบี้ยขยัน</span><span>'+slipFmt(e.diligence)+'</span></div>';
   h+='<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-top:1px solid var(--bdr2);margin-top:4px;font-weight:700"><span>รวม</span><span style="color:var(--ok)">'+slipFmt(e.totalIncome)+'</span></div></div>';
-  // Deductions
   h+='<div style="background:#fff;border-radius:10px;padding:12px;border:1px solid var(--bdr)">';
   h+='<div style="font-size:11px;font-weight:600;color:var(--err);margin-bottom:6px">📉 รายหัก</div>';
   if(e.tax3>0)h+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:var(--txt2)">ภาษี 3%</span><span>'+slipFmt(e.tax3)+'</span></div>';
@@ -960,45 +967,58 @@ function slipPreview(i){
   h+='<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-top:1px solid var(--bdr2);margin-top:4px;font-weight:700"><span>รวม</span><span style="color:var(--err)">'+slipFmt(e.totalDed)+'</span></div></div>';
   h+='</div>';
 
-  // Net
   h+='<div style="background:linear-gradient(135deg,#5c4a1e,#8b6914);border-radius:10px;padding:14px;text-align:center">';
   h+='<div style="color:rgba(255,255,255,.6);font-size:11px">เงินเดือนสุทธิ</div>';
   h+='<div style="color:#fff;font-size:26px;font-weight:800">฿'+slipFmt(e.net)+'</div>';
   if(e.commission>0)h+='<div style="color:#d4a73c;font-size:13px;margin-top:4px">+ คอมมิชชั่น ฿'+slipFmt(e.commission)+'</div>';
-  h+='</div></div>';
+  h+='</div>';
+
+  h+='<div style="text-align:center;margin-top:12px;font-size:10px;color:var(--muted)">หากมีข้อสงสัยกรุณาติดต่อฝ่ายบุคคล • บริษัท เดอะ เอ็มที จำกัด</div>';
+  h+='</div>';
 
   $('slip-modal-in').innerHTML=h;
   $('slip-modal').style.display='flex';
 }
 
 function slipBuildBody(e){
-  var lines=[];
-  lines.push('สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด');
-  lines.push('');
-  lines.push('เรียน คุณ'+e.name+(e.nickname?' ('+e.nickname+')':''));
-  lines.push('ตำแหน่ง: '+e.position);
-  lines.push('');
-  lines.push('━━━ รายรับ ━━━');
-  lines.push('เงินเดือน: '+slipFmt(e.salary)+' บาท');
-  if(e.diligence>0)lines.push('เบี้ยขยัน: '+slipFmt(e.diligence)+' บาท');
-  lines.push('รวมรายรับ: '+slipFmt(e.totalIncome)+' บาท');
-  lines.push('');
-  lines.push('━━━ รายหัก ━━━');
-  if(e.tax3>0)lines.push('ภาษีหัก ณ ที่จ่าย 3%: '+slipFmt(e.tax3)+' บาท');
-  if(e.ss5>0)lines.push('ประกันสังคม 5%: '+slipFmt(e.ss5)+' บาท');
-  if(e.loan>0)lines.push('หัก กยศ.: '+slipFmt(e.loan)+' บาท');
-  if(e.advance>0)lines.push('เบิกล่วงหน้า: '+slipFmt(e.advance)+' บาท');
-  if(e.totalDed===0)lines.push('ไม่มีรายการหัก');
-  lines.push('รวมรายหัก: '+slipFmt(e.totalDed)+' บาท');
-  lines.push('');
-  lines.push('════════════════════');
-  lines.push('เงินเดือนสุทธิ: '+slipFmt(e.net)+' บาท');
-  lines.push('════════════════════');
-  if(e.commission>0)lines.push('ค่าคอมมิชชั่น: '+slipFmt(e.commission)+' บาท');
-  lines.push('');
-  lines.push('หากมีข้อสงสัยกรุณาติดต่อฝ่ายบุคคล');
-  lines.push('บริษัท เดอะ เอ็มที จำกัด');
-  return lines.join('\n');
+  var f=slipFmt;
+  var row=function(l,v){return '<tr><td style="padding:4px 0;color:#706040;font-size:13px">'+l+'</td><td style="padding:4px 0;text-align:right;font-size:13px">'+v+' บาท</td></tr>'};
+  var dedRows='';
+  if(e.tax3>0)dedRows+=row('ภาษีหัก ณ ที่จ่าย 3%',f(e.tax3));
+  if(e.ss5>0)dedRows+=row('ประกันสังคม 5%',f(e.ss5));
+  if(e.loan>0)dedRows+=row('หัก กยศ.',f(e.loan));
+  if(e.advance>0)dedRows+=row('เบิกล่วงหน้า',f(e.advance));
+  if(!dedRows)dedRows='<tr><td colspan="2" style="padding:4px 0;color:#a89870;font-size:13px">ไม่มีรายการหัก</td></tr>';
+
+  return '<div style="max-width:500px;margin:0 auto;font-family:sans-serif;color:#3d3520">'
+    +'<div style="background:linear-gradient(135deg,#5c4a1e,#8b6914,#c6952b);padding:20px;text-align:center;border-radius:12px 12px 0 0">'
+    +'<img src="'+LOGO_URL+'" width="50" height="50" style="border-radius:10px;margin-bottom:6px"><br>'
+    +'<span style="color:#fff;font-size:16px;font-weight:700">บริษัท เดอะ เอ็มที จำกัด</span><br>'
+    +'<span style="color:rgba(255,255,255,.6);font-size:12px">สลิปเงินเดือน</span>'
+    +'</div>'
+    +'<div style="background:#fdf9f0;padding:20px;border:1px solid #e2d5b8;border-top:none">'
+    +'<div style="background:#fff;border:1px solid #e2d5b8;border-radius:8px;padding:12px;margin-bottom:14px">'
+    +'<div style="font-size:15px;font-weight:700;color:#5c4a1e">'+e.name+(e.nickname?' ('+e.nickname+')':'')+'</div>'
+    +'<div style="font-size:12px;color:#706040">ตำแหน่ง: '+e.position+'</div></div>'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px">'
+    +'<tr><td colspan="2" style="font-size:12px;font-weight:600;color:#6a8c2a;padding-bottom:6px;border-bottom:1px solid #e2d5b8">💰 รายรับ</td></tr>'
+    +row('เงินเดือน',f(e.salary))
+    +(e.diligence>0?row('เบี้ยขยัน',f(e.diligence)):'')
+    +'<tr><td style="padding:6px 0;font-weight:700;border-top:1px solid #e2d5b8">รวมรายรับ</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#6a8c2a;border-top:1px solid #e2d5b8">'+f(e.totalIncome)+' บาท</td></tr>'
+    +'</table>'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px">'
+    +'<tr><td colspan="2" style="font-size:12px;font-weight:600;color:#c43e2a;padding-bottom:6px;border-bottom:1px solid #e2d5b8">📉 รายหัก</td></tr>'
+    +dedRows
+    +'<tr><td style="padding:6px 0;font-weight:700;border-top:1px solid #e2d5b8">รวมรายหัก</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#c43e2a;border-top:1px solid #e2d5b8">'+f(e.totalDed)+' บาท</td></tr>'
+    +'</table>'
+    +'<div style="background:linear-gradient(135deg,#5c4a1e,#8b6914);border-radius:8px;padding:14px;text-align:center">'
+    +'<div style="color:rgba(255,255,255,.6);font-size:11px">เงินเดือนสุทธิ</div>'
+    +'<div style="color:#fff;font-size:24px;font-weight:800">฿'+f(e.net)+'</div>'
+    +(e.commission>0?'<div style="color:#d4a73c;font-size:12px;margin-top:4px">+ คอมมิชชั่น ฿'+f(e.commission)+'</div>':'')
+    +'</div></div>'
+    +'<div style="background:#f0e8d4;padding:12px;text-align:center;font-size:10px;color:#a89870;border-radius:0 0 12px 12px;border:1px solid #e2d5b8;border-top:none">'
+    +'หากมีข้อสงสัยกรุณาติดต่อฝ่ายบุคคล • บริษัท เดอะ เอ็มที จำกัด'
+    +'</div></div>';
 }
 
 function slipSendOne(i){
@@ -1016,7 +1036,7 @@ function slipSendOne(i){
     body:JSON.stringify({
       model:'claude-sonnet-4-20250514',
       max_tokens:1024,
-      messages:[{role:'user',content:'ส่งอีเมลไปที่ '+email+' หัวข้อ: "'+subject+'" เนื้อหา:\n\n'+body}],
+      messages:[{role:'user',content:'ส่งอีเมลเป็น HTML ไปที่ '+email+' หัวข้อ: "'+subject+'" เนื้อหา HTML:\n\n'+body}],
       mcp_servers:[{type:'url',url:'https://gmail.mcp.claude.com/mcp',name:'gmail'}]
     })
   }).then(function(r){return r.json()}).then(function(data){

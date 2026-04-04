@@ -608,7 +608,10 @@ function loadLeaves(empId){
 
 function renderLeaves(empId,list){
   var cnt={personal:0,sick:0,absent:0};
-  list.forEach(function(l){if(cnt[l.type]!==undefined)cnt[l.type]++});
+  list.forEach(function(l){
+    var d=l.days||1;
+    if(cnt[l.type]!==undefined)cnt[l.type]+=d;
+  });
 
   var h='<div class="lv-summary">';
   ['personal','sick','absent'].forEach(function(t){
@@ -620,16 +623,18 @@ function renderLeaves(empId,list){
 
   // Add form
   h+='<div class="lv-row"><div class="fld"><label>ประเภท</label><select id="lv-type"><option value="personal">ลากิจ</option><option value="sick">ลาป่วย</option><option value="absent">ขาดงาน</option></select></div>';
+  h+='<div class="fld"><label>จำนวน</label><select id="lv-days"><option value="1">เต็มวัน</option><option value="0.5">ครึ่งวัน</option></select></div>';
   h+='<div class="fld"><label>วันที่</label><input type="date" id="lv-date" value="'+new Date().toISOString().substring(0,10)+'"></div>';
   h+='<div class="fld"><label>หมายเหตุ</label><input id="lv-note" placeholder="ระบุเหตุผล (ไม่บังคับ)"></div>';
   h+='<button class="btn btn-a btn-s" style="margin-bottom:4px" onclick="addLeave(\''+empId+'\')">+ บันทึก</button></div>';
 
   // List
   if(list.length){
-    h+='<div class="lv-list"><div class="tw"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>';
+    h+='<div class="lv-list"><div class="tw"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>จำนวน</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>';
     list.forEach(function(l){
       var bg=l.type==='personal'?'b-new':l.type==='sick'?'b-daily':'b-terminated';
-      h+='<tr><td>'+esc(l.date)+'</td><td><span class="bg '+bg+'">'+esc(LV_LABELS[l.type]||l.type)+'</span></td><td>'+esc(l.note||'-')+'</td><td><button class="lv-del" onclick="delLeave(\''+l.id+'\',\''+empId+'\')">✕</button></td></tr>';
+      var dLabel=(l.days||1)===0.5?'<span style="color:#f59e0b;font-weight:600">½ วัน</span>':'<span style="color:var(--ok)">1 วัน</span>';
+      h+='<tr><td>'+esc(l.date)+'</td><td><span class="bg '+bg+'">'+esc(LV_LABELS[l.type]||l.type)+'</span></td><td>'+dLabel+'</td><td>'+esc(l.note||'-')+'</td><td><button class="lv-del" onclick="delLeave(\''+l.id+'\',\''+empId+'\')">✕</button></td></tr>';
     });
     h+='</tbody></table></div></div>';
   }
@@ -637,18 +642,19 @@ function renderLeaves(empId,list){
 }
 
 function addLeave(empId){
-  var type=$('lv-type').value,date=$('lv-date').value,note=$('lv-note').value.trim();
+  var type=$('lv-type').value,date=$('lv-date').value,note=$('lv-note').value.trim(),days=parseFloat($('lv-days').value);
   if(!date){toast('กรุณาเลือกวันที่','terr');return}
 
   // เช็คโควต้า
-  sb("leaves","GET",null,"?emp_id=eq."+empId+"&type=eq."+type+"&select=id").then(function(existing){
-    var used=Array.isArray(existing)?existing.length:0;
+  sb("leaves","GET",null,"?emp_id=eq."+empId+"&type=eq."+type+"&select=id,days").then(function(existing){
+    var used=0;
+    if(Array.isArray(existing))existing.forEach(function(e){used+=(e.days||1)});
     var max=LV_LIMITS[type];
-    if(used>=max){toast(LV_LABELS[type]+' ครบ '+max+' วันแล้ว ไม่สามารถเพิ่มได้','terr');return}
+    if(used+days>max){toast(LV_LABELS[type]+' ใช้แล้ว '+used+'/'+max+' วัน ไม่สามารถเพิ่ม '+days+' วันได้','terr');return}
 
     var id="LV-"+Date.now();
-    sb("leaves","POST",{id:id,emp_id:empId,type:type,date:date,note:note}).then(function(r){
-      if(Array.isArray(r)&&r.length){toast('บันทึกแล้ว','tok');loadLeaves(empId)}
+    sb("leaves","POST",{id:id,emp_id:empId,type:type,date:date,note:note,days:days}).then(function(r){
+      if(Array.isArray(r)&&r.length){toast('บันทึก'+(days===0.5?' (ครึ่งวัน)':'')+' แล้ว','tok');loadLeaves(empId)}
       else{toast('บันทึกไม่สำเร็จ','terr');console.log(r)}
     }).catch(function(e){toast('Error: '+e,'terr')});
   }).catch(function(e){toast('Error: '+e,'terr')});
@@ -1193,7 +1199,7 @@ function loadReport(){
     var lmap={};
     leaves.forEach(function(l){
       if(!lmap[l.emp_id])lmap[l.emp_id]={personal:0,sick:0,absent:0};
-      if(lmap[l.emp_id][l.type]!==undefined)lmap[l.emp_id][l.type]++;
+      if(lmap[l.emp_id][l.type]!==undefined)lmap[l.emp_id][l.type]+=(l.days||1);
     });
 
     RPT_DATA=emps.map(function(a){

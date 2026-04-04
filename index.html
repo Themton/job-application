@@ -188,7 +188,7 @@
     <!-- TAB: Users -->
     <div id="T-usr" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="ttl" style="font-size:18px">จัดการผู้ใช้</span><button class="btn btn-a btn-s" onclick="showUF()">➕ เพิ่ม</button></div>
-      <div id="uf-box" class="cd hide" style="margin-bottom:14px"><div class="g2"><div class="fld"><label>ชื่อผู้ใช้ <span class="rq">*</span></label><input id="uf-user"></div><div class="fld"><label>ชื่อแสดง</label><input id="uf-name"></div><div class="fld"><label id="uf-pw-label">รหัสผ่าน <span class="rq">*</span></label><input id="uf-pass" type="text"></div></div><div class="brow" style="margin-top:8px"><button class="btn btn-g btn-s" onclick="pf('uf-box').classList.add('hide')">ยกเลิก</button><button class="btn btn-a btn-s" id="uf-btn" onclick="saveU()">เพิ่ม</button></div></div>
+      <div id="uf-box" class="cd hide" style="margin-bottom:14px"><div class="g2"><div class="fld"><label>ชื่อผู้ใช้ <span class="rq">*</span></label><input id="uf-user"></div><div class="fld"><label>ชื่อแสดง</label><input id="uf-name"></div><div class="fld"><label id="uf-pw-label">รหัสผ่าน <span class="rq">*</span></label><input id="uf-pass" type="text"></div><div class="fld"><label>สิทธิ์การใช้งาน</label><select id="uf-role"><option value="admin">แอดมิน (เต็มระบบ)</option><option value="accounting">บัญชี (ดูข้อมูล+Export)</option></select></div></div><div class="brow" style="margin-top:8px"><button class="btn btn-g btn-s" onclick="pf('uf-box').classList.add('hide')">ยกเลิก</button><button class="btn btn-a btn-s" id="uf-btn" onclick="saveU()">เพิ่ม</button></div></div>
       <div id="usr-list"></div>
     </div>
 
@@ -447,7 +447,14 @@ function doLogin(){
   var u=$('i-user').value.trim(),p=$('i-pass').value.trim();$('l-err').classList.add('hide');
   if(!u||!p){$('l-err').textContent='กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';$('l-err').classList.remove('hide');return}
   sb("users","GET",null,"?username=eq."+encodeURIComponent(u)+"&password=eq."+encodeURIComponent(p)+"&select=*").then(function(r){
-    if(Array.isArray(r)&&r.length>0){sessionStorage.setItem('mt_logged','1');page('admin')}
+    if(Array.isArray(r)&&r.length>0){
+      var user=r[0];
+      if(!user.role||user.role==='admin'){
+        sessionStorage.setItem('mt_logged','1');page('admin');
+      }else{
+        $('l-err').textContent='บัญชีนี้ไม่มีสิทธิ์แอดมิน (สิทธิ์ปัจจุบัน: '+user.role+')';$('l-err').classList.remove('hide');
+      }
+    }
     else{$('l-err').textContent='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';$('l-err').classList.remove('hide')}
   }).catch(function(e){$('l-err').textContent='เชื่อมต่อไม่ได้: '+e;$('l-err').classList.remove('hide')});
 }
@@ -649,16 +656,18 @@ function delP(id){if(!confirm('ลบ?'))return;sb("positions","DELETE",null,"?i
 /* ═══ USERS ═══ */
 function renderUsr(){
   if(!USR.length){$('usr-list').innerHTML='<div class="emp"><div class="ei">👤</div><p>ยังไม่มี</p></div>';return}
-  var h='<div class="tw" style="margin-top:10px"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>จัดการ</th></tr></thead><tbody>';
-  USR.forEach(function(u){h+='<tr><td class="nm">'+esc(u.username)+'</td><td>'+esc(u.display_name||'')+'</td><td style="white-space:nowrap"><button class="btn btn-g btn-s" onclick="editU(\''+u.id+'\')">✏️</button> <button class="btn btn-d btn-s" onclick="delU(\''+u.id+'\')">🗑️</button></td></tr>'});
+  var rl={'admin':'แอดมิน','accounting':'บัญชี'};
+  var rc={'admin':'b-new','accounting':'b-daily'};
+  var h='<div class="tw" style="margin-top:10px"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>สิทธิ์</th><th>จัดการ</th></tr></thead><tbody>';
+  USR.forEach(function(u){h+='<tr><td class="nm">'+esc(u.username)+'</td><td>'+esc(u.display_name||'')+'</td><td><span class="bg '+(rc[u.role]||'b-new')+'">'+(rl[u.role]||u.role||'แอดมิน')+'</span></td><td style="white-space:nowrap"><button class="btn btn-g btn-s" onclick="editU(\''+u.id+'\')">✏️</button> <button class="btn btn-d btn-s" onclick="delU(\''+u.id+'\')">🗑️</button></td></tr>'});
   $('usr-list').innerHTML=h+'</tbody></table></div>';
 }
-function showUF(){editUID=null;$('uf-user').value='';$('uf-name').value='';$('uf-pass').value='';$('uf-user').disabled=false;$('uf-pw-label').innerHTML='รหัสผ่าน <span class="rq">*</span>';$('uf-btn').textContent='เพิ่ม';$('uf-box').classList.remove('hide')}
-function editU(id){var u;USR.forEach(function(x){if(x.id===id)u=x});if(!u)return;editUID=id;$('uf-user').value=u.username;$('uf-user').disabled=true;$('uf-name').value=u.display_name||'';$('uf-pass').value='';$('uf-pw-label').innerHTML='รหัสผ่านใหม่ <span style="font-size:10px;color:var(--muted)">(เว้นว่างถ้าไม่เปลี่ยน)</span>';$('uf-btn').textContent='บันทึก';$('uf-box').classList.remove('hide')}
+function showUF(){editUID=null;$('uf-user').value='';$('uf-name').value='';$('uf-pass').value='';$('uf-role').value='admin';$('uf-user').disabled=false;$('uf-pw-label').innerHTML='รหัสผ่าน <span class="rq">*</span>';$('uf-btn').textContent='เพิ่ม';$('uf-box').classList.remove('hide')}
+function editU(id){var u;USR.forEach(function(x){if(x.id===id)u=x});if(!u)return;editUID=id;$('uf-user').value=u.username;$('uf-user').disabled=true;$('uf-name').value=u.display_name||'';$('uf-pass').value='';$('uf-role').value=u.role||'admin';$('uf-pw-label').innerHTML='รหัสผ่านใหม่ <span style="font-size:10px;color:var(--muted)">(เว้นว่างถ้าไม่เปลี่ยน)</span>';$('uf-btn').textContent='บันทึก';$('uf-box').classList.remove('hide')}
 function saveU(){
-  var un=$('uf-user').value.trim(),dn=$('uf-name').value.trim(),pw=$('uf-pass').value;
-  if(editUID){var u={};if(dn)u.display_name=dn;if(pw)u.password=pw;if(!Object.keys(u).length){toast('กรุณากรอกข้อมูล','terr');return}sb("users","PATCH",u,"?id=eq."+editUID).then(function(){toast('แก้ไขแล้ว','tok');USR.forEach(function(x){if(x.id===editUID&&dn)x.display_name=dn});renderUsr();$('uf-box').classList.add('hide');editUID=null}).catch(function(e){toast('Error: '+e,'terr')})}
-  else{if(!un||!pw){toast('กรอกชื่อผู้ใช้และรหัสผ่าน','terr');return}var id="USR-"+Date.now();sb("users","POST",{id:id,username:un,password:pw,display_name:dn||un,role:'admin'}).then(function(r){if(Array.isArray(r)&&r.length){toast('เพิ่มแล้ว','tok');USR.push({id:id,username:un,display_name:dn||un,role:'admin'});renderUsr();$('uf-box').classList.add('hide')}else{toast('เพิ่มไม่สำเร็จ - ชื่อซ้ำ?','terr');console.log(r)}}).catch(function(e){toast('Error: '+e,'terr')})}
+  var un=$('uf-user').value.trim(),dn=$('uf-name').value.trim(),pw=$('uf-pass').value,rl=$('uf-role').value;
+  if(editUID){var u={};if(dn)u.display_name=dn;if(pw)u.password=pw;u.role=rl;sb("users","PATCH",u,"?id=eq."+editUID).then(function(){toast('แก้ไขแล้ว','tok');USR.forEach(function(x){if(x.id===editUID){if(dn)x.display_name=dn;x.role=rl}});renderUsr();$('uf-box').classList.add('hide');editUID=null}).catch(function(e){toast('Error: '+e,'terr')})}
+  else{if(!un||!pw){toast('กรอกชื่อผู้ใช้และรหัสผ่าน','terr');return}var id="USR-"+Date.now();sb("users","POST",{id:id,username:un,password:pw,display_name:dn||un,role:rl}).then(function(r){if(Array.isArray(r)&&r.length){toast('เพิ่มแล้ว','tok');USR.push({id:id,username:un,display_name:dn||un,role:rl});renderUsr();$('uf-box').classList.add('hide')}else{toast('เพิ่มไม่สำเร็จ - ชื่อซ้ำ?','terr');console.log(r)}}).catch(function(e){toast('Error: '+e,'terr')})}
 }
 function delU(id){if(USR.length<=1){toast('ต้องมีผู้ใช้อย่างน้อย 1 คน','terr');return}if(!confirm('ลบ?'))return;sb("users","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');USR=USR.filter(function(x){return x.id!==id});renderUsr()}).catch(function(e){toast('Error: '+e,'terr')})}
 
@@ -1275,7 +1284,14 @@ function doAccLogin(){
   var u=$('acc-user').value.trim(),p=$('acc-pass').value.trim();$('acc-err').classList.add('hide');
   if(!u||!p){$('acc-err').textContent='กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';$('acc-err').classList.remove('hide');return}
   sb("users","GET",null,"?username=eq."+encodeURIComponent(u)+"&password=eq."+encodeURIComponent(p)+"&select=*").then(function(r){
-    if(Array.isArray(r)&&r.length>0){sessionStorage.setItem('mt_acc_logged','1');page('acc')}
+    if(Array.isArray(r)&&r.length>0){
+      var user=r[0];
+      if(user.role==='accounting'){
+        sessionStorage.setItem('mt_acc_logged','1');page('acc');
+      }else{
+        $('acc-err').textContent='บัญชีนี้ไม่มีสิทธิ์เข้าระบบบัญชี (ต้องเป็นสิทธิ์ "บัญชี")';$('acc-err').classList.remove('hide');
+      }
+    }
     else{$('acc-err').textContent='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';$('acc-err').classList.remove('hide')}
   }).catch(function(e){$('acc-err').textContent='เชื่อมต่อไม่ได้: '+e;$('acc-err').classList.remove('hide')});
 }
@@ -1374,15 +1390,6 @@ function accDownload(content,filename,type){
 /* ═══ UTILS ═══ */
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
 function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinfo'?'📤 ':'❌ ')+t;el.className='toast '+(c||'terr');el.classList.remove('hide');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.add('hide')},3500)}
-
-// Auto-create accounting user if not exists
-sb("users","GET",null,"?username=eq.accounting&select=id").then(function(r){
-  if(!Array.isArray(r)||r.length===0){
-    sb("users","POST",{id:"USR-ACC-"+Date.now(),username:"accounting",password:"themt2569",display_name:"พนักงานบัญชี",role:"accounting"}).then(function(){
-      console.log('✅ สร้าง user บัญชีแล้ว');
-    }).catch(function(){});
-  }
-}).catch(function(){});
 
 /* ═══ INIT ═══ */
 if(MODE==='admin'){

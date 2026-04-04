@@ -1257,9 +1257,15 @@ function renderReport(){
     '</tr></thead><tbody>';
 
   list.forEach(function(r){
-    var pClr=r.personal_left<=0?'var(--err)':r.personal_left<=1?'#f59e0b':'var(--ok)';
-    var sClr=r.sick_left<=0?'var(--err)':r.sick_left<=5?'#f59e0b':'var(--ok)';
-    var sBg=ST[r.status]||ST.new;
+    var pBg,pClr,pLabel,sBg2,sClr,sLabel;
+    // ลากิจ
+    if(r.personal_left<=0){pBg='rgba(220,38,38,.1)';pClr='var(--err)';pLabel='<div style="font-size:9px;color:var(--err);font-weight:700">หมดแล้ว</div>'}
+    else if(r.personal_left<=2){pBg='rgba(245,158,11,.1)';pClr='#f59e0b';pLabel='<div style="font-size:9px;color:#f59e0b">ใกล้หมด</div>'}
+    else{pBg='rgba(106,140,42,.06)';pClr='var(--ok)';pLabel=''}
+    // ลาป่วย
+    if(r.sick_left<=0){sBg2='rgba(220,38,38,.1)';sClr='var(--err)';sLabel='<div style="font-size:9px;color:var(--err);font-weight:700">หมดแล้ว</div>'}
+    else if(r.sick_left<=5){sBg2='rgba(245,158,11,.1)';sClr='#f59e0b';sLabel='<div style="font-size:9px;color:#f59e0b">ใกล้หมด</div>'}
+    else{sBg2='rgba(106,140,42,.06)';sClr='var(--ok)';sLabel=''}
 
     h+='<tr onclick="detail(\''+r.id+'\')">';
     h+='<td><div class="nm">'+esc(r.name)+'</div>'+(r.nickname?'<div class="em">('+esc(r.nickname)+')</div>':'')+'</td>';
@@ -1271,11 +1277,11 @@ function renderReport(){
       +(r.house_link?'<a href="'+esc(r.house_link)+'" target="_blank" class="btn btn-g btn-s" style="font-size:10px;padding:3px 8px;text-decoration:none" title="ทะเบียนบ้าน">🏠</a> ':'')
       +(r.bank_link?'<a href="'+esc(r.bank_link)+'" target="_blank" class="btn btn-g btn-s" style="font-size:10px;padding:3px 8px;text-decoration:none" title="Book Bank">🏦</a>':'')
       +'</td>';
-    h+='<td style="text-align:center">'+r.personal_used+'/'+LV_LIMITS.personal+'</td>';
-    h+='<td style="text-align:center">'+r.sick_used+'/'+LV_LIMITS.sick+'</td>';
-    h+='<td style="text-align:center;font-weight:700;color:'+pClr+'">'+r.personal_left+'</td>';
-    h+='<td style="text-align:center;font-weight:700;color:'+sClr+'">'+r.sick_left+'</td>';
-    h+='<td style="text-align:center;font-weight:700;color:'+(r.absent>0?'var(--err)':'var(--muted)')+'">'+(r.absent||'-')+'</td>';
+    h+='<td style="text-align:center;font-size:12px">'+r.personal_used+'/'+LV_LIMITS.personal+'</td>';
+    h+='<td style="text-align:center;font-size:12px">'+r.sick_used+'/'+LV_LIMITS.sick+'</td>';
+    h+='<td style="text-align:center;background:'+pBg+';border-radius:6px"><div style="font-weight:700;font-size:14px;color:'+pClr+'">'+r.personal_left+'</div>'+pLabel+'</td>';
+    h+='<td style="text-align:center;background:'+sBg2+';border-radius:6px"><div style="font-weight:700;font-size:14px;color:'+sClr+'">'+r.sick_left+'</div>'+sLabel+'</td>';
+    h+='<td style="text-align:center;font-weight:700;color:'+(r.absent>0?'var(--err)':'var(--muted)')+';'+(r.absent>0?'background:rgba(220,38,38,.08);border-radius:6px':'')+'">'+(r.absent||'-')+'</td>';
     h+='</tr>';
   });
 

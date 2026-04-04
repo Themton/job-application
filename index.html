@@ -1132,6 +1132,7 @@ function loadReport(){
       return{
         id:a.id,name:a.name,nickname:a.nickname||'',phone:a.phone||'',
         position:a.position||'',status:a.status,
+        id_link:a.id_link||'',cred_link:a.cred_link||'',house_link:a.house_link||'',bank_link:a.bank_link||'',
         personal_used:lv.personal,personal_left:LV_LIMITS.personal-lv.personal,
         sick_used:lv.sick,sick_left:LV_LIMITS.sick-lv.sick,
         absent:lv.absent
@@ -1155,22 +1156,24 @@ function renderReport(){
   });
 
   // Summary
-  var totP=0,totS=0,totA=0;
-  list.forEach(function(r){totP+=r.personal_left;totS+=r.sick_left;totA+=r.absent});
+  var totP=0,totS=0,totA=0,hasId=0,noId=0;
+  list.forEach(function(r){totP+=r.personal_left;totS+=r.sick_left;totA+=r.absent;if(r.id_link)hasId++;else noId++});
   var warnP=list.filter(function(r){return r.personal_left<=1}).length;
   var warnS=list.filter(function(r){return r.sick_left<=5}).length;
 
   $('rpt-summary').innerHTML=
-    '<div class="sts" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">'+
+    '<div class="sts" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">'+
     '<div class="st"><div class="ic">👥</div><div class="l">พนักงาน</div><div class="v">'+list.length+'</div><div class="u">คน</div></div>'+
-    '<div class="st"><div class="ic">⚠️</div><div class="l">ลากิจใกล้หมด</div><div class="v" style="color:var(--err)">'+warnP+'</div><div class="u">คน (เหลือ ≤1 วัน)</div></div>'+
-    '<div class="st"><div class="ic">🏥</div><div class="l">ลาป่วยใกล้หมด</div><div class="v" style="color:#f59e0b">'+warnS+'</div><div class="u">คน (เหลือ ≤5 วัน)</div></div>'+
+    '<div class="st"><div class="ic">🪪</div><div class="l">มีบัตร ปชช.</div><div class="v" style="color:var(--ok)">'+hasId+'</div><div class="u">คน</div></div>'+
+    '<div class="st"><div class="ic">❌</div><div class="l">ยังไม่มีบัตร</div><div class="v" style="color:var(--err)">'+noId+'</div><div class="u">คน</div></div>'+
+    '<div class="st"><div class="ic">⚠️</div><div class="l">ลากิจใกล้หมด</div><div class="v" style="color:var(--err)">'+warnP+'</div><div class="u">คน</div></div>'+
     '<div class="st"><div class="ic">✗</div><div class="l">ขาดงานรวม</div><div class="v" style="color:var(--err)">'+totA+'</div><div class="u">ครั้ง</div></div>'+
     '</div>';
 
   // Table
   var h='<div class="tw"><table><thead><tr>'+
     '<th>ชื่อ-สกุล</th><th>เบอร์โทร</th><th>ตำแหน่ง</th>'+
+    '<th style="text-align:center">เอกสาร</th>'+
     '<th style="text-align:center">ลากิจ<br><span style="font-size:8px;text-transform:none">ใช้/สิทธิ์</span></th>'+
     '<th style="text-align:center">ลาป่วย<br><span style="font-size:8px;text-transform:none">ใช้/สิทธิ์</span></th>'+
     '<th style="text-align:center">ลากิจ<br><span style="font-size:8px;text-transform:none">คงเหลือ</span></th>'+
@@ -1187,6 +1190,12 @@ function renderReport(){
     h+='<td><div class="nm">'+esc(r.name)+'</div>'+(r.nickname?'<div class="em">('+esc(r.nickname)+')</div>':'')+'</td>';
     h+='<td><a href="tel:'+esc(r.phone)+'" style="color:var(--pri2);text-decoration:none">'+esc(r.phone)+'</a></td>';
     h+='<td>'+esc(r.position)+'</td>';
+    h+='<td style="text-align:center;white-space:nowrap" onclick="event.stopPropagation()">'
+      +(r.id_link?'<a href="'+esc(r.id_link)+'" target="_blank" class="btn btn-g btn-s" style="font-size:10px;padding:3px 8px;text-decoration:none" title="บัตรประชาชน">🪪</a> ':'<span class="bg b-terminated" style="font-size:9px">🪪✗</span> ')
+      +(r.cred_link?'<a href="'+esc(r.cred_link)+'" target="_blank" class="btn btn-g btn-s" style="font-size:10px;padding:3px 8px;text-decoration:none" title="วุฒิการศึกษา">📄</a> ':'')
+      +(r.house_link?'<a href="'+esc(r.house_link)+'" target="_blank" class="btn btn-g btn-s" style="font-size:10px;padding:3px 8px;text-decoration:none" title="ทะเบียนบ้าน">🏠</a> ':'')
+      +(r.bank_link?'<a href="'+esc(r.bank_link)+'" target="_blank" class="btn btn-g btn-s" style="font-size:10px;padding:3px 8px;text-decoration:none" title="Book Bank">🏦</a>':'')
+      +'</td>';
     h+='<td style="text-align:center">'+r.personal_used+'/'+LV_LIMITS.personal+'</td>';
     h+='<td style="text-align:center">'+r.sick_used+'/'+LV_LIMITS.sick+'</td>';
     h+='<td style="text-align:center;font-weight:700;color:'+pClr+'">'+r.personal_left+'</td>';

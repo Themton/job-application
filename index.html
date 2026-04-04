@@ -409,7 +409,7 @@ function doLogin(){
   var u=$('i-user').value.trim(),p=$('i-pass').value.trim();$('l-err').classList.add('hide');
   if(!u||!p){$('l-err').textContent='กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';$('l-err').classList.remove('hide');return}
   sb("users","GET",null,"?username=eq."+encodeURIComponent(u)+"&password=eq."+encodeURIComponent(p)+"&select=*").then(function(r){
-    if(Array.isArray(r)&&r.length>0){page('admin')}
+    if(Array.isArray(r)&&r.length>0){sessionStorage.setItem('mt_logged','1');page('admin')}
     else{$('l-err').textContent='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';$('l-err').classList.remove('hide')}
   }).catch(function(e){$('l-err').textContent='เชื่อมต่อไม่ได้: '+e;$('l-err').classList.remove('hide')});
 }
@@ -1214,7 +1214,8 @@ function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinf
 
 /* ═══ INIT ═══ */
 if(MODE==='admin'){
-  page('login');
+  if(sessionStorage.getItem('mt_logged')==='1'){page('admin')}
+  else{page('login')}
 }else{
   page('form');
 }

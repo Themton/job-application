@@ -317,11 +317,11 @@
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:8px">
     <div><h2 class="ttl" style="margin-bottom:2px">📊 ระบบบัญชี — ข้อมูลพนักงาน</h2><p class="sub" style="margin-bottom:0">ดูข้อมูลและ Export ข้อมูลพนักงาน</p></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn btn-g btn-s" onclick="accDownloadAll()">🪪 โหลดบัตร ปชช. ทั้งหมด</button>
-      <button class="btn btn-a btn-s" onclick="accExportCSV()">📥 Export CSV</button>
-      <button class="btn btn-a btn-s" onclick="accExportAll()">📥 Export ทั้งหมด (CSV)</button>
+      <button class="btn btn-g btn-s" onclick="accDownloadSelected()">🪪 โหลดบัตรที่เลือก</button>
+      <button class="btn btn-a btn-s" onclick="accExportSelected()">📥 Export ที่เลือก</button>
+      <button class="btn btn-a btn-s" onclick="accExportAll()">📥 Export ทั้งหมด</button>
       <button class="btn btn-g btn-s" onclick="loadAcc()">🔄</button>
-      <button class="btn btn-d btn-s" onclick="accLogout()">🚪 ออกจากระบบ</button>
+      <button class="btn btn-d btn-s" onclick="accLogout()">🚪 ออก</button>
     </div>
   </div>
   <div id="acc-stats" class="sts" style="margin-bottom:14px"></div>
@@ -330,8 +330,29 @@
     <select class="fsel" id="acc-st" onchange="accRender()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
   </div>
   <div id="acc-cnt" class="rcnt"></div>
+  <div id="acc-sel-bar" class="hide" style="background:var(--pri);color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+    <span id="acc-sel-cnt">เลือก 0 คน</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="accDownloadSelected()">🪪 โหลดบัตร</button>
+      <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="accExportSelected()">📥 Export</button>
+      <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="accClearSel()">✕ ยกเลิก</button>
+    </div>
+  </div>
   <div id="acc-table"></div>
 </div>
+
+<!-- Acc Doc Preview Modal -->
+<div id="acc-doc-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:1002;align-items:center;justify-content:center;padding:16px;cursor:pointer" onclick="this.style.display='none'">
+  <div style="position:relative;max-width:700px;width:100%;max-height:90vh" onclick="event.stopPropagation()">
+    <button onclick="$('acc-doc-modal').style.display='none'" style="position:absolute;top:-12px;right:-12px;width:36px;height:36px;border-radius:50%;background:var(--pri);color:#fff;border:none;font-size:18px;cursor:pointer;z-index:1">✕</button>
+    <div id="acc-doc-header" style="background:linear-gradient(135deg,#5c4a1e,#8b6914);padding:12px 16px;border-radius:12px 12px 0 0;color:#fff;font-weight:600;font-size:14px"></div>
+    <div style="background:#fff;border-radius:0 0 12px 12px;overflow:hidden">
+      <img id="acc-doc-img" src="" style="width:100%;max-height:75vh;object-fit:contain;display:block">
+    </div>
+    <div style="text-align:center;margin-top:8px">
+      <a id="acc-doc-link" href="" target="_blank" class="btn btn-a btn-s" style="text-decoration:none;color:#fff">📥 ดาวน์โหลด</a>
+    </div>
+  </div>
 </div>
 
 <div id="lbox" class="lbox hide" onclick="closeLB()"><button class="lbox-close" onclick="closeLB()">✕</button><img id="lbox-img" src=""></div>
@@ -1308,6 +1329,8 @@ function loadAcc(){
   }).catch(function(e){$('acc-ld').classList.add('hide');$('acc-main').classList.remove('hide');toast('โหลดไม่สำเร็จ: '+e,'terr')});
 }
 
+var ACC_SEL={};
+
 function accRender(){
   var q=$('acc-srch').value.toLowerCase(),st=$('acc-st').value;
   var list=ACC_DATA.filter(function(a){
@@ -1325,66 +1348,84 @@ function accRender(){
     '<div class="st"><div class="l">มีบัตร ปชช.</div><div class="v" style="color:var(--ok)">'+hasId+'</div></div>'+
     '<div class="st"><div class="l">ยังไม่มีบัตร</div><div class="v" style="color:var(--err)">'+(tot-tm-hasId)+'</div></div>';
 
+  // Selection bar
+  var selCount=0;list.forEach(function(a){if(ACC_SEL[a.id])selCount++});
+  if(selCount>0){$('acc-sel-bar').classList.remove('hide');$('acc-sel-bar').style.display='flex';$('acc-sel-cnt').textContent='เลือก '+selCount+' คน'}
+  else{$('acc-sel-bar').classList.add('hide');$('acc-sel-bar').style.display='none'}
+
   $('acc-cnt').textContent='พบ '+list.length+' คน';
 
+  var allChecked=list.length>0&&list.every(function(a){return ACC_SEL[a.id]});
   var h='<div class="tw"><table><thead><tr>'+
-    '<th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>เบอร์โทร</th><th>ตำแหน่ง</th><th>ธนาคาร</th><th>เลขบัญชี</th><th>วุฒิ</th><th>สถานะ</th><th>วันที่</th><th>เอกสาร</th>'+
+    '<th style="width:30px;text-align:center"><input type="checkbox" '+(allChecked?'checked':'')+' onchange="accToggleAll(this.checked)" style="accent-color:var(--pri2)"></th>'+
+    '<th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>เบอร์โทร</th><th>ตำแหน่ง</th><th>ธนาคาร</th><th>เลขบัญชี</th><th>สถานะ</th><th>บัตร ปชช.</th>'+
     '</tr></thead><tbody>';
 
   list.forEach(function(a){
     var s=ACC_ST[a.status]||ACC_ST.new;
-    var dt=String(a.created_at||'').substring(0,10);
-    h+='<tr>';
+    var chk=ACC_SEL[a.id]?'checked':'';
+    h+='<tr style="'+(ACC_SEL[a.id]?'background:rgba(198,149,43,.06)':'')+'">';
+    h+='<td style="text-align:center"><input type="checkbox" '+chk+' onchange="accToggle(\''+a.id+'\',this.checked)" style="accent-color:var(--pri2)"></td>';
     h+='<td class="nm">'+esc(a.name)+'</td>';
     h+='<td>'+esc(a.nickname||'-')+'</td>';
     h+='<td>'+esc(a.phone||'-')+'</td>';
     h+='<td>'+esc(a.position||'-')+'</td>';
     h+='<td>'+esc(a.bank||'-')+'</td>';
     h+='<td>'+esc(a.bank_account||'-')+'</td>';
-    h+='<td>'+esc(a.education||'-')+'</td>';
     h+='<td><span class="bg '+s.c+'">'+s.l+'</span></td>';
-    h+='<td>'+esc(dt)+'</td>';
-    h+='<td style="white-space:nowrap">'
-      +(a.id_link?'<a href="'+esc(a.id_link)+'" target="_blank" style="text-decoration:none" title="บัตรประชาชน">🪪</a> ':'')
-      +(a.cred_link?'<a href="'+esc(a.cred_link)+'" target="_blank" style="text-decoration:none" title="วุฒิการศึกษา">📄</a> ':'')
-      +(a.house_link?'<a href="'+esc(a.house_link)+'" target="_blank" style="text-decoration:none" title="ทะเบียนบ้าน">🏠</a> ':'')
-      +(a.bank_link?'<a href="'+esc(a.bank_link)+'" target="_blank" style="text-decoration:none" title="Book Bank">🏦</a>':'')
-      +((!a.id_link&&!a.cred_link&&!a.house_link&&!a.bank_link)?'<span style="color:var(--muted)">-</span>':'')
-      +'</td>';
+    if(a.id_link){
+      h+='<td style="text-align:center"><button onclick="accShowDoc(\''+esc(a.name)+'\',\''+esc(a.id_link)+'\')" class="btn btn-g btn-s" style="font-size:11px;padding:4px 10px">🪪 ดู</button></td>';
+    }else{
+      h+='<td style="text-align:center;color:var(--muted);font-size:11px">ยังไม่มี</td>';
+    }
     h+='</tr>';
   });
   h+='</tbody></table></div>';
   $('acc-table').innerHTML=h;
+  window._accList=list;
 }
 
-function accDownloadAll(){
-  var links=[];
-  ACC_DATA.forEach(function(a){if(a.id_link)links.push({name:a.name,url:a.id_link})});
-  if(!links.length){toast('ไม่มีไฟล์บัตรประชาชนให้ดาวน์โหลด','terr');return}
-  if(!confirm('ดาวน์โหลดบัตรประชาชน '+links.length+' ไฟล์\n\nเบราว์เซอร์อาจบล็อก popup — กด "อนุญาต" ถ้ามีแจ้งเตือน'))return;
-  links.forEach(function(l,i){
+function accToggle(id,checked){if(checked)ACC_SEL[id]=true;else delete ACC_SEL[id];accRender()}
+function accToggleAll(checked){window._accList.forEach(function(a){if(checked)ACC_SEL[a.id]=true;else delete ACC_SEL[a.id]});accRender()}
+function accClearSel(){ACC_SEL={};accRender()}
+
+function accShowDoc(name,url){
+  var fid=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(!fid)fid=url.match(/id=([a-zA-Z0-9_-]+)/);
+  var imgUrl=fid?'https://drive.google.com/thumbnail?id='+fid[1]+'&sz=w1200':url;
+  var dlUrl=fid?'https://drive.google.com/uc?export=download&id='+fid[1]:url;
+  $('acc-doc-header').textContent='🪪 บัตรประชาชน — '+name;
+  $('acc-doc-img').src=imgUrl;
+  $('acc-doc-img').onerror=function(){this.parentNode.innerHTML='<div style="padding:40px;text-align:center"><a href="'+url+'" target="_blank" class="btn btn-a">📥 เปิดไฟล์</a></div>'};
+  $('acc-doc-link').href=dlUrl;
+  $('acc-doc-modal').style.display='flex';
+}
+
+function accDownloadSelected(){
+  var sel=[];ACC_DATA.forEach(function(a){if(ACC_SEL[a.id]&&a.id_link)sel.push(a)});
+  if(!sel.length){toast('กรุณาเลือกพนักงานที่มีบัตร ปชช.','terr');return}
+  if(!confirm('ดาวน์โหลดบัตร ปชช. '+sel.length+' ไฟล์?'))return;
+  sel.forEach(function(a,i){
     setTimeout(function(){
-      var url=l.url,fid=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      var url=a.id_link,fid=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
       if(!fid)fid=url.match(/id=([a-zA-Z0-9_-]+)/);
       if(fid)url='https://drive.google.com/uc?export=download&id='+fid[1];
       window.open(url,'_blank');
-      if(i===links.length-1)toast('เปิดบัตร ปชช. '+links.length+' ไฟล์แล้ว','tok');
+      if(i===sel.length-1)toast('โหลดบัตร ปชช. '+sel.length+' ไฟล์','tok');
     },i*500);
   });
 }
 
-function accExportCSV(){
-  var q=$('acc-srch').value.toLowerCase(),st=$('acc-st').value;
-  var list=ACC_DATA.filter(function(a){
-    return[a.name,a.nickname,a.phone,a.position,a.education,a.bank].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st);
-  });
+function accExportSelected(){
+  var sel=[];ACC_DATA.forEach(function(a){if(ACC_SEL[a.id])sel.push(a)});
+  if(!sel.length){toast('กรุณาเลือกพนักงานก่อน','terr');return}
   var csv='\uFEFF';
   csv+='ชื่อ-สกุล,ชื่อเล่น,เบอร์โทร,อีเมล,ตำแหน่ง,ธนาคาร,เลขบัญชี,วุฒิการศึกษา,สถานะ,วันที่สมัคร\n';
-  list.forEach(function(a){
+  sel.forEach(function(a){
     csv+='"'+esc(a.name)+'","'+esc(a.nickname||'')+'","'+esc(a.phone||'')+'","'+esc(a.email||'')+'","'+esc(a.position||'')+'","'+esc(a.bank||'')+'","'+esc(a.bank_account||'')+'","'+esc(a.education||'')+'","'+(ACC_ST[a.status]||ACC_ST.new).l+'","'+String(a.created_at||'').substring(0,10)+'"\n';
   });
-  accDownload(csv,'ข้อมูลพนักงาน_'+new Date().toISOString().substring(0,10)+'.csv','text/csv;charset=utf-8');
-  toast('Export '+list.length+' รายการ','tok');
+  accDownload(csv,'พนักงานที่เลือก_'+sel.length+'คน_'+new Date().toISOString().substring(0,10)+'.csv','text/csv;charset=utf-8');
+  toast('Export '+sel.length+' คน','tok');
 }
 
 function accExportAll(){

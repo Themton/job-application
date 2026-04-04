@@ -317,6 +317,7 @@
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:8px">
     <div><h2 class="ttl" style="margin-bottom:2px">📊 ระบบบัญชี — ข้อมูลพนักงาน</h2><p class="sub" style="margin-bottom:0">ดูข้อมูลและ Export ข้อมูลพนักงาน</p></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-g btn-s" onclick="accDownloadAll()">🪪 โหลดบัตร ปชช. ทั้งหมด</button>
       <button class="btn btn-a btn-s" onclick="accExportCSV()">📥 Export CSV</button>
       <button class="btn btn-a btn-s" onclick="accExportAll()">📥 Export ทั้งหมด (CSV)</button>
       <button class="btn btn-g btn-s" onclick="loadAcc()">🔄</button>
@@ -1314,14 +1315,15 @@ function accRender(){
   });
 
   // Stats
-  var tot=ACC_DATA.length,dy=0,mt=0,nw=0,tm=0;
-  ACC_DATA.forEach(function(a){if(a.status==='daily')dy++;if(a.status==='monthly')mt++;if(a.status==='new')nw++;if(a.status==='terminated')tm++});
+  var tot=ACC_DATA.length,dy=0,mt=0,nw=0,tm=0,hasId=0;
+  ACC_DATA.forEach(function(a){if(a.status==='daily')dy++;if(a.status==='monthly')mt++;if(a.status==='new')nw++;if(a.status==='terminated')tm++;if(a.id_link)hasId++});
   $('acc-stats').innerHTML=
     '<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+tot+'</div></div>'+
     '<div class="st"><div class="l">ใหม่</div><div class="v" style="color:#3b82f6">'+nw+'</div></div>'+
     '<div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div>'+
     '<div class="st"><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+mt+'</div></div>'+
-    '<div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div>';
+    '<div class="st"><div class="l">มีบัตร ปชช.</div><div class="v" style="color:var(--ok)">'+hasId+'</div></div>'+
+    '<div class="st"><div class="l">ยังไม่มีบัตร</div><div class="v" style="color:var(--err)">'+(tot-tm-hasId)+'</div></div>';
 
   $('acc-cnt').textContent='พบ '+list.length+' คน';
 
@@ -1353,6 +1355,22 @@ function accRender(){
   });
   h+='</tbody></table></div>';
   $('acc-table').innerHTML=h;
+}
+
+function accDownloadAll(){
+  var links=[];
+  ACC_DATA.forEach(function(a){if(a.id_link)links.push({name:a.name,url:a.id_link})});
+  if(!links.length){toast('ไม่มีไฟล์บัตรประชาชนให้ดาวน์โหลด','terr');return}
+  if(!confirm('ดาวน์โหลดบัตรประชาชน '+links.length+' ไฟล์\n\nเบราว์เซอร์อาจบล็อก popup — กด "อนุญาต" ถ้ามีแจ้งเตือน'))return;
+  links.forEach(function(l,i){
+    setTimeout(function(){
+      var url=l.url,fid=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if(!fid)fid=url.match(/id=([a-zA-Z0-9_-]+)/);
+      if(fid)url='https://drive.google.com/uc?export=download&id='+fid[1];
+      window.open(url,'_blank');
+      if(i===links.length-1)toast('เปิดบัตร ปชช. '+links.length+' ไฟล์แล้ว','tok');
+    },i*500);
+  });
 }
 
 function accExportCSV(){

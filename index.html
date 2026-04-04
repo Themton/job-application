@@ -195,7 +195,11 @@
     <div id="T-rpt" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <span class="ttl" style="font-size:18px">📊 รายงานวันลาคงเหลือ</span>
-        <div style="display:flex;gap:6px;align-items:center">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-g btn-s" onclick="rptDownloadAll('id_link','บัตรประชาชน')" title="ดาวน์โหลดบัตร ปชช. ทั้งหมด">🪪 โหลดบัตรทั้งหมด</button>
+          <button class="btn btn-g btn-s" onclick="rptDownloadAll('cred_link','วุฒิการศึกษา')">📄 โหลดวุฒิ</button>
+          <button class="btn btn-g btn-s" onclick="rptDownloadAll('house_link','ทะเบียนบ้าน')">🏠 โหลดทะเบียนบ้าน</button>
+          <button class="btn btn-g btn-s" onclick="rptDownloadAll('bank_link','Book Bank')">🏦 โหลด Book Bank</button>
           <div class="sb" style="min-width:180px"><input id="rpt-srch" placeholder="ค้นหาชื่อ เบอร์โทร..." oninput="renderReport()"></div>
           <select class="fsel" id="rpt-st" onchange="renderReport()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option></select>
           <button class="btn btn-g btn-s" onclick="loadReport()">🔄</button>
@@ -1206,6 +1210,27 @@ function renderReport(){
 
   h+='</tbody></table></div>';
   $('rpt-table').innerHTML=h;
+}
+
+function rptDownloadAll(field,label){
+  var links=[];
+  RPT_DATA.forEach(function(r){if(r[field])links.push({name:r.name,url:r[field]})});
+  if(!links.length){toast('ไม่มีไฟล์'+label+'ให้ดาวน์โหลด','terr');return}
+  if(!confirm('จะเปิด '+links.length+' ไฟล์ ('+label+')\n\nเบราว์เซอร์อาจบล็อก popup — กด "อนุญาต" ถ้ามีแจ้งเตือน')){return}
+
+  var opened=0;
+  links.forEach(function(l,i){
+    setTimeout(function(){
+      // Convert Google Drive link to direct download
+      var url=l.url;
+      var fid=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if(!fid)fid=url.match(/id=([a-zA-Z0-9_-]+)/);
+      if(fid){url='https://drive.google.com/uc?export=download&id='+fid[1]}
+      window.open(url,'_blank');
+      opened++;
+      if(opened===links.length)toast('เปิด '+label+' '+opened+' ไฟล์แล้ว','tok');
+    },i*500);
+  });
 }
 
 /* ═══ UTILS ═══ */

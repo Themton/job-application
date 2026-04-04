@@ -90,9 +90,10 @@
 
 <div class="hdr"><div class="hdr-in">
   <div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><div><h1>ระบบข้อมูลพนักงาน</h1><small>บริษัทเดอะเอ็มที</small></div></div>
-  <div id="nav-btns" style="display:flex;gap:5px">
+  <div id="nav-btns" style="display:flex;gap:5px;flex-wrap:wrap">
     <a href="." class="nbtn" style="text-decoration:none">📝 กรอกข้อมูลพนักงาน</a>
     <a href="?admin" class="nbtn" style="text-decoration:none">👤 สำหรับเจ้าหน้าที่</a>
+    <a href="?acc" class="nbtn" style="text-decoration:none">📊 บัญชี</a>
   </div>
 </div></div>
 
@@ -300,6 +301,38 @@
   <div id="slip-modal-in" style="background:var(--card);border-radius:16px;padding:24px;max-width:560px;width:100%;max-height:85vh;overflow:auto;box-shadow:var(--sh3);border:1px solid var(--bdr)" onclick="event.stopPropagation()"></div>
 </div>
 
+<!-- PAGE: ACCOUNTING LOGIN -->
+<div id="P-acc-login" class="wrap hide"><div class="lw"><div class="lb">
+<div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>เข้าสู่ระบบบัญชี</h2><p class="s">บริษัทเดอะเอ็มที</p>
+<div id="acc-err" class="lerr hide"></div>
+<div class="fld"><label>ชื่อผู้ใช้</label><input id="acc-user" placeholder="ชื่อผู้ใช้" onkeydown="if(event.key==='Enter')doAccLogin()"></div>
+<div class="fld"><label>รหัสผ่าน</label><input id="acc-pass" type="password" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doAccLogin()"></div>
+<button class="btn btn-a" onclick="doAccLogin()">🔐 เข้าสู่ระบบ</button>
+</div></div></div>
+
+<!-- PAGE: ACCOUNTING -->
+<div id="P-acc" class="wrap hide">
+<div id="acc-ld" class="ldp"><div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><div style="font-size:14px;font-weight:600;color:var(--pri)">กำลังโหลดข้อมูล...</div></div>
+<div id="acc-main" class="hide">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:8px">
+    <div><h2 class="ttl" style="margin-bottom:2px">📊 ระบบบัญชี — ข้อมูลพนักงาน</h2><p class="sub" style="margin-bottom:0">ดูข้อมูลและ Export ข้อมูลพนักงาน</p></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-a btn-s" onclick="accExportCSV()">📥 Export CSV</button>
+      <button class="btn btn-a btn-s" onclick="accExportAll()">📥 Export ทั้งหมด (CSV)</button>
+      <button class="btn btn-g btn-s" onclick="loadAcc()">🔄</button>
+      <button class="btn btn-d btn-s" onclick="accLogout()">🚪 ออกจากระบบ</button>
+    </div>
+  </div>
+  <div id="acc-stats" class="sts" style="margin-bottom:14px"></div>
+  <div class="tb">
+    <div class="sb"><input id="acc-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร ตำแหน่ง..." oninput="accRender()"></div>
+    <select class="fsel" id="acc-st" onchange="accRender()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
+  </div>
+  <div id="acc-cnt" class="rcnt"></div>
+  <div id="acc-table"></div>
+</div>
+</div>
+
 <div id="lbox" class="lbox hide" onclick="closeLB()"><button class="lbox-close" onclick="closeLB()">✕</button><img id="lbox-img" src=""></div>
 <div id="toast" class="toast hide"></div>
 
@@ -309,7 +342,7 @@ var SB="https://fnkohtdpwdwedjrtklre.supabase.co";
 var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZua29odGRwd2R3ZWRqcnRrbHJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTA3MjIsImV4cCI6MjA4ODkyNjcyMn0.AuotNxQWgKiSYpS7kLBMm3jOCFhJWsXy31yaqG6dwic";
 var DA="https://script.google.com/macros/s/AKfycbzVjRs-R4Fs_hBPK3sQhFvSsYTHZ-1pV-t5kjBac86AbDBMGzYi96HPzL-QOqigEWCw/exec";
 var EM="https://script.google.com/macros/s/AKfycbyDrEQweHxOpdKdZ3TA0niJ7YG02rqFFcyccECtS6LgcRkRZMZnt7Z1xwTfFTXat0GI/exec";
-var MODE=location.search.indexOf('admin')>-1?'admin':'public';
+var MODE=location.search.indexOf('admin')>-1?'admin':location.search.indexOf('acc')>-1?'acc':'public';
 
 /* ═══ Supabase ═══ */
 function sb(t,m,b,q){var u=SB+"/rest/v1/"+t+(q||"");var o={method:m||"GET",headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Prefer":"return=representation"}};if(b)o.body=JSON.stringify(b);return fetch(u,o).then(function(r){return r.json()})}
@@ -328,9 +361,10 @@ function pf(id){return $(id)}
 
 /* ═══ PAGE NAV ═══ */
 function page(p){
-  ['P-form','P-success','P-login','P-admin'].forEach(function(x){$(x).classList.add('hide')});
+  ['P-form','P-success','P-login','P-admin','P-acc-login','P-acc'].forEach(function(x){$(x).classList.add('hide')});
   $('P-'+p).classList.remove('hide');
   if(p==='admin')loadAdmin();
+  if(p==='acc')loadAcc();
   if(p==='form')loadPos();
   window.scrollTo(0,0);
 }
@@ -1233,6 +1267,110 @@ function rptDownloadAll(field,label){
   });
 }
 
+/* ═══ ACCOUNTING ═══ */
+var ACC_DATA=[];
+var ACC_ST={new:{l:'ใหม่',c:'b-new'},daily:{l:'รายวัน',c:'b-daily'},monthly:{l:'ประจำ',c:'b-monthly'},terminated:{l:'พ้นสภาพ',c:'b-terminated'}};
+
+function doAccLogin(){
+  var u=$('acc-user').value.trim(),p=$('acc-pass').value.trim();$('acc-err').classList.add('hide');
+  if(!u||!p){$('acc-err').textContent='กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';$('acc-err').classList.remove('hide');return}
+  sb("users","GET",null,"?username=eq."+encodeURIComponent(u)+"&password=eq."+encodeURIComponent(p)+"&select=*").then(function(r){
+    if(Array.isArray(r)&&r.length>0){sessionStorage.setItem('mt_acc_logged','1');page('acc')}
+    else{$('acc-err').textContent='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';$('acc-err').classList.remove('hide')}
+  }).catch(function(e){$('acc-err').textContent='เชื่อมต่อไม่ได้: '+e;$('acc-err').classList.remove('hide')});
+}
+
+function accLogout(){sessionStorage.removeItem('mt_acc_logged');page('acc-login')}
+
+function loadAcc(){
+  $('acc-ld').classList.remove('hide');$('acc-main').classList.add('hide');
+  sb("applications","GET",null,"?select=*&order=created_at.desc").then(function(r){
+    ACC_DATA=Array.isArray(r)?r:[];
+    $('acc-ld').classList.add('hide');$('acc-main').classList.remove('hide');
+    accRender();
+  }).catch(function(e){$('acc-ld').classList.add('hide');$('acc-main').classList.remove('hide');toast('โหลดไม่สำเร็จ: '+e,'terr')});
+}
+
+function accRender(){
+  var q=$('acc-srch').value.toLowerCase(),st=$('acc-st').value;
+  var list=ACC_DATA.filter(function(a){
+    return[a.name,a.nickname,a.phone,a.position,a.education,a.bank].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st);
+  });
+
+  // Stats
+  var tot=ACC_DATA.length,dy=0,mt=0,nw=0,tm=0;
+  ACC_DATA.forEach(function(a){if(a.status==='daily')dy++;if(a.status==='monthly')mt++;if(a.status==='new')nw++;if(a.status==='terminated')tm++});
+  $('acc-stats').innerHTML=
+    '<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+tot+'</div></div>'+
+    '<div class="st"><div class="l">ใหม่</div><div class="v" style="color:#3b82f6">'+nw+'</div></div>'+
+    '<div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div>'+
+    '<div class="st"><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+mt+'</div></div>'+
+    '<div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div>';
+
+  $('acc-cnt').textContent='พบ '+list.length+' คน';
+
+  var h='<div class="tw"><table><thead><tr>'+
+    '<th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>เบอร์โทร</th><th>ตำแหน่ง</th><th>ธนาคาร</th><th>เลขบัญชี</th><th>วุฒิ</th><th>สถานะ</th><th>วันที่</th><th>เอกสาร</th>'+
+    '</tr></thead><tbody>';
+
+  list.forEach(function(a){
+    var s=ACC_ST[a.status]||ACC_ST.new;
+    var dt=String(a.created_at||'').substring(0,10);
+    h+='<tr>';
+    h+='<td class="nm">'+esc(a.name)+'</td>';
+    h+='<td>'+esc(a.nickname||'-')+'</td>';
+    h+='<td>'+esc(a.phone||'-')+'</td>';
+    h+='<td>'+esc(a.position||'-')+'</td>';
+    h+='<td>'+esc(a.bank||'-')+'</td>';
+    h+='<td>'+esc(a.bank_account||'-')+'</td>';
+    h+='<td>'+esc(a.education||'-')+'</td>';
+    h+='<td><span class="bg '+s.c+'">'+s.l+'</span></td>';
+    h+='<td>'+esc(dt)+'</td>';
+    h+='<td style="white-space:nowrap">'
+      +(a.id_link?'<a href="'+esc(a.id_link)+'" target="_blank" style="text-decoration:none" title="บัตรประชาชน">🪪</a> ':'')
+      +(a.cred_link?'<a href="'+esc(a.cred_link)+'" target="_blank" style="text-decoration:none" title="วุฒิการศึกษา">📄</a> ':'')
+      +(a.house_link?'<a href="'+esc(a.house_link)+'" target="_blank" style="text-decoration:none" title="ทะเบียนบ้าน">🏠</a> ':'')
+      +(a.bank_link?'<a href="'+esc(a.bank_link)+'" target="_blank" style="text-decoration:none" title="Book Bank">🏦</a>':'')
+      +((!a.id_link&&!a.cred_link&&!a.house_link&&!a.bank_link)?'<span style="color:var(--muted)">-</span>':'')
+      +'</td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  $('acc-table').innerHTML=h;
+}
+
+function accExportCSV(){
+  var q=$('acc-srch').value.toLowerCase(),st=$('acc-st').value;
+  var list=ACC_DATA.filter(function(a){
+    return[a.name,a.nickname,a.phone,a.position,a.education,a.bank].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st);
+  });
+  var csv='\uFEFF';
+  csv+='ชื่อ-สกุล,ชื่อเล่น,เบอร์โทร,อีเมล,ตำแหน่ง,ธนาคาร,เลขบัญชี,วุฒิการศึกษา,สถานะ,วันที่สมัคร\n';
+  list.forEach(function(a){
+    csv+='"'+esc(a.name)+'","'+esc(a.nickname||'')+'","'+esc(a.phone||'')+'","'+esc(a.email||'')+'","'+esc(a.position||'')+'","'+esc(a.bank||'')+'","'+esc(a.bank_account||'')+'","'+esc(a.education||'')+'","'+(ACC_ST[a.status]||ACC_ST.new).l+'","'+String(a.created_at||'').substring(0,10)+'"\n';
+  });
+  accDownload(csv,'ข้อมูลพนักงาน_'+new Date().toISOString().substring(0,10)+'.csv','text/csv;charset=utf-8');
+  toast('Export '+list.length+' รายการ','tok');
+}
+
+function accExportAll(){
+  var csv='\uFEFF';
+  csv+='ชื่อ-สกุล,ชื่อเล่น,เบอร์โทร,อีเมล,ตำแหน่ง,ธนาคาร,เลขบัญชี,วุฒิการศึกษา,สถานะ,วันที่สมัคร,บัตรประชาชน,วุฒิ,ทะเบียนบ้าน,Book Bank\n';
+  ACC_DATA.forEach(function(a){
+    csv+='"'+esc(a.name)+'","'+esc(a.nickname||'')+'","'+esc(a.phone||'')+'","'+esc(a.email||'')+'","'+esc(a.position||'')+'","'+esc(a.bank||'')+'","'+esc(a.bank_account||'')+'","'+esc(a.education||'')+'","'+(ACC_ST[a.status]||ACC_ST.new).l+'","'+String(a.created_at||'').substring(0,10)+'","'+(a.id_link||'')+'","'+(a.cred_link||'')+'","'+(a.house_link||'')+'","'+(a.bank_link||'')+'"\n';
+  });
+  accDownload(csv,'ข้อมูลพนักงานทั้งหมด_'+new Date().toISOString().substring(0,10)+'.csv','text/csv;charset=utf-8');
+  toast('Export ทั้งหมด '+ACC_DATA.length+' รายการ','tok');
+}
+
+function accDownload(content,filename,type){
+  var blob=new Blob([content],{type:type});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 /* ═══ UTILS ═══ */
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
 function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinfo'?'📤 ':'❌ ')+t;el.className='toast '+(c||'terr');el.classList.remove('hide');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.add('hide')},3500)}
@@ -1241,6 +1379,9 @@ function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinf
 if(MODE==='admin'){
   if(sessionStorage.getItem('mt_logged')==='1'){page('admin')}
   else{page('login')}
+}else if(MODE==='acc'){
+  if(sessionStorage.getItem('mt_acc_logged')==='1'){page('acc')}
+  else{page('acc-login')}
 }else{
   page('form');
 }

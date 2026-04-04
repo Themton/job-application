@@ -170,6 +170,7 @@
       <button class="atab" id="tab-usr" onclick="showTab('usr')">👤 ผู้ใช้</button>
       <button class="atab" id="tab-rpt" onclick="showTab('rpt')">📊 รายงาน</button>
       <button class="atab" id="tab-pay" onclick="showTab('pay')">💰 เงินเดือน</button>
+      <button class="atab" id="tab-paydb" onclick="showTab('paydb')">🗂️ ประวัติเงินเดือน</button>
       <button class="atab" id="tab-slip" onclick="showTab('slip')">📧 ส่งสลิป</button>
     </div>
     <!-- TAB: Employees -->
@@ -237,7 +238,12 @@
       </div>
 
       <div id="pay-results" class="hide">
-        <div class="sts" id="pay-stats" style="margin-top:16px"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:16px;margin-bottom:10px;flex-wrap:wrap">
+          <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="pay-month" value="" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
+          <button class="btn btn-a btn-s" onclick="paySaveToDB()" id="pay-save-btn">💾 บันทึกลงระบบ</button>
+          <span id="pay-save-status" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+        <div class="sts" id="pay-stats"></div>
         <div class="tb">
           <div class="sb"><input id="pay-srch" placeholder="ค้นหาชื่อ..." oninput="payRenderTable()"></div>
           <div id="pay-filters" style="display:flex;gap:3px;flex-wrap:wrap"></div>
@@ -249,6 +255,22 @@
           ½วัน = ออกก่อน 14:00 / เข้าหลัง 12:00 / มีแสตมป์เดียว (ยกเว้นวันสุดท้ายของเดือน)
         </div>
       </div>
+    </div>
+
+    <!-- TAB: Payroll History -->
+    <div id="T-paydb" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span class="ttl" style="font-size:18px">🗂️ ประวัติเงินเดือน</span>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <select class="fsel" id="paydb-month" onchange="loadPayDB()"><option value="">กำลังโหลด...</option></select>
+          <div class="sb" style="min-width:160px"><input id="paydb-srch" placeholder="ค้นหาชื่อ..." oninput="paydbRender()"></div>
+          <button class="btn btn-a btn-s" onclick="paydbExport()">📥 Export CSV</button>
+          <button class="btn btn-d btn-s" onclick="paydbDelete()">🗑️ ลบเดือนนี้</button>
+          <button class="btn btn-g btn-s" onclick="loadPayDBMonths()">🔄</button>
+        </div>
+      </div>
+      <div id="paydb-stats" class="sts" style="margin-bottom:14px"></div>
+      <div id="paydb-table"></div>
     </div>
 
     <!-- TAB: Payslip Email -->
@@ -392,8 +414,8 @@ function page(p){
 }
 
 function showTab(t){
-  ['app','pos','usr','rpt','pay','slip'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
-  if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();
+  ['app','pos','usr','rpt','pay','paydb','slip'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
+  if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();
 }
 
 /* ═══ LOAD POSITIONS FOR FORM ═══ */
@@ -726,6 +748,8 @@ function payProcess(){
         return Object.assign({},emp,{att:att,attA:attA,pay:pay});
       });
       $('pay-results').classList.remove('hide');
+      // Auto-set current month
+      if(!$('pay-month').value){var now=new Date();$('pay-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
       payRenderFilters();payRenderTable();
       toast('คำนวณเสร็จ! พบ '+PAY_DATA.length+' คน','tok');
     }catch(e){toast('ผิดพลาด: '+e.message,'terr');console.error(e)}
@@ -1028,6 +1052,164 @@ function slipAutoEmail(){
     if(nick){var em=nick.toLowerCase().replace(/\s+/g,'')+domain;SLIP_EMAILS[i]=em;emailSet(e.name,em);count++}
   });
   slipRender();toast('สร้างอีเมลอัตโนมัติ '+count+' คน','tok');
+}
+
+/* ═══ PAYROLL SAVE & HISTORY ═══ */
+function paySaveToDB(){
+  var month=$('pay-month').value;
+  if(!month){toast('กรุณาเลือกเดือน/ปี','terr');return}
+  if(!PAY_DATA.length){toast('ยังไม่มีข้อมูลเงินเดือน','terr');return}
+  if(!confirm('บันทึกเงินเดือน '+PAY_DATA.length+' คน เดือน '+month+' ?\n\n(ถ้ามีข้อมูลเดือนเดิมจะถูกลบแล้วบันทึกใหม่)'))return;
+
+  $('pay-save-btn').disabled=true;$('pay-save-status').textContent='⏳ กำลังบันทึก...';
+
+  // Delete old records for this month first
+  sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
+    // Insert all
+    var records=PAY_DATA.map(function(e){
+      return{
+        id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),
+        month:month,
+        emp_name:e.name,
+        nickname:e.nickname||'',
+        position:e.position||'',
+        salary:e.pay?e.pay.adjSal:e.salary,
+        diligence:e.diligence||0,
+        total_income:e.pay?e.pay.totalIn:e.totalIncome,
+        tax3:e.pay?e.pay.tax3:e.tax3,
+        ss5:e.pay?e.pay.ss5:e.ss5,
+        loan:e.loan||0,
+        advance:e.advance||0,
+        total_ded:e.pay?e.pay.totalDed:e.totalDed,
+        net:e.pay?e.pay.net:e.net,
+        commission:e.commission||0
+      };
+    });
+
+    // Batch insert (chunk if needed)
+    var chunk=50,idx=0,ok=0;
+    function next(){
+      if(idx>=records.length){
+        $('pay-save-btn').disabled=false;
+        $('pay-save-status').innerHTML='<span style="color:var(--ok)">✅ บันทึกแล้ว '+ok+' คน — เดือน '+month+'</span>';
+        toast('บันทึกเงินเดือน '+ok+' คนแล้ว','tok');
+        return;
+      }
+      var batch=records.slice(idx,idx+chunk);
+      sb("payroll","POST",batch).then(function(r){
+        ok+=batch.length;idx+=chunk;
+        $('pay-save-status').textContent='⏳ บันทึก '+ok+'/'+records.length+'...';
+        next();
+      }).catch(function(e){
+        $('pay-save-btn').disabled=false;
+        $('pay-save-status').innerHTML='<span style="color:var(--err)">❌ ผิดพลาด: '+e+'</span>';
+      });
+    }
+    next();
+  }).catch(function(e){
+    $('pay-save-btn').disabled=false;
+    $('pay-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>';
+  });
+}
+
+var PAYDB_DATA=[],PAYDB_MONTHS=[];
+
+function loadPayDBMonths(){
+  sb("payroll","GET",null,"?select=month&order=month.desc").then(function(r){
+    if(!Array.isArray(r))r=[];
+    var seen={};PAYDB_MONTHS=[];
+    r.forEach(function(x){if(!seen[x.month]){seen[x.month]=true;PAYDB_MONTHS.push(x.month)}});
+    var sel=$('paydb-month');
+    sel.innerHTML=PAYDB_MONTHS.length?'':'<option value="">ยังไม่มีข้อมูล</option>';
+    PAYDB_MONTHS.forEach(function(m,i){sel.innerHTML+='<option value="'+m+'"'+(i===0?' selected':'')+'>'+m+'</option>'});
+    if(PAYDB_MONTHS.length)loadPayDB();
+    else{$('paydb-stats').innerHTML='';$('paydb-table').innerHTML='<div class="emp"><div class="ei">📭</div><p>ยังไม่มีข้อมูลเงินเดือน</p><p style="font-size:12px;color:var(--muted)">ไปที่แท็บ 💰 เงินเดือน → คำนวณ → กด 💾 บันทึกลงระบบ</p></div>'}
+  }).catch(function(e){toast('โหลดไม่สำเร็จ: '+e,'terr')});
+}
+
+function loadPayDB(){
+  var month=$('paydb-month').value;
+  if(!month)return;
+  sb("payroll","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*&order=emp_name").then(function(r){
+    PAYDB_DATA=Array.isArray(r)?r:[];
+    paydbRender();
+  }).catch(function(e){toast('โหลดไม่สำเร็จ: '+e,'terr')});
+}
+
+function paydbRender(){
+  var q=$('paydb-srch').value.toLowerCase();
+  var list=PAYDB_DATA.filter(function(r){
+    if(!q)return true;
+    return(r.emp_name+' '+r.nickname+' '+r.position).toLowerCase().indexOf(q)>=0;
+  });
+
+  var tSal=0,tInc=0,tDed=0,tNet=0,tComm=0;
+  list.forEach(function(r){tSal+=r.salary;tInc+=r.total_income;tDed+=r.total_ded;tNet+=r.net;tComm+=r.commission});
+
+  $('paydb-stats').innerHTML=[
+    {l:"พนักงาน",v:list.length,u:"คน",c:"var(--pri)",ic:"👥"},
+    {l:"รวมรายรับ",v:payFmt(tInc),u:"บาท",c:"var(--ok)",ic:"💰"},
+    {l:"รวมหัก",v:payFmt(tDed),u:"บาท",c:"var(--err)",ic:"📉"},
+    {l:"จ่ายสุทธิ",v:payFmt(tNet),u:"บาท",c:"var(--ok)",ic:"✅"},
+    {l:"คอมมิชชั่น",v:payFmt(tComm),u:"บาท",c:"#d4a73c",ic:"⭐"}
+  ].map(function(s){return'<div class="st"><div class="ic">'+s.ic+'</div><div class="l">'+s.l+'</div><div class="v" style="color:'+s.c+'">'+s.v+'</div><div class="u">'+s.u+'</div></div>'}).join('');
+
+  var h='<div class="tw"><table><thead><tr>'+
+    '<th>ชื่อ</th><th>ตำแหน่ง</th><th style="text-align:right">เงินเดือน</th><th style="text-align:right">เบี้ยขยัน</th><th style="text-align:right">รวมรายรับ</th>'+
+    '<th style="text-align:right">ภาษี3%</th><th style="text-align:right">ปกส.5%</th><th style="text-align:right">กยศ.</th><th style="text-align:right">เบิกล่วงหน้า</th><th style="text-align:right">รวมหัก</th>'+
+    '<th style="text-align:right;color:var(--ok)">สุทธิ</th><th style="text-align:right">คอมมิชชั่น</th>'+
+    '</tr></thead><tbody>';
+
+  list.forEach(function(r){
+    h+='<tr>';
+    h+='<td><div class="nm">'+esc(r.emp_name)+'</div>'+(r.nickname?'<div class="em">('+esc(r.nickname)+')</div>':'')+'</td>';
+    h+='<td style="font-size:11px">'+esc(r.position)+'</td>';
+    h+='<td style="text-align:right;font-variant-numeric:tabular-nums">'+payFmt(r.salary)+'</td>';
+    h+='<td style="text-align:right;font-variant-numeric:tabular-nums;color:'+(r.diligence>0?'var(--ok)':'var(--muted)')+'">'+payFmt(r.diligence)+'</td>';
+    h+='<td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--ok)">'+payFmt(r.total_income)+'</td>';
+    h+='<td style="text-align:right;font-variant-numeric:tabular-nums;color:'+(r.tax3>0?'var(--err)':'var(--muted)')+'">'+payFmt(r.tax3)+'</td>';
+    h+='<td style="text-align:right;font-variant-numeric:tabular-nums;color:'+(r.ss5>0?'var(--err)':'var(--muted)')+'">'+payFmt(r.ss5)+'</td>';
+    h+='<td style="text-align:right;font-variant-numeric:tabular-nums;color:'+(r.loan>0?'var(--err)':'var(--muted)')+'">'+payFmt(r.loan)+'</td>';
+    h+='<td style="text-align:right;font-variant-numeric:tabular-nums;color:'+(r.advance>0?'var(--err)':'var(--muted)')+'">'+payFmt(r.advance)+'</td>';
+    h+='<td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--err)">'+payFmt(r.total_ded)+'</td>';
+    h+='<td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:700">'+payFmt(r.net)+'</td>';
+    h+='<td style="text-align:right;font-variant-numeric:tabular-nums;color:'+(r.commission>0?'#d4a73c':'var(--muted)')+'">'+payFmt(r.commission)+'</td>';
+    h+='</tr>';
+  });
+
+  h+='</tbody><tfoot><tr style="font-weight:700">'+
+    '<td colspan="2" style="color:var(--pri)">รวม '+list.length+' คน</td>'+
+    '<td style="text-align:right;font-variant-numeric:tabular-nums">'+payFmt(tSal)+'</td>'+
+    '<td></td>'+
+    '<td style="text-align:right;font-variant-numeric:tabular-nums;color:var(--ok)">'+payFmt(tInc)+'</td>'+
+    '<td colspan="4"></td>'+
+    '<td style="text-align:right;font-variant-numeric:tabular-nums;color:var(--err)">'+payFmt(tDed)+'</td>'+
+    '<td style="text-align:right;font-variant-numeric:tabular-nums;color:var(--ok)">'+payFmt(tNet)+'</td>'+
+    '<td style="text-align:right;font-variant-numeric:tabular-nums;color:#d4a73c">'+payFmt(tComm)+'</td>'+
+    '</tr></tfoot></table></div>';
+  $('paydb-table').innerHTML=h;
+}
+
+function paydbExport(){
+  if(!PAYDB_DATA.length){toast('ไม่มีข้อมูล','terr');return}
+  var month=$('paydb-month').value;
+  var csv='\uFEFF';
+  csv+='เดือน,ชื่อ,ชื่อเล่น,ตำแหน่ง,เงินเดือน,เบี้ยขยัน,รวมรายรับ,ภาษี3%,ประกันสังคม5%,กยศ.,เบิกล่วงหน้า,รวมหัก,สุทธิ,คอมมิชชั่น\n';
+  PAYDB_DATA.forEach(function(r){
+    csv+='"'+month+'","'+esc(r.emp_name)+'","'+esc(r.nickname||'')+'","'+esc(r.position||'')+'",'+r.salary+','+r.diligence+','+r.total_income+','+r.tax3+','+r.ss5+','+r.loan+','+r.advance+','+r.total_ded+','+r.net+','+r.commission+'\n';
+  });
+  accDownload(csv,'เงินเดือน_'+month+'.csv','text/csv;charset=utf-8');
+  toast('Export '+PAYDB_DATA.length+' คน','tok');
+}
+
+function paydbDelete(){
+  var month=$('paydb-month').value;
+  if(!month)return;
+  if(!confirm('ลบข้อมูลเงินเดือนเดือน '+month+' ทั้งหมด?'))return;
+  sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
+    toast('ลบเดือน '+month+' แล้ว','tok');
+    loadPayDBMonths();
+  }).catch(function(e){toast('Error: '+e,'terr')});
 }
 
 var LOGO_URL='https://raw.githubusercontent.com/Themton/job-application/main/LOGO_THEMT.png';

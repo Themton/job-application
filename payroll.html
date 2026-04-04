@@ -372,7 +372,13 @@ function analyzeAtt(att){
 }
 
 function calcPayroll(emp,attA){
-  if(isDirector(emp.position))return{rate:0,halfDed:0,absDed:0,attDed:0,adjSal:emp.salary,totalIn:emp.totalIncome,tax3:0,ss5:0,totalDed:0,net:emp.net,daily:false,method:"กรรมการ"};
+  var isTele=emp.position.indexOf("Telesales")>=0||emp.position.indexOf("telesales")>=0;
+  
+  // กรรมการ, พนักงานประจำ, แอดมิน = ไม่หักจากเวลา
+  if(!isTele){
+    return{rate:0,halfDed:0,absDed:0,attDed:0,adjSal:emp.salary,totalIn:emp.totalIncome,tax3:emp.tax3,ss5:emp.ss5,totalDed:emp.totalDed,net:emp.net,daily:false,method:emp.position+" — ไม่คิดจากเวลา"};
+  }
+
   var daily=isDaily(emp.position);
   if(daily){
     var eff=attA.full+attA.half*0.5;
@@ -380,14 +386,14 @@ function calcPayroll(emp,attA){
     var t3=emp.tax3>0?Math.round(ti*0.03*100)/100:0;
     var s5=emp.ss5>0?Math.min(Math.round(ti*0.05*100)/100,750):0;
     var td=t3+s5+emp.loan+emp.advance;
-    return{rate:DAILY_RATE,halfDed:attA.half*(DAILY_RATE/2),absDed:attA.absent*DAILY_RATE,attDed:Math.max(0,emp.salary-adj),adjSal:adj,totalIn:ti,tax3:t3,ss5:s5,totalDed:td,net:Math.max(0,ti-td),daily:true,eff:eff,method:"รายวัน "+DAILY_RATE+"฿×"+eff+"วัน"};
+    return{rate:DAILY_RATE,halfDed:attA.half*(DAILY_RATE/2),absDed:attA.absent*DAILY_RATE,attDed:Math.max(0,emp.salary-adj),adjSal:adj,totalIn:ti,tax3:t3,ss5:s5,totalDed:td,net:Math.max(0,ti-td),daily:true,eff:eff,method:"Telesales รายวัน "+DAILY_RATE+"฿×"+eff+"วัน"};
   } else {
     var hd=attA.half*(PERM_RATE/2),ad=attA.absent*PERM_RATE,atd=hd+ad;
     var adj=Math.max(0,emp.salary-atd),ti=adj+emp.diligence;
     var t3=emp.tax3>0?Math.round(ti*0.03*100)/100:0;
     var s5=emp.ss5>0?Math.min(Math.round(ti*0.05*100)/100,750):0;
     var td=t3+s5+emp.loan+emp.advance;
-    return{rate:PERM_RATE,halfDed:hd,absDed:ad,attDed:atd,adjSal:adj,totalIn:ti,tax3:t3,ss5:s5,totalDed:td,net:Math.max(0,ti-td),daily:false,method:"ประจำ หัก "+PERM_RATE+"฿/วัน"};
+    return{rate:PERM_RATE,halfDed:hd,absDed:ad,attDed:atd,adjSal:adj,totalIn:ti,tax3:t3,ss5:s5,totalDed:td,net:Math.max(0,ti-td),daily:false,method:"Telesales รายเดือน หัก "+PERM_RATE+"฿/วัน"};
   }
 }
 

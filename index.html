@@ -1375,6 +1375,15 @@ function accDownload(content,filename,type){
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
 function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinfo'?'📤 ':'❌ ')+t;el.className='toast '+(c||'terr');el.classList.remove('hide');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.add('hide')},3500)}
 
+// Auto-create accounting user if not exists
+sb("users","GET",null,"?username=eq.accounting&select=id").then(function(r){
+  if(!Array.isArray(r)||r.length===0){
+    sb("users","POST",{id:"USR-ACC-"+Date.now(),username:"accounting",password:"themt2569",display_name:"พนักงานบัญชี",role:"accounting"}).then(function(){
+      console.log('✅ สร้าง user บัญชีแล้ว');
+    }).catch(function(){});
+  }
+}).catch(function(){});
+
 /* ═══ INIT ═══ */
 if(MODE==='admin'){
   if(sessionStorage.getItem('mt_logged')==='1'){page('admin')}

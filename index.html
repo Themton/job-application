@@ -57,7 +57,7 @@
 .sp{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sn .6s linear infinite}@keyframes sn{to{transform:rotate(360deg)}}
 .ldp{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}.ldp .logo{width:56px;height:56px;border-radius:12px}
 .suc{text-align:center;padding:50px 20px}.suc .sico{font-size:56px;margin-bottom:14px}.suc h3{font-size:20px;font-weight:700;color:var(--pri);margin-bottom:6px}.suc p{font-size:14px;color:var(--txt2);margin-bottom:20px}
-.atabs{display:flex;gap:6px;margin-bottom:22px;border-bottom:2px solid var(--bdr2);overflow-x:auto;-webkit-overflow-scrolling:touch}.atab{padding:10px 18px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.2s;white-space:nowrap;flex-shrink:0}.atab:hover{color:var(--txt)}.atab.on{color:#b8860b;border-bottom-color:#b8860b}
+.atabs{display:flex;gap:2px;margin-bottom:22px;border-bottom:2px solid var(--bdr2);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding-bottom:2px}.atab{padding:9px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.2s;white-space:nowrap;flex-shrink:0}.atab:hover{color:var(--txt)}.atab.on{color:#b8860b;border-bottom-color:#b8860b;background:rgba(198,149,43,.06);border-radius:6px 6px 0 0}
 .doc-box{border:1px solid var(--bdr);border-radius:10px;overflow:hidden;margin-top:8px;background:var(--inp)}.doc-box img{width:100%;max-height:360px;object-fit:contain;display:block;cursor:pointer;background:#fff}
 .doc-label{font-size:11px;color:var(--muted);font-weight:600;padding:8px 12px;border-top:1px solid var(--bdr2);display:flex;justify-content:space-between}.doc-label a{font-size:11px}.doc-na{padding:20px;text-align:center;color:var(--muted);font-size:13px}
 .lbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;cursor:pointer}.lbox img{max-width:100%;max-height:90vh;object-fit:contain;border-radius:8px}.lbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:28px;font-weight:700;cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);border-radius:50%;border:none}
@@ -79,7 +79,7 @@
 .tmbtn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid;transition:.2s;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
 .tmbtn-warn{background:rgba(220,38,38,.05);border-color:rgba(220,38,38,.3);color:var(--err)}.tmbtn-warn:hover{background:rgba(220,38,38,.12)}
 .emp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
-@media(max-width:700px){.g2,.dg{grid-template-columns:1fr}.sts{grid-template-columns:1fr 1fr}.hdr-in{flex-direction:column;gap:8px}.tb{flex-direction:column}.tw{overflow-x:auto}.tw table{min-width:500px}.wrap{padding:16px 14px 40px}.cd{padding:18px 16px}.ttl{font-size:19px}.brand h1{font-size:13px}.dt{flex-direction:column;text-align:center}.fld input,.fld select{font-size:16px;padding:11px 12px}.btn{padding:12px 20px;font-size:14px;width:100%;justify-content:center}.brow{flex-direction:column}.btn-s{width:auto}.lb{padding:28px 20px}.lb .logo{width:56px;height:56px}.lb h2{font-size:17px}.atabs{overflow-x:auto}.atab{padding:10px 14px;font-size:12px;white-space:nowrap}.st{padding:12px}.st .v{font-size:20px}.toast{left:14px;right:14px;bottom:14px}.tw th,.tw td{padding:9px 10px;font-size:11px}.uz{padding:16px 10px;min-height:80px}.emp-grid{grid-template-columns:1fr}.doc-box img{max-height:260px}}
+@media(max-width:700px){.g2,.dg{grid-template-columns:1fr}.sts{grid-template-columns:1fr 1fr}.hdr-in{flex-direction:column;gap:8px}.tb{flex-direction:column}.tw{overflow-x:auto}.tw table{min-width:500px}.wrap{padding:16px 14px 40px}.cd{padding:18px 16px}.ttl{font-size:19px}.brand h1{font-size:13px}.dt{flex-direction:column;text-align:center}.fld input,.fld select{font-size:16px;padding:11px 12px}.btn{padding:12px 20px;font-size:14px;width:100%;justify-content:center}.brow{flex-direction:column}.btn-s{width:auto}.lb{padding:28px 20px}.lb .logo{width:56px;height:56px}.lb h2{font-size:17px}.atabs{overflow-x:auto;scroll-snap-type:x mandatory}.atab{padding:8px 10px;font-size:11px;white-space:nowrap;scroll-snap-align:start}.st{padding:12px}.st .v{font-size:20px}.toast{left:14px;right:14px;bottom:14px}.tw th,.tw td{padding:9px 10px;font-size:11px}.uz{padding:16px 10px;min-height:80px}.emp-grid{grid-template-columns:1fr}.doc-box img{max-height:260px}}
 @media(max-width:400px){.sts{grid-template-columns:1fr 1fr}.st{padding:10px}.st .v{font-size:18px}.cd{padding:14px 12px}.hdr-in{padding:10px 14px}.wrap{padding:12px 10px 36px}}
 </style>
 </head>
@@ -169,11 +169,11 @@
       <button class="atab" id="tab-pos" onclick="showTab('pos')">💼 ตำแหน่ง</button>
       <button class="atab" id="tab-usr" onclick="showTab('usr')">👤 ผู้ใช้</button>
       <button class="atab" id="tab-rpt" onclick="showTab('rpt')">📊 รายงาน</button>
-      <button class="atab" id="tab-pay" onclick="showTab('pay')">💰 เงินเดือน</button>
-      <button class="atab" id="tab-paydb" onclick="showTab('paydb')">🗂️ ประวัติเงินเดือน</button>
-      <button class="atab" id="tab-slip" onclick="showTab('slip')">📧 ส่งสลิป</button>
+      <button class="atab" id="tab-pay" onclick="showTab('pay')">💰 คิดเงินเดือน</button>
+      <button class="atab" id="tab-paydb" onclick="showTab('paydb')">🗂️ ประวัติ</button>
+      <button class="atab" id="tab-slip" onclick="showTab('slip')">📧 สลิป</button>
     </div>
-    <!-- TAB: Employees -->
+    <div style="text-align:right;font-size:9px;color:var(--muted);margin-top:-18px;margin-bottom:14px">← เลื่อนดูเมนูเพิ่ม →</div>
     <div id="T-app"><div class="sts" id="A-sts"></div>
       <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร ตำแหน่ง..." oninput="doFilter()"></div>
         <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>

@@ -1361,8 +1361,8 @@ function payDBRender(){
     {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
     {k:'diligence',l:'เบี้ยขยัน',w:75,type:'inc'},
     {k:'commission',l:'คอมมิชชั่น',w:80,type:'inc'},
-    {k:'tax3',l:'ภาษี 3%',w:75,type:'ded'},
-    {k:'ss5',l:'ปกส. 5%',w:75,type:'ded'},
+    {k:'tax3',l:'ภาษี 3% ⚡',w:80,type:'ded'},
+    {k:'ss5',l:'ปกส. 5% ⚡',w:80,type:'ded'},
     {k:'loan',l:'กยศ.',w:70,type:'ded'},
     {k:'advance',l:'เบิกล่วงหน้า',w:85,type:'ded'}
   ];
@@ -1397,7 +1397,8 @@ function payDBRender(){
     h+='<td class="xpos">'+esc(e.position)+'</td>';
     cols.forEach(function(c){
       var v=e[c.k]||0;
-      h+='<td><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" placeholder="0"></td>';
+      var auto=(c.k==='tax3'||c.k==='ss5');
+      h+='<td style="'+(auto?'background:#f0f8ff':'')+'"><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" data-i="'+i+'" placeholder="0" style="'+(auto?'color:#4a90d9':'')+'"></td>';
     });
     h+='<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
     h+='<td class="xsum xsum-err">'+payFmt(e.totalDed)+'</td>';
@@ -1419,23 +1420,40 @@ function payDBRender(){
   $('paydb2-table').innerHTML=h;
 }
 
-function payDBCell(i,field,val){
-  PAYDB2[i][field]=parseFloat(val)||0;
-  // Auto-calculate this row
-  var e=PAYDB2[i];
+function payDBCalcRow(e){
   e.totalIncome=e.salary+e.diligence+e.commission;
+  e.tax3=Math.round(e.totalIncome*0.03*100)/100;
+  e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,750);
   e.totalDed=e.tax3+e.ss5+e.loan+e.advance;
   e.net=Math.max(0,e.totalIncome-e.totalDed);
-  // Update summary cells for this row only (faster than full re-render)
-  var row=i;
-  var tds=$('paydb2-table').querySelectorAll('tbody tr')[row];
-  if(tds){
-    var cells=tds.querySelectorAll('td.xsum');
+}
+
+function payDBCell(i,field,val){
+  PAYDB2[i][field]=parseFloat(val)||0;
+  var e=PAYDB2[i];
+
+  if(field==='salary'||field==='diligence'||field==='commission'){
+    payDBCalcRow(e);
+  }else{
+    e.totalIncome=e.salary+e.diligence+e.commission;
+    e.totalDed=e.tax3+e.ss5+e.loan+e.advance;
+    e.net=Math.max(0,e.totalIncome-e.totalDed);
+  }
+
+  // Update tax3/ss5 inputs and summary in DOM
+  var t3inp=$('paydb2-table').querySelector('input[data-i="'+i+'"][data-c="tax3"]');
+  var s5inp=$('paydb2-table').querySelector('input[data-i="'+i+'"][data-c="ss5"]');
+  if(field==='salary'||field==='diligence'||field==='commission'){
+    if(t3inp)t3inp.value=e.tax3||'';
+    if(s5inp)s5inp.value=e.ss5||'';
+  }
+  var row=t3inp?t3inp.closest('tr'):null;
+  if(row){
+    var cells=row.querySelectorAll('td.xsum');
     if(cells[0])cells[0].textContent=payFmt(e.totalIncome);
     if(cells[1])cells[1].textContent=payFmt(e.totalDed);
     if(cells[2])cells[2].textContent=payFmt(e.net);
   }
-  // Update footer totals
   payDBUpdateFooter();
 }
 
@@ -1468,13 +1486,9 @@ function payDBUpdate(i,field,val){
 }
 
 function payDBCalcAll(){
-  PAYDB2.forEach(function(e){
-    e.totalIncome=e.salary+e.diligence;
-    e.totalDed=e.tax3+e.ss5+e.loan+e.advance;
-    e.net=Math.max(0,e.totalIncome-e.totalDed);
-  });
+  PAYDB2.forEach(function(e){payDBCalcRow(e)});
   payDBRender();
-  toast('คำนวณ '+PAYDB2.length+' คนเรียบร้อย','tok');
+  toast('คำนวณ '+PAYDB2.length+' คน — ภาษี 3% + ปกส. 5% อัตโนมัติ','tok');
 }
 
 function payDBSave(){

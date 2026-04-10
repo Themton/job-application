@@ -207,6 +207,7 @@
       </div>
       <div class="sb-menu">
         <button class="sb-item on" id="tab-app" onclick="showTab('app')"><span class="sb-ic">📋</span><span class="sb-tx">พนักงาน</span></button>
+        <button class="sb-item" id="tab-dept" onclick="showTab('dept')"><span class="sb-ic">🏢</span><span class="sb-tx">แผนก</span></button>
         <button class="sb-item" id="tab-pos" onclick="showTab('pos')"><span class="sb-ic">💼</span><span class="sb-tx">ตำแหน่ง</span></button>
         <button class="sb-item" id="tab-usr" onclick="showTab('usr')"><span class="sb-ic">👤</span><span class="sb-tx">ผู้ใช้ / สิทธิ์</span></button>
         <button class="sb-item" id="tab-rpt" onclick="showTab('rpt')"><span class="sb-ic">📊</span><span class="sb-tx">รายงาน</span></button>
@@ -230,7 +231,8 @@
     <!-- Content area -->
     <div class="sb-content">
     <div id="T-app"><div class="sts" id="A-sts"></div>
-      <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร ตำแหน่ง..." oninput="doFilter()"></div>
+      <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร..." oninput="doFilter()"></div>
+        <select class="fsel" id="f-dept" onchange="doFilter()"><option value="">ทุกแผนก</option></select>
         <select class="fsel" id="f-pos" onchange="doFilter()"><option value="">ทุกตำแหน่ง</option></select>
         <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
         <button class="btn btn-a btn-s" onclick="showAdminAddEmp()">➕ เพิ่มพนักงาน</button>
@@ -247,6 +249,7 @@
           <div class="fld"><label>ชื่อเล่น</label><input id="ae-nick" placeholder="ชื่อเล่น"></div>
           <div class="fld"><label>โทรศัพท์ <span class="rq">*</span></label><input id="ae-phone" placeholder="08XXXXXXXX" maxlength="10" inputmode="tel"></div>
           <div class="fld"><label>อีเมล</label><input id="ae-email" placeholder="email@example.com" type="email"></div>
+          <div class="fld"><label>แผนก</label><select id="ae-dept"><option value="">-- เลือก --</option></select></div>
           <div class="fld"><label>ตำแหน่ง <span class="rq">*</span></label><select id="ae-pos"><option value="">-- เลือก --</option></select></div>
           <div class="fld"><label>ประเภท <span class="rq">*</span></label><select id="ae-status"><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="new">ใหม่</option></select></div>
           <div class="fld"><label>วุฒิการศึกษา</label><select id="ae-edu"><option value="">-- เลือก --</option><option>ไม่มีวุฒิการศึกษา</option><option>ประถมศึกษา</option><option>มัธยมศึกษาตอนต้น (ม.3)</option><option>มัธยมศึกษาตอนปลาย (ม.6)</option><option>ปวช.</option><option>ปวส.</option><option>อนุปริญญา</option><option>ปริญญาตรี</option><option>ปริญญาโท</option><option>ปริญญาเอก</option></select></div>
@@ -260,6 +263,12 @@
       </div>
 
       <div id="A-cnt" class="rcnt"></div><div id="A-tbl"></div>
+    </div>
+    <!-- TAB: Departments -->
+    <div id="T-dept" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="ttl" style="font-size:18px">🏢 จัดการแผนก</span><button class="btn btn-a btn-s" onclick="showDF()">➕ เพิ่มแผนก</button></div>
+      <div id="df-box" class="cd hide" style="margin-bottom:14px"><div class="fld" style="max-width:400px"><label>ชื่อแผนก <span class="rq">*</span></label><input id="df-name"></div><div class="brow" style="margin-top:8px"><button class="btn btn-g btn-s" onclick="$('df-box').classList.add('hide')">ยกเลิก</button><button class="btn btn-a btn-s" id="df-btn" onclick="saveDept()">เพิ่ม</button></div></div>
+      <div id="dept-list"></div>
     </div>
     <!-- TAB: Positions -->
     <div id="T-pos" class="hide">
@@ -516,7 +525,7 @@ var MODE=location.search.indexOf('admin')>-1?'admin':location.search.indexOf('ac
 function sb(t,m,b,q){var u=SB+"/rest/v1/"+t+(q||"");var o={method:m||"GET",headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Prefer":"return=representation"}};if(b)o.body=JSON.stringify(b);return fetch(u,o).then(function(r){return r.json()})}
 
 /* ═══ STATE ═══ */
-var ALL=[],POS=[],USR=[],FI={c:null,b:null,h:null,k:null},editPID=null,editUID=null;
+var ALL=[],POS=[],USR=[],DEPT=[],FI={c:null,b:null,h:null,k:null},editPID=null,editUID=null,editDID=null;
 
 /* ═══ EMAIL CACHE (localStorage) ═══ */
 function emailCache(){try{return JSON.parse(localStorage.getItem('mt_emails')||'{}')}catch(e){return{}}}
@@ -541,11 +550,11 @@ function page(p){
   window.scrollTo(0,0);
 }
 
-var TAB_LABELS={app:'📋 พนักงาน',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',pay:'💰 คิดเงินเดือน',paydb:'🗂️ ประวัติ',slip:'📧 สลิป'};
+var TAB_LABELS={app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',pay:'💰 คิดเงินเดือน',paydb:'🗂️ ประวัติ',slip:'📧 สลิป'};
 
 function showTab(t){
-  ['app','pos','usr','rpt','pay','paydb','slip'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
-  if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();
+  ['app','dept','pos','usr','rpt','pay','paydb','slip'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
+  if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   // Update mobile topbar label
   if($('sb-active-label'))$('sb-active-label').textContent=TAB_LABELS[t]||t;
   // Close sidebar on mobile
@@ -651,9 +660,9 @@ function doLogin(){
 /* ═══ ADMIN LOAD ═══ */
 function loadAdmin(){
   $('A-ld').classList.remove('hide');$('A-main').classList.add('hide');$('A-det').classList.add('hide');
-  Promise.all([sb("applications","GET",null,"?select=*&order=created_at.desc"),sb("positions","GET",null,"?select=*&order=title"),sb("users","GET",null,"?select=id,username,display_name,role,created_at")]).then(function(r){
-    ALL=Array.isArray(r[0])?r[0]:[];POS=Array.isArray(r[1])?r[1]:[];USR=Array.isArray(r[2])?r[2]:[];
-    $('A-ld').classList.add('hide');$('A-main').classList.remove('hide');emailSyncFromAll();stats();doFilter();renderPos();renderUsr();
+  Promise.all([sb("applications","GET",null,"?select=*&order=created_at.desc"),sb("positions","GET",null,"?select=*&order=title"),sb("users","GET",null,"?select=id,username,display_name,role,created_at"),sb("departments","GET",null,"?select=*&order=title").catch(function(){return[]})]).then(function(r){
+    ALL=Array.isArray(r[0])?r[0]:[];POS=Array.isArray(r[1])?r[1]:[];USR=Array.isArray(r[2])?r[2]:[];DEPT=Array.isArray(r[3])?r[3]:[];
+    $('A-ld').classList.add('hide');$('A-main').classList.remove('hide');emailSyncFromAll();stats();doFilter();renderPos();renderUsr();renderDept();
   }).catch(function(e){$('A-ld').classList.add('hide');$('A-main').classList.remove('hide');toast('โหลดไม่สำเร็จ: '+e,'terr')});
 }
 
@@ -665,18 +674,22 @@ function stats(){
   var sel=$('f-pos'),cur=sel.value;
   sel.innerHTML='<option value="">ทุกตำแหน่ง ('+t+')</option>';
   Object.keys(posMap).sort().forEach(function(p){sel.innerHTML+='<option value="'+esc(p)+'"'+(cur===p?' selected':'')+'>'+esc(p)+' ('+posMap[p]+')</option>'});
+  // Dept filter
+  var deptMap={};ALL.forEach(function(a){if(a.department)deptMap[a.department]=(deptMap[a.department]||0)+1});
+  var dsel=$('f-dept'),dcur=dsel.value;
+  dsel.innerHTML='<option value="">ทุกแผนก ('+t+')</option>';
+  Object.keys(deptMap).sort().forEach(function(d){dsel.innerHTML+='<option value="'+esc(d)+'"'+(dcur===d?' selected':'')+'>'+esc(d)+' ('+deptMap[d]+')</option>'});
 }
 
 /* ═══ FILTER ═══ */
 function doFilter(){
-  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value;
-  var f=ALL.filter(function(a){return[a.name,a.nickname,a.phone,a.position,a.education,a.bank].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)&&(!pos||a.position===pos)});
+  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value;
+  var f=ALL.filter(function(a){return[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)&&(!pos||a.position===pos)&&(!dept||a.department===dept)});
   $('A-cnt').textContent='พบ '+f.length+' คน';
   if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูล</p></div>';return}
-  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>ประเภท</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่</th></tr></thead><tbody>';
+  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>แผนก</th><th>ตำแหน่ง</th><th>ประเภท</th><th>เอกสาร</th><th>วันที่</th></tr></thead><tbody>';
   f.forEach(function(a){
     var s=ST[a.status]||ST.new;var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
-    // Determine type
     var typeLabel,typeBg;
     if(a.status==='daily'){typeLabel='รายวัน';typeBg='background:#fff3cd;color:#856404;border:1px solid #ffc107'}
     else if(a.status==='monthly'){typeLabel='ประจำ';typeBg='background:#d4edda;color:#155724;border:1px solid #28a745'}
@@ -684,22 +697,42 @@ function doFilter(){
     else{typeLabel='ใหม่';typeBg='background:#cce5ff;color:#004085;border:1px solid #007bff'}
     h+='<tr onclick="detail(\''+a.id+'\')">';
     h+='<td class="nm">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'')+'</td>';
+    h+='<td style="font-size:11px">'+(a.department?'<span style="background:rgba(92,74,30,.08);color:var(--pri);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600">'+esc(a.department)+'</span>':'-')+'</td>';
     h+='<td style="font-size:12px">'+esc(a.position||'-')+'</td>';
     h+='<td><span style="'+typeBg+';padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap">'+typeLabel+'</span></td>';
     h+='<td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td>';
-    h+='<td><span class="bg '+s.c+'">'+s.l+'</span></td>';
     h+='<td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td>';
     h+='</tr>';
   });
   $('A-tbl').innerHTML=h+'</tbody></table></div>';
 }
 
+/* ═══ DEPARTMENTS ═══ */
+function renderDept(){
+  if(!DEPT.length){$('dept-list').innerHTML='<div class="emp"><div class="ei">🏢</div><p>ยังไม่มีแผนก</p></div>';return}
+  var h='<div class="tw" style="margin-top:10px"><table><thead><tr><th>ชื่อแผนก</th><th>จำนวนพนักงาน</th><th>จัดการ</th></tr></thead><tbody>';
+  DEPT.forEach(function(d){
+    var cnt=ALL.filter(function(a){return a.department===d.title}).length;
+    h+='<tr><td class="nm">'+esc(d.title)+'</td><td>'+cnt+' คน</td><td style="white-space:nowrap"><button class="btn btn-g btn-s" onclick="editDept(\''+d.id+'\')">✏️</button> <button class="btn btn-d btn-s" onclick="delDept(\''+d.id+'\')">🗑️</button></td></tr>';
+  });
+  $('dept-list').innerHTML=h+'</tbody></table></div>';
+}
+function showDF(){editDID=null;$('df-name').value='';$('df-btn').textContent='เพิ่ม';$('df-box').classList.remove('hide')}
+function editDept(id){var d;DEPT.forEach(function(x){if(x.id===id)d=x});if(!d)return;editDID=id;$('df-name').value=d.title;$('df-btn').textContent='บันทึก';$('df-box').classList.remove('hide')}
+function saveDept(){
+  var t=$('df-name').value.trim();if(!t){toast('กรอกชื่อแผนก','terr');return}
+  if(editDID){sb("departments","PATCH",{title:t},"?id=eq."+editDID).then(function(){toast('แก้ไขแล้ว','tok');DEPT.forEach(function(d){if(d.id===editDID)d.title=t});renderDept();$('df-box').classList.add('hide');editDID=null;stats()}).catch(function(e){toast('Error: '+e,'terr')})}
+  else{var id="DEPT-"+Date.now();sb("departments","POST",{id:id,title:t}).then(function(r){if(Array.isArray(r)&&r.length){toast('เพิ่มแล้ว','tok');DEPT.push({id:id,title:t});renderDept();$('df-box').classList.add('hide');stats()}else{toast('เพิ่มไม่สำเร็จ','terr')}}).catch(function(e){toast('Error: '+e,'terr')})}
+}
+function delDept(id){if(!confirm('ลบแผนกนี้?'))return;sb("departments","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');DEPT=DEPT.filter(function(d){return d.id!==id});renderDept();stats()}).catch(function(e){toast('Error: '+e,'terr')})}
+
 /* ═══ ADMIN ADD EMPLOYEE ═══ */
 function showAdminAddEmp(){
   $('admin-add-emp').classList.remove('hide');
-  // Populate positions dropdown
   var sel=$('ae-pos');sel.innerHTML='<option value="">-- เลือก --</option>';
   POS.forEach(function(p){sel.innerHTML+='<option value="'+esc(p.title)+'">'+esc(p.title)+'</option>'});
+  var dsel=$('ae-dept');dsel.innerHTML='<option value="">-- เลือก --</option>';
+  DEPT.forEach(function(d){dsel.innerHTML+='<option value="'+esc(d.title)+'">'+esc(d.title)+'</option>'});
   $('ae-name').focus();
 }
 
@@ -710,7 +743,7 @@ function adminClearEmp(){
 
 function adminAddEmp(){
   var nm=$('ae-name').value.trim(),nick=$('ae-nick').value.trim(),ph=$('ae-phone').value.trim();
-  var em=$('ae-email').value.trim(),pos=$('ae-pos').value,st=$('ae-status').value;
+  var em=$('ae-email').value.trim(),dept=$('ae-dept').value,pos=$('ae-pos').value,st=$('ae-status').value;
   var edu=$('ae-edu').value,bk=$('ae-bank').value,ba=$('ae-account').value.trim();
 
   if(!nm){toast('กรุณากรอกชื่อ-สกุล','terr');return}
@@ -718,7 +751,7 @@ function adminAddEmp(){
   if(!pos){toast('กรุณาเลือกตำแหน่ง','terr');return}
 
   var id='EMP-'+Date.now();
-  var data={id:id,name:nm,nickname:nick,phone:ph,email:em,position:pos,status:st,education:edu,bank:bk,bank_account:ba};
+  var data={id:id,name:nm,nickname:nick,phone:ph,email:em,department:dept,position:pos,status:st,education:edu,bank:bk,bank_account:ba};
 
   sb("applications","POST",data).then(function(r){
     if(Array.isArray(r)&&r.length){
@@ -774,6 +807,9 @@ function editEmp(id){
   var bankOpts='<option value="">-- เลือก --</option>';
   ['กสิกรไทย (KBANK)','กรุงเทพ (BBL)','กรุงไทย (KTB)','ไทยพาณิชย์ (SCB)','กรุงศรีอยุธยา (BAY)','ทหารไทยธนชาต (TTB)','ออมสิน (GSB)','ธ.ก.ส. (BAAC)','เกียรตินาคินภัทร (KKP)','ซีไอเอ็มบี (CIMB)','ทิสโก้ (TISCO)','ยูโอบี (UOB)'].forEach(function(b){bankOpts+='<option'+(b===a.bank?' selected':'')+'>'+b+'</option>'});
 
+  var deptOpts='<option value="">-- เลือก --</option>';
+  DEPT.forEach(function(d){deptOpts+='<option value="'+esc(d.title)+'"'+(d.title===a.department?' selected':'')+'>'+esc(d.title)+'</option>'});
+
   $('edit-section').innerHTML=
     '<div class="cd edit-form" style="border:2px solid var(--acc)"><div class="cd-t"><span class="dot"></span> ✏️ แก้ไขข้อมูลพนักงาน</div>'+
     '<div class="g2">'+
@@ -781,6 +817,7 @@ function editEmp(id){
       '<div class="fld"><label>ชื่อเล่น</label><input id="ed-nick" value="'+esc(a.nickname||'')+'"></div>'+
       '<div class="fld"><label>โทรศัพท์</label><input id="ed-phone" value="'+esc(a.phone)+'" maxlength="10" inputmode="tel"></div>'+
       '<div class="fld"><label>อีเมล</label><input id="ed-email" value="'+esc(a.email||'')+'" type="email"></div>'+
+      '<div class="fld"><label>แผนก</label><select id="ed-dept">'+deptOpts+'</select></div>'+
       '<div class="fld"><label>ตำแหน่ง</label><select id="ed-pos">'+posOpts+'</select></div>'+
       '<div class="fld"><label>วุฒิการศึกษา</label><select id="ed-edu">'+eduOpts+'</select></div>'+
       '<div class="fld"><label>ธนาคาร</label><select id="ed-bank">'+bankOpts+'</select></div>'+
@@ -798,6 +835,7 @@ function saveEmp(id){
     nickname:$('ed-nick').value.trim(),
     phone:$('ed-phone').value.trim(),
     email:$('ed-email').value.trim(),
+    department:$('ed-dept').value,
     position:$('ed-pos').value,
     education:$('ed-edu').value,
     bank:$('ed-bank').value,
@@ -809,14 +847,12 @@ function saveEmp(id){
   sb("applications","PATCH",d,"?id=eq."+id).then(function(){
     toast('บันทึกเรียบร้อย','tok');
     if(d.email)emailSet(d.name,d.email);
-    ALL.forEach(function(a){if(a.id===id){a.name=d.name;a.nickname=d.nickname;a.phone=d.phone;a.email=d.email;a.position=d.position;a.education=d.education;a.bank=d.bank;a.bank_account=d.bank_account}});
-    doFilter();detail(id);
-    syncSheet({id:id,name:d.name,nickname:d.nickname,phone:d.phone,position:d.position,education:d.education,bank:d.bank,bank_account:d.bank_account});
+    ALL.forEach(function(a){if(a.id===id){a.name=d.name;a.nickname=d.nickname;a.phone=d.phone;a.email=d.email;a.department=d.department;a.position=d.position;a.education=d.education;a.bank=d.bank;a.bank_account=d.bank_account}});
+    stats();doFilter();detail(id);
   }).catch(function(e){
-    // Even if Supabase fails (email column missing), still cache locally
     if(d.email)emailSet(d.name,d.email);
-    ALL.forEach(function(a){if(a.id===id){a.name=d.name;a.nickname=d.nickname;a.phone=d.phone;a.email=d.email;a.position=d.position;a.education=d.education;a.bank=d.bank;a.bank_account=d.bank_account}});
-    toast('บันทึกแล้ว (อีเมลเก็บในเครื่อง)','tok');doFilter();detail(id);
+    ALL.forEach(function(a){if(a.id===id){a.name=d.name;a.nickname=d.nickname;a.phone=d.phone;a.email=d.email;a.department=d.department;a.position=d.position;a.education=d.education;a.bank=d.bank;a.bank_account=d.bank_account}});
+    toast('บันทึกแล้ว','tok');stats();doFilter();detail(id);
   });
 }
 

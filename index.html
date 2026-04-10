@@ -52,6 +52,10 @@
 .ssel{padding:7px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;outline:none;background:var(--card)}
 .sts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}.st{background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:16px}.st .l{font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}.st .v{font-size:24px;font-weight:700;color:var(--pri)}
 .toast{position:fixed;bottom:18px;right:18px;padding:12px 20px;border-radius:9px;font-size:13px;font-weight:500;box-shadow:var(--sh3);z-index:9999;color:#fff;animation:ti .3s}.toast.tok{background:var(--ok)}.toast.terr{background:var(--err)}.toast.tinfo{background:var(--pri2)}
+
+.xls{border-collapse:collapse;width:100%;font-size:12px;font-family:'Noto Sans Thai',sans-serif}.xls th,.xls td{border:1px solid #c8c0a8;padding:0;height:28px}.xls thead th{background:#e8dfc8;color:var(--pri);font-weight:600;font-size:10px;text-align:center;position:sticky;top:0;z-index:2;padding:4px 6px;white-space:nowrap}.xls tbody td{background:#fff}.xls tbody tr:hover td{background:#fdf5e0}.xls .xr{background:#e8dfc8;color:var(--pri);font-weight:600;font-size:10px;text-align:center;width:30px;min-width:30px;padding:2px}.xls .xname{text-align:left;padding:2px 6px;font-weight:600;color:var(--pri);font-size:12px;min-width:140px;white-space:nowrap}.xls .xpos{text-align:left;padding:2px 6px;font-size:10px;color:var(--txt2);min-width:80px;white-space:nowrap}
+.xls input{width:100%;height:100%;border:none;background:transparent;text-align:right;font-size:12px;font-family:inherit;padding:2px 6px;outline:none;color:var(--txt)}.xls input:focus{background:#e8f0fe;box-shadow:inset 0 0 0 2px #4285f4}.xls .xsum{background:#f0e8d4;font-weight:700;text-align:right;padding:2px 6px;font-size:12px}.xls .xsum-ok{color:var(--ok)}.xls .xsum-err{color:var(--err)}.xls .xsum-pri{color:var(--pri)}
+.xls-wrap{border:2px solid #b8a880;border-radius:8px;overflow:auto;max-height:70vh;box-shadow:var(--sh2)}
 @keyframes ti{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
 .emp{text-align:center;padding:44px 16px;color:var(--muted)}.emp .ei{font-size:36px;opacity:.3;margin-bottom:8px}.emp p{font-size:14px;font-weight:500}
 .sp{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sn .6s linear infinite}@keyframes sn{to{transform:rotate(360deg)}}
@@ -1205,39 +1209,111 @@ function payDBLoadPrev(){
 function payDBRender(){
   if(!PAYDB2.length){$('paydb2-table').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่มีข้อมูล</p></div>';return}
 
-  var tI=0,tD=0,tN=0;
-  PAYDB2.forEach(function(e){tI+=e.totalIncome;tD+=e.totalDed;tN+=e.net});
+  var tSal=0,tDil=0,tI=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tCom=0;
+  PAYDB2.forEach(function(e){tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tCom+=e.commission});
 
-  var h='<div style="font-size:11px;color:var(--muted);margin-bottom:6px">พนักงาน '+PAYDB2.length+' คน | รวมรายรับ '+payFmt(tI)+' | รวมหัก '+payFmt(tD)+' | สุทธิ <b style="color:var(--ok)">'+payFmt(tN)+'</b></div>';
-  h+='<div class="tw" style="overflow-x:auto"><table style="min-width:900px"><thead><tr>';
-  h+='<th style="width:30px">ลำดับ</th><th>ชื่อ</th><th>ตำแหน่ง</th>';
-  h+='<th style="width:90px">เงินเดือน</th><th style="width:70px">เบี้ยขยัน</th>';
-  h+='<th style="width:70px">ภาษี3%</th><th style="width:70px">ปกส.5%</th>';
-  h+='<th style="width:70px">กยศ.</th><th style="width:80px">เบิกล่วงหน้า</th>';
-  h+='<th style="width:80px">คอมมิชชั่น</th>';
-  h+='<th style="text-align:right">รวมรับ</th><th style="text-align:right">รวมหัก</th><th style="text-align:right;color:var(--ok)">สุทธิ</th>';
+  var cols=[
+    {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
+    {k:'diligence',l:'เบี้ยขยัน',w:75,type:'inc'},
+    {k:'commission',l:'คอมมิชชั่น',w:80,type:'inc'},
+    {k:'tax3',l:'ภาษี 3%',w:75,type:'ded'},
+    {k:'ss5',l:'ปกส. 5%',w:75,type:'ded'},
+    {k:'loan',l:'กยศ.',w:70,type:'ded'},
+    {k:'advance',l:'เบิกล่วงหน้า',w:85,type:'ded'}
+  ];
+  var sums=[tSal,tDil,tCom,tT3,tS5,tLo,tAd];
+
+  var h='<div class="xls-wrap"><table class="xls"><thead><tr>';
+  h+='<th class="xr" style="min-width:28px"></th>';
+  h+='<th style="min-width:40px">A</th>';
+  h+='<th style="min-width:150px">B</th>';
+  h+='<th style="min-width:90px">C</th>';
+  cols.forEach(function(c,ci){h+='<th style="min-width:'+c.w+'px">'+String.fromCharCode(68+ci)+'</th>'});
+  h+='<th style="min-width:90px;background:#d4ecc0">'+String.fromCharCode(68+cols.length)+'</th>';
+  h+='<th style="min-width:80px;background:#f5d0c0">'+String.fromCharCode(69+cols.length)+'</th>';
+  h+='<th style="min-width:100px;background:#c0d8f0">'+String.fromCharCode(70+cols.length)+'</th>';
+  h+='</tr><tr>';
+  h+='<th class="xr"></th>';
+  h+='<th style="font-size:9px">ลำดับ</th>';
+  h+='<th style="text-align:left;padding-left:6px">ชื่อ-สกุล</th>';
+  h+='<th style="text-align:left;padding-left:6px">ตำแหน่ง</th>';
+  cols.forEach(function(c){h+='<th>'+c.l+'</th>'});
+  h+='<th style="background:#d4ecc0">รวมรับ</th>';
+  h+='<th style="background:#f5d0c0">รวมหัก</th>';
+  h+='<th style="background:#c0d8f0">สุทธิ</th>';
   h+='</tr></thead><tbody>';
 
   PAYDB2.forEach(function(e,i){
-    var inp=function(field,w){return'<input value="'+(e[field]||0)+'" onchange="payDBUpdate('+i+',\''+field+'\',this.value)" style="width:'+(w||'60')+'px;padding:4px 6px;border:1px solid var(--bdr);border-radius:4px;font-size:11px;font-family:inherit;text-align:right;background:var(--inp)">'};
     h+='<tr>';
-    h+='<td style="text-align:center;color:var(--muted);font-size:10px">'+(i+1)+'</td>';
-    h+='<td><div class="nm" style="font-size:12px">'+esc(e.name)+'</div>'+(e.nickname?'<div class="em">('+esc(e.nickname)+')</div>':'')+'</td>';
-    h+='<td style="font-size:10px;color:var(--txt2)">'+esc(e.position)+'</td>';
-    h+='<td>'+inp('salary','80')+'</td>';
-    h+='<td>'+inp('diligence')+'</td>';
-    h+='<td>'+inp('tax3')+'</td>';
-    h+='<td>'+inp('ss5')+'</td>';
-    h+='<td>'+inp('loan')+'</td>';
-    h+='<td>'+inp('advance','70')+'</td>';
-    h+='<td>'+inp('commission','70')+'</td>';
-    h+='<td style="text-align:right;font-size:12px;color:var(--ok)">'+payFmt(e.totalIncome)+'</td>';
-    h+='<td style="text-align:right;font-size:12px;color:var(--err)">'+payFmt(e.totalDed)+'</td>';
-    h+='<td style="text-align:right;font-size:13px;font-weight:700">'+payFmt(e.net)+'</td>';
+    h+='<td class="xr">'+(i+1)+'</td>';
+    h+='<td class="xr" style="font-size:10px">'+(i+1)+'</td>';
+    h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
+    h+='<td class="xpos">'+esc(e.position)+'</td>';
+    cols.forEach(function(c){
+      var v=e[c.k]||0;
+      h+='<td><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+i+',\''+c.k+'\')" data-r="'+i+'" data-c="'+c.k+'" placeholder="0"></td>';
+    });
+    h+='<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
+    h+='<td class="xsum xsum-err">'+payFmt(e.totalDed)+'</td>';
+    h+='<td class="xsum" style="font-size:13px;color:var(--pri)">'+payFmt(e.net)+'</td>';
     h+='</tr>';
   });
-  h+='</tbody></table></div>';
+
+  // Totals row
+  h+='</tbody><tfoot><tr style="background:#e8dfc8">';
+  h+='<td class="xr"></td>';
+  h+='<td class="xsum xsum-pri" colspan="2" style="text-align:left;padding-left:6px">รวม '+PAYDB2.length+' คน</td>';
+  h+='<td></td>';
+  sums.forEach(function(s){h+='<td class="xsum">'+payFmt(s)+'</td>'});
+  h+='<td class="xsum xsum-ok">'+payFmt(tI)+'</td>';
+  h+='<td class="xsum xsum-err">'+payFmt(tD)+'</td>';
+  h+='<td class="xsum" style="font-size:14px;color:var(--pri)">'+payFmt(tN)+'</td>';
+  h+='</tr></tfoot></table></div>';
+
   $('paydb2-table').innerHTML=h;
+}
+
+function payDBCell(i,field,val){
+  PAYDB2[i][field]=parseFloat(val)||0;
+  // Auto-calculate this row
+  var e=PAYDB2[i];
+  e.totalIncome=e.salary+e.diligence+e.commission;
+  e.totalDed=e.tax3+e.ss5+e.loan+e.advance;
+  e.net=Math.max(0,e.totalIncome-e.totalDed);
+  // Update summary cells for this row only (faster than full re-render)
+  var row=i;
+  var tds=$('paydb2-table').querySelectorAll('tbody tr')[row];
+  if(tds){
+    var cells=tds.querySelectorAll('td.xsum');
+    if(cells[0])cells[0].textContent=payFmt(e.totalIncome);
+    if(cells[1])cells[1].textContent=payFmt(e.totalDed);
+    if(cells[2])cells[2].textContent=payFmt(e.net);
+  }
+  // Update footer totals
+  payDBUpdateFooter();
+}
+
+function payDBUpdateFooter(){
+  var tSal=0,tDil=0,tCom=0,tT3=0,tS5=0,tLo=0,tAd=0,tI=0,tD=0,tN=0;
+  PAYDB2.forEach(function(e){tSal+=e.salary;tDil+=e.diligence;tCom+=e.commission;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tI+=e.totalIncome;tD+=e.totalDed;tN+=e.net});
+  var foot=$('paydb2-table').querySelectorAll('tfoot td.xsum');
+  var vals=[tSal,tDil,tCom,tT3,tS5,tLo,tAd,tI,tD,tN];
+  foot.forEach(function(td,j){if(j>0&&vals[j-1]!==undefined)td.textContent=payFmt(vals[j-1])});
+}
+
+function payDBNav(e,row,col){
+  var cols=['salary','diligence','commission','tax3','ss5','loan','advance'];
+  var ci=cols.indexOf(col);
+  var nr=row,nc=ci;
+  if(e.key==='Tab'){
+    e.preventDefault();
+    if(e.shiftKey){nc--;if(nc<0){nc=cols.length-1;nr--}}else{nc++;if(nc>=cols.length){nc=0;nr++}}
+  }else if(e.key==='Enter'||e.key==='ArrowDown'){e.preventDefault();nr++}
+  else if(e.key==='ArrowUp'){e.preventDefault();nr--}
+  else{return}
+  if(nr<0)nr=0;if(nr>=PAYDB2.length)nr=PAYDB2.length-1;
+  var next=$('paydb2-table').querySelector('input[data-r="'+nr+'"][data-c="'+cols[nc]+'"]');
+  if(next){next.focus();next.select()}
 }
 
 function payDBUpdate(i,field,val){

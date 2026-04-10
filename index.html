@@ -778,13 +778,20 @@ function payPickFile(inp,key){var f=inp.files[0];if(!f)return;var r=new FileRead
 function payRmFile(e,key){e.stopPropagation();PAY_FILES[key]=null;$('uz-'+key).classList.remove('ok');$('uz-'+key).querySelector('input').value='';$('uz-'+key+'-e').classList.remove('hide');$('uz-'+key+'-d').classList.add('hide');$('pay-calc-btn').disabled=true}
 
 function payMatchEmpDB(emp){
-  var en=emp.name.replace(/\s*-\s*/g,' ').replace(/\s+/g,' ').trim();
-  var parts=en.split(' ').filter(function(p){return p.length>1});
+  var en=emp.name.replace(/\s*-\s*/g,' ').replace(/\s+/g,' ').replace(/\s{2,}/g,' ').trim();
+  var parts=en.split(' ').filter(function(p){return p.length>0});
+  // Try exact match first
   for(var i=0;i<ALL.length;i++){
-    var a=ALL[i],an=(a.name||'').replace(/\s*-\s*/g,' ').replace(/\s+/g,' ').trim();
+    var an=(ALL[i].name||'').replace(/\s*-\s*/g,' ').replace(/\s+/g,' ').replace(/\s{2,}/g,' ').trim();
+    if(an===en)return ALL[i];
+  }
+  // Try partial match
+  for(var i=0;i<ALL.length;i++){
+    var a=ALL[i],an=(a.name||'').replace(/\s*-\s*/g,' ').replace(/\s+/g,' ').replace(/\s{2,}/g,' ').trim();
     var mc=0;for(var j=0;j<parts.length;j++){if(an.indexOf(parts[j])>=0)mc++}
     if(mc>=2||(parts.length===1&&mc>=1))return a;
   }
+  // Try nickname
   if(emp.nickname){for(var i=0;i<ALL.length;i++){if((ALL[i].nickname||'').indexOf(emp.nickname)>=0)return ALL[i]}}
   return null;
 }
@@ -799,21 +806,42 @@ function payProcess(){
       var posSet={};emps.forEach(function(e){if(e.position)posSet[e.position]=true});
       PAY_POS=Object.keys(posSet);
       payDetectSundays(atts);
-      var terminated=[];
+      var terminated=[],notFound=[];
       PAY_DATA=emps.map(function(emp){
         var att=payMatch(emp,atts),attA=payAnalyze(att),pay=payCalc(emp,attA);
-        // ตรวจสอบสถานะจากระบบ
         var dbEmp=payMatchEmpDB(emp);
         var empStatus=dbEmp?dbEmp.status:'';
         var isTerminated=(empStatus==='terminated');
         if(isTerminated)terminated.push(emp.name);
-        return Object.assign({},emp,{att:att,attA:attA,pay:pay,dbStatus:empStatus,isTerminated:isTerminated});
+        if(!dbEmp)notFound.push(emp.name);
+        return Object.assign({},emp,{att:att,attA:attA,pay:pay,dbStatus:empStatus,isTerminated:isTerminated,dbFound:!!dbEmp});
       });
       $('pay-results').classList.remove('hide');
       if(!$('pay-month').value){var now=new Date();$('pay-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
+
+      // Show terminated warning banner
+      var warn='';
+      if(terminated.length){
+        warn+='<div style="background:rgba(220,38,38,.1);border:2px solid var(--err);border-radius:8px;padding:14px;margin-bottom:14px">';
+        warn+='<div style="font-weight:700;color:var(--err);font-size:14px;margin-bottom:6px">⛔ พบพนักงานลาออก/พ้นสภาพ '+terminated.length+' คน — ห้ามโอนเงิน!</div>';
+        warn+='<div style="font-size:12px;color:var(--err)">';
+        terminated.forEach(function(n){warn+='<div style="padding:2px 0">• '+esc(n)+'</div>'});
+        warn+='</div>';
+        warn+='<div style="font-size:11px;color:var(--muted);margin-top:6px">พนักงานเหล่านี้จะ <b>ไม่ถูกรวม</b> ในไฟล์ Payroll SCB</div>';
+        warn+='</div>';
+      }
+      if(notFound.length){
+        warn+='<div style="background:rgba(245,158,11,.1);border:2px solid #f59e0b;border-radius:8px;padding:14px;margin-bottom:14px">';
+        warn+='<div style="font-weight:700;color:#f59e0b;font-size:13px;margin-bottom:4px">⚠️ ไม่พบในฐานข้อมูล '+notFound.length+' คน (ตรวจสอบชื่อ)</div>';
+        warn+='<div style="font-size:11px;color:var(--muted)">'+notFound.join(', ')+'</div>';
+        warn+='</div>';
+      }
+      $('pay-warn')&&$('pay-warn').remove();
+      if(warn){var div=document.createElement('div');div.id='pay-warn';div.innerHTML=warn;$('pay-stats').parentNode.insertBefore(div,$('pay-stats'))}
+
       payRenderFilters();payRenderTable();
       if(terminated.length){
-        toast('⚠️ พบพนักงานลาออก '+terminated.length+' คน — จะไม่ถูกรวมในไฟล์ Payroll','terr');
+        toast('⛔ พบพนักงานลาออก '+terminated.length+' คน — ห้ามโอน!','terr');
       }else{
         toast('คำนวณเสร็จ! พบ '+PAY_DATA.length+' คน','tok');
       }

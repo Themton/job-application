@@ -218,6 +218,43 @@
         <span class="ttl" style="font-size:18px">💰 คำนวณเงินเดือน</span>
       </div>
 
+      <!-- 2 Modes -->
+      <div class="g2" style="margin-bottom:16px">
+        <div class="cd" style="cursor:pointer;text-align:center;border:2px solid var(--bdr);transition:.2s" onclick="payShowMode('db')" id="pay-mode-db">
+          <div style="font-size:28px;margin-bottom:6px">🗄️</div>
+          <div style="font-size:14px;font-weight:700;color:var(--pri)">ดึงจากฐานข้อมูล</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">ดึงข้อมูลพนักงานจากระบบ<br>แก้ไขเงินเดือนได้ทันที ทำพร้อมกันทุกคน</div>
+        </div>
+        <div class="cd" style="cursor:pointer;text-align:center;border:2px solid var(--bdr);transition:.2s" onclick="payShowMode('file')" id="pay-mode-file">
+          <div style="font-size:28px;margin-bottom:6px">📂</div>
+          <div style="font-size:14px;font-weight:700;color:var(--pri)">อัปโหลดไฟล์ Excel</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">อัปโหลดตารางเงินเดือน + เวลาลงเวลา<br>คำนวณหักเวลาอัตโนมัติ</div>
+        </div>
+      </div>
+
+      <!-- Mode: DB -->
+      <div id="pay-db-area" class="hide">
+        <div class="cd">
+          <div class="cd-t"><span class="dot"></span> ตั้งค่าเงินเดือนจากฐานข้อมูล</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="paydb2-month" value="" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
+            <button class="btn btn-a btn-s" onclick="payDBLoad()">🗄️ ดึงข้อมูลพนักงาน</button>
+            <button class="btn btn-g btn-s" onclick="payDBLoadPrev()">📋 ดึงเงินเดือนเดือนก่อน</button>
+          </div>
+          <div id="paydb2-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+          <div id="paydb2-table"></div>
+          <div id="paydb2-actions" class="hide" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <button class="btn btn-a" onclick="payDBCalcAll()">📊 คำนวณทั้งหมด</button>
+            <button class="btn btn-a btn-s" onclick="payDBSave()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">💾 บันทึกลงระบบ</button>
+            <button class="btn btn-a btn-s" onclick="payDBExportSCB()" style="background:linear-gradient(135deg,#4e2a84,#7b3fa0)">🏦 สร้างไฟล์ SCB</button>
+            <button class="btn btn-g btn-s" onclick="payDBExportCSV()">📥 Export CSV</button>
+            <span id="paydb2-save-status" style="font-size:12px;color:var(--muted)"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode: File Upload (existing) -->
+      <div id="pay-file-area" class="hide">
       <div class="cd" id="pay-upload">
         <div class="cd-t"><span class="dot"></span> อัปโหลดไฟล์</div>
         <div class="g2">
@@ -235,6 +272,7 @@
           </div>
         </div>
         <div class="brow" style="margin-top:12px"><button class="btn btn-a" id="pay-calc-btn" disabled onclick="payProcess()">📊 คำนวณเงินเดือน</button></div>
+      </div>
       </div>
 
       <div id="pay-results" class="hide">
@@ -1090,6 +1128,197 @@ function slipAutoEmail(){
 }
 
 /* ═══ SCB PAYROLL FILE EXPORT ═══ */
+
+/* ═══ PAYROLL FROM DB ═══ */
+var PAYDB2=[];
+
+function payShowMode(mode){
+  $('pay-db-area').classList.toggle('hide',mode!=='db');
+  $('pay-file-area').classList.toggle('hide',mode!=='file');
+  $('pay-mode-db').style.borderColor=mode==='db'?'var(--acc)':'var(--bdr)';
+  $('pay-mode-db').style.background=mode==='db'?'rgba(198,149,43,.06)':'';
+  $('pay-mode-file').style.borderColor=mode==='file'?'var(--acc)':'var(--bdr)';
+  $('pay-mode-file').style.background=mode==='file'?'rgba(198,149,43,.06)':'';
+  if(mode==='db'&&!$('paydb2-month').value){var now=new Date();$('paydb2-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
+}
+
+function payDBLoad(){
+  $('paydb2-status').textContent='⏳ กำลังดึงข้อมูลพนักงาน...';
+  sb("applications","GET",null,"?select=*&status=neq.terminated&order=name").then(function(r){
+    if(!Array.isArray(r)||!r.length){$('paydb2-status').textContent='ไม่พบพนักงาน';return}
+    PAYDB2=r.map(function(a){
+      return{
+        id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
+        bank:a.bank||'',account:a.bank_account||'',
+        salary:0,diligence:0,tax3:0,ss5:0,loan:0,advance:0,commission:0,
+        totalIncome:0,totalDed:0,net:0,
+        isTerminated:false
+      };
+    });
+    $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — กรอกเงินเดือนแล้วกด คำนวณ';
+    payDBRender();
+    $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';
+  }).catch(function(e){$('paydb2-status').textContent='❌ ดึงไม่สำเร็จ: '+e});
+}
+
+function payDBLoadPrev(){
+  var month=$('paydb2-month').value;
+  if(!month){toast('เลือกเดือน/ปีก่อน','terr');return}
+  // Find previous month
+  var d=new Date(month+'-01');d.setMonth(d.getMonth()-1);
+  var prevMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+
+  $('paydb2-status').textContent='⏳ ดึงข้อมูลเดือน '+prevMonth+'...';
+
+  Promise.all([
+    sb("applications","GET",null,"?select=*&status=neq.terminated&order=name"),
+    sb("payroll","GET",null,"?month=eq."+encodeURIComponent(prevMonth)+"&select=*")
+  ]).then(function(res){
+    var emps=Array.isArray(res[0])?res[0]:[];
+    var prev=Array.isArray(res[1])?res[1]:[];
+
+    if(!emps.length){$('paydb2-status').textContent='ไม่พบพนักงาน';return}
+
+    // Map previous payroll by name
+    var prevMap={};
+    prev.forEach(function(p){prevMap[p.emp_name.trim()]=p});
+
+    PAYDB2=emps.map(function(a){
+      var p=prevMap[a.name.trim()]||{};
+      return{
+        id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
+        bank:a.bank||'',account:a.bank_account||'',
+        salary:p.salary||0,diligence:p.diligence||0,
+        tax3:p.tax3||0,ss5:p.ss5||0,loan:p.loan||0,advance:p.advance||0,commission:p.commission||0,
+        totalIncome:p.total_income||0,totalDed:p.total_ded||0,net:p.net||0,
+        isTerminated:false
+      };
+    });
+
+    var matched=PAYDB2.filter(function(e){return e.salary>0}).length;
+    $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — ดึงเงินเดือนจาก '+prevMonth+' ได้ <b>'+matched+'</b> คน';
+    payDBRender();
+    $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';
+  }).catch(function(e){$('paydb2-status').textContent='❌ '+e});
+}
+
+function payDBRender(){
+  if(!PAYDB2.length){$('paydb2-table').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่มีข้อมูล</p></div>';return}
+
+  var tI=0,tD=0,tN=0;
+  PAYDB2.forEach(function(e){tI+=e.totalIncome;tD+=e.totalDed;tN+=e.net});
+
+  var h='<div style="font-size:11px;color:var(--muted);margin-bottom:6px">พนักงาน '+PAYDB2.length+' คน | รวมรายรับ '+payFmt(tI)+' | รวมหัก '+payFmt(tD)+' | สุทธิ <b style="color:var(--ok)">'+payFmt(tN)+'</b></div>';
+  h+='<div class="tw" style="overflow-x:auto"><table style="min-width:900px"><thead><tr>';
+  h+='<th style="width:30px">ลำดับ</th><th>ชื่อ</th><th>ตำแหน่ง</th>';
+  h+='<th style="width:90px">เงินเดือน</th><th style="width:70px">เบี้ยขยัน</th>';
+  h+='<th style="width:70px">ภาษี3%</th><th style="width:70px">ปกส.5%</th>';
+  h+='<th style="width:70px">กยศ.</th><th style="width:80px">เบิกล่วงหน้า</th>';
+  h+='<th style="width:80px">คอมมิชชั่น</th>';
+  h+='<th style="text-align:right">รวมรับ</th><th style="text-align:right">รวมหัก</th><th style="text-align:right;color:var(--ok)">สุทธิ</th>';
+  h+='</tr></thead><tbody>';
+
+  PAYDB2.forEach(function(e,i){
+    var inp=function(field,w){return'<input value="'+(e[field]||0)+'" onchange="payDBUpdate('+i+',\''+field+'\',this.value)" style="width:'+(w||'60')+'px;padding:4px 6px;border:1px solid var(--bdr);border-radius:4px;font-size:11px;font-family:inherit;text-align:right;background:var(--inp)">'};
+    h+='<tr>';
+    h+='<td style="text-align:center;color:var(--muted);font-size:10px">'+(i+1)+'</td>';
+    h+='<td><div class="nm" style="font-size:12px">'+esc(e.name)+'</div>'+(e.nickname?'<div class="em">('+esc(e.nickname)+')</div>':'')+'</td>';
+    h+='<td style="font-size:10px;color:var(--txt2)">'+esc(e.position)+'</td>';
+    h+='<td>'+inp('salary','80')+'</td>';
+    h+='<td>'+inp('diligence')+'</td>';
+    h+='<td>'+inp('tax3')+'</td>';
+    h+='<td>'+inp('ss5')+'</td>';
+    h+='<td>'+inp('loan')+'</td>';
+    h+='<td>'+inp('advance','70')+'</td>';
+    h+='<td>'+inp('commission','70')+'</td>';
+    h+='<td style="text-align:right;font-size:12px;color:var(--ok)">'+payFmt(e.totalIncome)+'</td>';
+    h+='<td style="text-align:right;font-size:12px;color:var(--err)">'+payFmt(e.totalDed)+'</td>';
+    h+='<td style="text-align:right;font-size:13px;font-weight:700">'+payFmt(e.net)+'</td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  $('paydb2-table').innerHTML=h;
+}
+
+function payDBUpdate(i,field,val){
+  PAYDB2[i][field]=parseFloat(val)||0;
+}
+
+function payDBCalcAll(){
+  PAYDB2.forEach(function(e){
+    e.totalIncome=e.salary+e.diligence;
+    e.totalDed=e.tax3+e.ss5+e.loan+e.advance;
+    e.net=Math.max(0,e.totalIncome-e.totalDed);
+  });
+  payDBRender();
+  toast('คำนวณ '+PAYDB2.length+' คนเรียบร้อย','tok');
+}
+
+function payDBSave(){
+  var month=$('paydb2-month').value;
+  if(!month){toast('เลือกเดือน/ปี','terr');return}
+  var valid=PAYDB2.filter(function(e){return e.salary>0||e.net>0});
+  if(!valid.length){toast('ไม่มีข้อมูลเงินเดือน — กรอกเงินเดือนแล้วกดคำนวณก่อน','terr');return}
+  if(!confirm('บันทึกเงินเดือน '+valid.length+' คน เดือน '+month+'?'))return;
+
+  $('paydb2-save-status').textContent='⏳ กำลังบันทึก...';
+
+  sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
+    var records=valid.map(function(e){
+      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,salary:e.salary,diligence:e.diligence,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net,commission:e.commission};
+    });
+    sb("payroll","POST",records).then(function(){
+      $('paydb2-save-status').innerHTML='<span style="color:var(--ok)">✅ บันทึก '+valid.length+' คน เดือน '+month+'</span>';
+      toast('บันทึกเรียบร้อย','tok');
+    }).catch(function(e){$('paydb2-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
+  }).catch(function(e){$('paydb2-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
+}
+
+function payDBExportSCB(){
+  var valid=PAYDB2.filter(function(e){return e.net>0});
+  if(!valid.length){toast('ไม่มีข้อมูล — คำนวณก่อน','terr');return}
+  var month=$('paydb2-month').value;
+  var dateStr='';
+  if(month){var d=new Date(month+'-28');dateStr=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear()}
+
+  var ws_data=[];
+  var r0=new Array(19).fill('');r0[12]='PAY';r0[13]='0';ws_data.push(r0);
+  var r1=new Array(19).fill('');r1[1]='Customer File Ref.';r1[3]='Customer Batch Ref.';r1[12]='TBPPPayroll';r1[13]='TBBankPAY';r1[14]='TBFeePayroll';r1[15]='TBServiceType';ws_data.push(r1);
+  var r2=new Array(19).fill('');r2[1]='Debit Account';r2[3]='Select Product';ws_data.push(r2);
+  var r3=new Array(19).fill('');r3[1]='Debit Fee Account';r3[3]='Select Product';r3[4]='SCB Payroll1';ws_data.push(r3);
+  var r4=new Array(19).fill('');r4[1]='Value Date';r4[2]=dateStr;ws_data.push(r4);
+  ws_data.push(new Array(19).fill(''));ws_data.push(new Array(19).fill(''));
+  var hdr=new Array(19).fill('');hdr[0]='No.';hdr[1]='Bank';hdr[2]='Account No.';hdr[3]='Recipient Name';hdr[4]='Amount';hdr[6]='Fee Charge';ws_data.push(hdr);
+
+  valid.forEach(function(e,i){
+    var bankName=BANK_MAP[e.bank]||e.bank||'ไทยพาณิชย์';
+    var bankCode=BANK_CODE[bankName]||'014';
+    var row=new Array(19).fill('');
+    row[0]=i+1;row[1]=bankName;row[2]=e.account;row[3]=e.name;row[4]=Math.round(e.net*100)/100;row[6]='Payer (OUR)';row[13]=bankCode;row[14]='OUR';
+    ws_data.push(row);
+  });
+
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet(ws_data);
+  ws['!cols']=[{wch:6},{wch:16},{wch:18},{wch:28},{wch:14},{wch:16},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws,'Payment');
+  XLSX.writeFile(wb,'CPX_Payroll_'+(month||'export')+'.xlsx');
+  toast('สร้างไฟล์ SCB '+valid.length+' คน','tok');
+}
+
+function payDBExportCSV(){
+  var valid=PAYDB2.filter(function(e){return e.salary>0||e.net>0});
+  if(!valid.length){toast('ไม่มีข้อมูล','terr');return}
+  var csv='\uFEFF';
+  csv+='ชื่อ,ชื่อเล่น,ตำแหน่ง,ธนาคาร,เลขบัญชี,เงินเดือน,เบี้ยขยัน,รวมรายรับ,ภาษี3%,ประกันสังคม5%,กยศ.,เบิกล่วงหน้า,รวมหัก,สุทธิ,คอมมิชชั่น\n';
+  valid.forEach(function(e){
+    csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.position)+'","'+esc(e.bank)+'","'+esc(e.account)+'",'+e.salary+','+e.diligence+','+e.totalIncome+','+e.tax3+','+e.ss5+','+e.loan+','+e.advance+','+e.totalDed+','+e.net+','+e.commission+'\n';
+  });
+  accDownload(csv,'เงินเดือน_'+($('paydb2-month').value||'export')+'.csv','text/csv;charset=utf-8');
+  toast('Export '+valid.length+' คน','tok');
+}
+
+/* ═══ SCB PAYROLL FILE EXPORT (File mode) ═══ */
 var BANK_MAP={
   'SCB':'ไทยพาณิชย์','ไทยพาณิชย์':'ไทยพาณิชย์','ไทยพาณิชย์ (SCB)':'ไทยพาณิชย์',
   'KBANK':'กสิกรไทย','กสิกรไทย':'กสิกรไทย','กสิกรไทย (KBANK)':'กสิกรไทย',

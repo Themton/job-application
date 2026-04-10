@@ -298,6 +298,7 @@
             <button class="btn btn-g btn-s" onclick="payDBLoadPrev()">📋 ดึงเงินเดือนเดือนก่อน</button>
           </div>
           <div id="paydb2-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+          <div id="paydb2-filters" class="hide" style="display:none;gap:4px;margin-bottom:10px;flex-wrap:wrap"></div>
           <div id="paydb2-table"></div>
           <div id="paydb2-actions" class="hide" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
             <button class="btn btn-a" onclick="payDBCalcAll()">📊 คำนวณทั้งหมด</button>
@@ -1256,6 +1257,19 @@ function payShowMode(mode){
   if(mode==='db'&&!$('paydb2-month').value){var now=new Date();$('paydb2-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
 }
 
+var PAYDB2_FILTER='';
+
+function payDBBuildFilters(){
+  var posMap={};
+  PAYDB2.forEach(function(e){if(e.position)posMap[e.position]=(posMap[e.position]||0)+1});
+  var h='<button class="btn btn-s '+(PAYDB2_FILTER===''?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">ทั้งหมด ('+PAYDB2.length+')</button>';
+  Object.keys(posMap).sort().forEach(function(p){
+    h+='<button class="btn btn-s '+(PAYDB2_FILTER===p?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\''+esc(p)+'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">'+esc(p)+' ('+posMap[p]+')</button>';
+  });
+  $('paydb2-filters').innerHTML=h;
+  $('paydb2-filters').classList.remove('hide');$('paydb2-filters').style.display='flex';
+}
+
 function payDBLoad(){
   $('paydb2-status').textContent='⏳ กำลังดึงข้อมูลพนักงาน...';
   sb("applications","GET",null,"?select=*&status=neq.terminated&order=name").then(function(r){
@@ -1270,7 +1284,7 @@ function payDBLoad(){
       };
     });
     $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — กรอกเงินเดือนแล้วกด คำนวณ';
-    payDBRender();
+    PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
     $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';
   }).catch(function(e){$('paydb2-status').textContent='❌ ดึงไม่สำเร็จ: '+e});
 }
@@ -1311,7 +1325,7 @@ function payDBLoadPrev(){
 
     var matched=PAYDB2.filter(function(e){return e.salary>0}).length;
     $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — ดึงเงินเดือนจาก '+prevMonth+' ได้ <b>'+matched+'</b> คน';
-    payDBRender();
+    PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
     $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';
   }).catch(function(e){$('paydb2-status').textContent='❌ '+e});
 }
@@ -1319,8 +1333,14 @@ function payDBLoadPrev(){
 function payDBRender(){
   if(!PAYDB2.length){$('paydb2-table').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่มีข้อมูล</p></div>';return}
 
+  // Build filtered list with original indices
+  var filtered=[];
+  PAYDB2.forEach(function(e,i){
+    if(!PAYDB2_FILTER||e.position===PAYDB2_FILTER)filtered.push({e:e,idx:i});
+  });
+
   var tSal=0,tDil=0,tI=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tCom=0;
-  PAYDB2.forEach(function(e){tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tCom+=e.commission});
+  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tCom+=e.commission});
 
   var cols=[
     {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
@@ -1353,15 +1373,16 @@ function payDBRender(){
   h+='<th style="background:#c0d8f0">สุทธิ</th>';
   h+='</tr></thead><tbody>';
 
-  PAYDB2.forEach(function(e,i){
+  filtered.forEach(function(f,ri){
+    var e=f.e,i=f.idx;
     h+='<tr>';
-    h+='<td class="xr">'+(i+1)+'</td>';
-    h+='<td class="xr" style="font-size:10px">'+(i+1)+'</td>';
+    h+='<td class="xr">'+(ri+1)+'</td>';
+    h+='<td class="xr" style="font-size:10px">'+(ri+1)+'</td>';
     h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
     h+='<td class="xpos">'+esc(e.position)+'</td>';
     cols.forEach(function(c){
       var v=e[c.k]||0;
-      h+='<td><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+i+',\''+c.k+'\')" data-r="'+i+'" data-c="'+c.k+'" placeholder="0"></td>';
+      h+='<td><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" placeholder="0"></td>';
     });
     h+='<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
     h+='<td class="xsum xsum-err">'+payFmt(e.totalDed)+'</td>';
@@ -1372,7 +1393,7 @@ function payDBRender(){
   // Totals row
   h+='</tbody><tfoot><tr style="background:#e8dfc8">';
   h+='<td class="xr"></td>';
-  h+='<td class="xsum xsum-pri" colspan="2" style="text-align:left;padding-left:6px">รวม '+PAYDB2.length+' คน</td>';
+  h+='<td class="xsum xsum-pri" colspan="2" style="text-align:left;padding-left:6px">รวม '+filtered.length+' คน'+(PAYDB2_FILTER?' ('+esc(PAYDB2_FILTER)+')':'')+'</td>';
   h+='<td></td>';
   sums.forEach(function(s){h+='<td class="xsum">'+payFmt(s)+'</td>'});
   h+='<td class="xsum xsum-ok">'+payFmt(tI)+'</td>';
@@ -1411,17 +1432,18 @@ function payDBUpdateFooter(){
   foot.forEach(function(td,j){if(j>0&&vals[j-1]!==undefined)td.textContent=payFmt(vals[j-1])});
 }
 
-function payDBNav(e,row,col){
+function payDBNav(e,dispRow,col){
   var cols=['salary','diligence','commission','tax3','ss5','loan','advance'];
   var ci=cols.indexOf(col);
-  var nr=row,nc=ci;
+  var nr=dispRow,nc=ci;
   if(e.key==='Tab'){
     e.preventDefault();
     if(e.shiftKey){nc--;if(nc<0){nc=cols.length-1;nr--}}else{nc++;if(nc>=cols.length){nc=0;nr++}}
   }else if(e.key==='Enter'||e.key==='ArrowDown'){e.preventDefault();nr++}
   else if(e.key==='ArrowUp'){e.preventDefault();nr--}
   else{return}
-  if(nr<0)nr=0;if(nr>=PAYDB2.length)nr=PAYDB2.length-1;
+  var maxR=$('paydb2-table').querySelectorAll('tbody tr').length-1;
+  if(nr<0)nr=0;if(nr>maxR)nr=maxR;
   var next=$('paydb2-table').querySelector('input[data-r="'+nr+'"][data-c="'+cols[nc]+'"]');
   if(next){next.focus();next.select()}
 }

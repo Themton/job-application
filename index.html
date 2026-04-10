@@ -63,7 +63,7 @@
 .suc{text-align:center;padding:50px 20px}.suc .sico{font-size:56px;margin-bottom:14px}.suc h3{font-size:20px;font-weight:700;color:var(--pri);margin-bottom:6px}.suc p{font-size:14px;color:var(--txt2);margin-bottom:20px}
 .atabs{display:none}
 /* ═══ SIDEBAR ═══ */
-.sb{position:fixed;left:0;top:0;bottom:0;width:230px;background:linear-gradient(180deg,#3d3018,#5c4a1e 40%,#4a3a16);color:#e8dfc8;z-index:100;display:flex;flex-direction:column;box-shadow:4px 0 20px rgba(0,0,0,.15);transition:transform .3s}
+.sidebar-nav{position:fixed;left:0;top:0;bottom:0;width:230px;background:linear-gradient(180deg,#3d3018,#5c4a1e 40%,#4a3a16);color:#e8dfc8;z-index:100;display:flex;flex-direction:column;box-shadow:4px 0 20px rgba(0,0,0,.15);transition:transform .3s}
 .sb-head{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.1);text-align:center}
 .sb-logo{width:48px;height:48px;border-radius:10px;margin-bottom:6px;border:2px solid rgba(198,149,43,.4)}
 .sb-title{font-size:15px;font-weight:700;color:#fff}
@@ -82,8 +82,8 @@
 .sb-ov{display:none}
 #P-admin{padding:0!important;max-width:none!important}
 @media(max-width:900px){
-  .sb{transform:translateX(-100%);z-index:1001}
-  .sb.open{transform:translateX(0)}
+  .sidebar-nav{transform:translateX(-100%);z-index:1001}
+  .sidebar-nav.open{transform:translateX(0)}
   .sb-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:none}
   .sb-ov.show{display:block}
   .sb-content{margin-left:0;padding:70px 14px 40px}
@@ -199,7 +199,7 @@
 
     <!-- Sidebar -->
     <div id="sidebar-overlay" class="sb-ov hide" onclick="sbToggle()"></div>
-    <nav id="sidebar" class="sb">
+    <nav id="sidebar" class="sidebar-nav">
       <div class="sb-head">
         <img src="LOGO_THEMT.png" alt="MT" class="sb-logo">
         <div class="sb-title">เดอะ เอ็มที</div>
@@ -506,6 +506,8 @@ function page(p){
     $(x).classList.add('hide');$(x).style.display='none';
   });
   $('P-'+p).classList.remove('hide');$('P-'+p).style.display=p==='admin'?'block':'';
+  // Hide header in admin mode (sidebar replaces it)
+  document.querySelector('.hdr').style.display=(p==='admin')?'none':'';
   if(p==='admin')loadAdmin();
   if(p==='acc')loadAcc();
   if(p==='form')loadPos();

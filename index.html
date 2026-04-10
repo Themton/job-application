@@ -648,9 +648,24 @@ function doFilter(){
   var f=ALL.filter(function(a){return[a.name,a.nickname,a.phone,a.position,a.education,a.bank].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)&&(!pos||a.position===pos)});
   $('A-cnt').textContent='พบ '+f.length+' คน';
   if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูล</p></div>';return}
-  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่</th></tr></thead><tbody>';
-  f.forEach(function(a){var s=ST[a.status]||ST.new;var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
-    h+='<tr onclick="detail(\''+a.id+'\')"><td class="nm">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'')+'</td><td>'+esc(a.position||'-')+'</td><td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td><td><span class="bg '+s.c+'">'+s.l+'</span></td><td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td></tr>'});
+  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>ประเภท</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่</th></tr></thead><tbody>';
+  f.forEach(function(a){
+    var s=ST[a.status]||ST.new;var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
+    // Determine type
+    var typeLabel,typeBg;
+    if(a.status==='daily'){typeLabel='รายวัน';typeBg='background:#fff3cd;color:#856404;border:1px solid #ffc107'}
+    else if(a.status==='monthly'){typeLabel='ประจำ';typeBg='background:#d4edda;color:#155724;border:1px solid #28a745'}
+    else if(a.status==='terminated'){typeLabel='พ้นสภาพ';typeBg='background:#f8d7da;color:#721c24;border:1px solid #dc3545'}
+    else{typeLabel='ใหม่';typeBg='background:#cce5ff;color:#004085;border:1px solid #007bff'}
+    h+='<tr onclick="detail(\''+a.id+'\')">';
+    h+='<td class="nm">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'')+'</td>';
+    h+='<td style="font-size:12px">'+esc(a.position||'-')+'</td>';
+    h+='<td><span style="'+typeBg+';padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap">'+typeLabel+'</span></td>';
+    h+='<td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td>';
+    h+='<td><span class="bg '+s.c+'">'+s.l+'</span></td>';
+    h+='<td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td>';
+    h+='</tr>';
+  });
   $('A-tbl').innerHTML=h+'</tbody></table></div>';
 }
 

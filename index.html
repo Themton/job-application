@@ -231,6 +231,7 @@
     <div class="sb-content">
     <div id="T-app"><div class="sts" id="A-sts"></div>
       <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร ตำแหน่ง..." oninput="doFilter()"></div>
+        <select class="fsel" id="f-pos" onchange="doFilter()"><option value="">ทุกตำแหน่ง</option></select>
         <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
         <button class="btn btn-g btn-s" onclick="loadAdmin()">🔄</button></div>
       <div id="A-cnt" class="rcnt"></div><div id="A-tbl"></div>
@@ -631,12 +632,19 @@ function loadAdmin(){
 }
 
 /* ═══ STATS ═══ */
-function stats(){var t=ALL.length,dy=0,mt=0,tm=0;ALL.forEach(function(a){if(a.status==='daily')dy++;if(a.status==='monthly')mt++;if(a.status==='terminated')tm++});$('A-sts').innerHTML='<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div><div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div><div class="st"><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+mt+'</div></div><div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div>'}
+function stats(){
+  var t=ALL.length,dy=0,mt=0,tm=0,posMap={};
+  ALL.forEach(function(a){if(a.status==='daily')dy++;if(a.status==='monthly')mt++;if(a.status==='terminated')tm++;if(a.position)posMap[a.position]=(posMap[a.position]||0)+1});
+  $('A-sts').innerHTML='<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div><div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div><div class="st"><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+mt+'</div></div><div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div>';
+  var sel=$('f-pos'),cur=sel.value;
+  sel.innerHTML='<option value="">ทุกตำแหน่ง ('+t+')</option>';
+  Object.keys(posMap).sort().forEach(function(p){sel.innerHTML+='<option value="'+esc(p)+'"'+(cur===p?' selected':'')+'>'+esc(p)+' ('+posMap[p]+')</option>'});
+}
 
 /* ═══ FILTER ═══ */
 function doFilter(){
-  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value;
-  var f=ALL.filter(function(a){return[a.name,a.nickname,a.phone,a.position,a.education,a.bank].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)});
+  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value;
+  var f=ALL.filter(function(a){return[a.name,a.nickname,a.phone,a.position,a.education,a.bank].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)&&(!pos||a.position===pos)});
   $('A-cnt').textContent='พบ '+f.length+' คน';
   if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูล</p></div>';return}
   var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>เอกสาร</th><th>สถานะ</th><th>วันที่</th></tr></thead><tbody>';

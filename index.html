@@ -735,6 +735,18 @@ var PAY_DAILY=352,PAY_PERM=400;
 function payPickFile(inp,key){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){PAY_FILES[key]={name:f.name,data:new Uint8Array(e.target.result)};$('uz-'+key).classList.add('ok');$('uz-'+key+'-e').classList.add('hide');$('uz-'+key+'-d').classList.remove('hide');$('uz-'+key+'-n').textContent=f.name;$('pay-calc-btn').disabled=!(PAY_FILES.sal&&PAY_FILES.att)};r.readAsArrayBuffer(f)}
 function payRmFile(e,key){e.stopPropagation();PAY_FILES[key]=null;$('uz-'+key).classList.remove('ok');$('uz-'+key).querySelector('input').value='';$('uz-'+key+'-e').classList.remove('hide');$('uz-'+key+'-d').classList.add('hide');$('pay-calc-btn').disabled=true}
 
+function payMatchEmpDB(emp){
+  var en=emp.name.replace(/\s*-\s*/g,' ').replace(/\s+/g,' ').trim();
+  var parts=en.split(' ').filter(function(p){return p.length>1});
+  for(var i=0;i<ALL.length;i++){
+    var a=ALL[i],an=(a.name||'').replace(/\s*-\s*/g,' ').replace(/\s+/g,' ').trim();
+    var mc=0;for(var j=0;j<parts.length;j++){if(an.indexOf(parts[j])>=0)mc++}
+    if(mc>=2||(parts.length===1&&mc>=1))return a;
+  }
+  if(emp.nickname){for(var i=0;i<ALL.length;i++){if((ALL[i].nickname||'').indexOf(emp.nickname)>=0)return ALL[i]}}
+  return null;
+}
+
 function payProcess(){
   if(!PAY_FILES.sal||!PAY_FILES.att){toast('อัปโหลดทั้ง 2 ไฟล์','terr');return}
   $('pay-calc-btn').disabled=true;$('pay-calc-btn').innerHTML='<span class="sp"></span> กำลังประมวลผล...';
@@ -745,15 +757,24 @@ function payProcess(){
       var posSet={};emps.forEach(function(e){if(e.position)posSet[e.position]=true});
       PAY_POS=Object.keys(posSet);
       payDetectSundays(atts);
+      var terminated=[];
       PAY_DATA=emps.map(function(emp){
         var att=payMatch(emp,atts),attA=payAnalyze(att),pay=payCalc(emp,attA);
-        return Object.assign({},emp,{att:att,attA:attA,pay:pay});
+        // ตรวจสอบสถานะจากระบบ
+        var dbEmp=payMatchEmpDB(emp);
+        var empStatus=dbEmp?dbEmp.status:'';
+        var isTerminated=(empStatus==='terminated');
+        if(isTerminated)terminated.push(emp.name);
+        return Object.assign({},emp,{att:att,attA:attA,pay:pay,dbStatus:empStatus,isTerminated:isTerminated});
       });
       $('pay-results').classList.remove('hide');
-      // Auto-set current month
       if(!$('pay-month').value){var now=new Date();$('pay-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
       payRenderFilters();payRenderTable();
-      toast('คำนวณเสร็จ! พบ '+PAY_DATA.length+' คน','tok');
+      if(terminated.length){
+        toast('⚠️ พบพนักงานลาออก '+terminated.length+' คน — จะไม่ถูกรวมในไฟล์ Payroll','terr');
+      }else{
+        toast('คำนวณเสร็จ! พบ '+PAY_DATA.length+' คน','tok');
+      }
     }catch(e){toast('ผิดพลาด: '+e.message,'terr');console.error(e)}
     $('pay-calc-btn').disabled=false;$('pay-calc-btn').innerHTML='📊 คำนวณเงินเดือน';
   },100);
@@ -846,9 +867,15 @@ function payRenderTable(){
   var list=PAY_DATA.filter(function(e){if(PAY_FILTER!=="ทั้งหมด"&&e.position!==PAY_FILTER)return false;if(q&&e.name.toLowerCase().indexOf(q)<0&&(!e.nickname||e.nickname.toLowerCase().indexOf(q)<0))return false;return true});
   list.sort(function(a,b){var va,vb;switch(PAY_SORT){case"salary":va=a.salary;vb=b.salary;break;case"net":va=a.pay.net;vb=b.pay.net;break;case"halfDays":va=a.attA.half;vb=b.attA.half;break;case"absentDays":va=a.attA.absent;vb=b.attA.absent;break;case"attDed":va=a.pay.attDed;vb=b.pay.attDed;break;default:va=a.name;vb=b.name}if(typeof va==="string")return PAY_SDIR==="asc"?va.localeCompare(vb):vb.localeCompare(va);return PAY_SDIR==="asc"?va-vb:vb-va});
 
-  var act=PAY_DATA.filter(function(e){return e.salary>0}),sON=0,sNN=0,sAD=0,sH=0,sA=0;
-  act.forEach(function(e){sON+=e.net;sNN+=e.pay.net;sAD+=e.pay.attDed;sH+=e.attA.half;sA+=e.attA.absent});
-  $('pay-stats').innerHTML=[{l:"พนักงาน",v:fmtI(act.length),u:"คน",c:"var(--pri)",ic:"👥"},{l:"สุทธิเดิม",v:payFmt(sON),u:"บาท",c:"var(--muted)",ic:"📋"},{l:"หักเวลา",v:payFmt(sAD),u:"บาท",c:"var(--err)",ic:"⏱"},{l:"สุทธิใหม่",v:payFmt(sNN),u:"บาท",c:"var(--ok)",ic:"✅"},{l:"ครึ่งวัน",v:fmtI(sH),u:"ครั้ง",c:"#d4a73c",ic:"½"},{l:"ขาดงาน",v:fmtI(sA),u:"ครั้ง",c:"var(--err)",ic:"✗"}].map(function(s){return'<div class="st"><div class="ic">'+s.ic+'</div><div class="l">'+s.l+'</div><div class="v" style="color:'+s.c+'">'+s.v+'</div><div class="u">'+s.u+'</div></div>'}).join('');
+  var act=PAY_DATA.filter(function(e){return e.salary>0}),sON=0,sNN=0,sAD=0,sH=0,sA=0,termCount=0;
+  act.forEach(function(e){sON+=e.net;sNN+=e.pay.net;sAD+=e.pay.attDed;sH+=e.attA.half;sA+=e.attA.absent;if(e.isTerminated)termCount++});
+  $('pay-stats').innerHTML=[
+    {l:"พนักงาน",v:fmtI(act.length),u:"คน",c:"var(--pri)",ic:"👥"},
+    {l:"สุทธิเดิม",v:payFmt(sON),u:"บาท",c:"var(--muted)",ic:"📋"},
+    {l:"หักเวลา",v:payFmt(sAD),u:"บาท",c:"var(--err)",ic:"⏱"},
+    {l:"สุทธิใหม่",v:payFmt(sNN),u:"บาท",c:"var(--ok)",ic:"✅"},
+    {l:"ลาออก/พ้นสภาพ",v:fmtI(termCount),u:"คน (ห้ามโอน)",c:termCount?"var(--err)":"var(--muted)",ic:"⛔"}
+  ].map(function(s){return'<div class="st"><div class="ic">'+s.ic+'</div><div class="l">'+s.l+'</div><div class="v" style="color:'+s.c+'">'+s.v+'</div><div class="u">'+s.u+'</div></div>'}).join('');
 
   var si=function(c){return PAY_SORT===c?(PAY_SDIR==="asc"?"↑":"↓"):'<span style="opacity:.3">↕</span>'};
   var h='<div class="tw" style="overflow-x:auto"><table><thead><tr>';
@@ -857,9 +884,9 @@ function payRenderTable(){
     h+='<th style="'+al+al2+'" onclick="payHandleSort(\''+c.k+'\')">'+c.l+' '+si(c.k)+'</th>';
   });h+='</tr></thead><tbody>';
   var tH=0,tA=0,tAD=0,tN=0;
-  list.forEach(function(e,i){var pc=posClr[e.position]||"#888",hasC=e.pay.attDed>0;tH+=e.attA.half;tA+=e.attA.absent;tAD+=e.pay.attDed;tN+=e.pay.net;
-    h+='<tr onclick="payShowDetail('+i+')">';
-    h+='<td><div class="nm">'+esc(e.name)+'</div>'+(e.nickname?'<div class="em">('+esc(e.nickname)+')</div>':'')+'</td>';
+  list.forEach(function(e,i){var pc=posClr[e.position]||"#888",hasC=e.pay.attDed>0;tH+=e.attA.half;tA+=e.attA.absent;tAD+=e.pay.attDed;if(!e.isTerminated)tN+=e.pay.net;
+    h+='<tr onclick="payShowDetail('+i+')" style="'+(e.isTerminated?'background:rgba(220,38,38,.06);opacity:.7':'')+'">';
+    h+='<td><div class="nm">'+esc(e.name)+(e.isTerminated?' <span style="background:var(--err);color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700">⛔ ลาออก</span>':'')+'</div>'+(e.nickname?'<div class="em">('+esc(e.nickname)+')</div>':'')+'</td>';
     h+='<td><span class="bg" style="background:'+pc+'14;color:'+pc+';border:1px solid '+pc+'33;font-size:10px">'+esc(e.position)+'</span></td>';
     h+='<td style="text-align:right;font-variant-numeric:tabular-nums">'+(e.salary>0?payFmt(e.salary):"-")+'</td>';
     h+='<td style="text-align:center;color:'+(e.attA.half>0?"#d4a73c":"var(--muted)")+';font-weight:'+(e.attA.half>0?700:400)+'">'+(e.attA.half||"-")+'</td>';
@@ -1086,13 +1113,22 @@ function payExportSCB(){
   var dateStr='';
   if(month){var d=new Date(month+'-28');dateStr=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear()}
 
-  // Filter only employees with net > 0 and have bank account
+  // Filter: net > 0 AND NOT terminated
+  var terminated=[];
   var emps=PAY_DATA.filter(function(e){
     var net=e.pay?e.pay.net:e.net;
+    if(e.isTerminated){terminated.push(e.name);return false}
     return net>0;
   });
 
   if(!emps.length){toast('ไม่มีพนักงานที่ต้องจ่ายเงิน','terr');return}
+
+  // Show warning for terminated
+  var msg='สร้างไฟล์ Payroll '+emps.length+' คน';
+  if(terminated.length){
+    msg+='\n\n⛔ ไม่รวมพนักงานลาออก '+terminated.length+' คน:\n— '+terminated.join('\n— ');
+  }
+  if(!confirm(msg+'\n\nดำเนินการ?'))return;
 
   // Build worksheet data
   var ws_data=[];

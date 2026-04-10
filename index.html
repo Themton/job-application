@@ -213,6 +213,7 @@
         <button class="sb-item" id="tab-rpt" onclick="showTab('rpt')"><span class="sb-ic">📊</span><span class="sb-tx">รายงาน</span></button>
         <div class="sb-sep">เงินเดือน</div>
         <button class="sb-item" id="tab-pay" onclick="showTab('pay')"><span class="sb-ic">💰</span><span class="sb-tx">คิดเงินเดือน</span></button>
+        <button class="sb-item" id="tab-comm" onclick="showTab('comm')"><span class="sb-ic">⭐</span><span class="sb-tx">คอมมิชชั่น</span></button>
         <button class="sb-item" id="tab-paydb" onclick="showTab('paydb')"><span class="sb-ic">🗂️</span><span class="sb-tx">ประวัติเงินเดือน</span></button>
         <button class="sb-item" id="tab-slip" onclick="showTab('slip')"><span class="sb-ic">📧</span><span class="sb-tx">ส่งสลิป</span></button>
       </div>
@@ -388,6 +389,28 @@
       </div>
     </div>
 
+    <!-- TAB: Commission -->
+    <div id="T-comm" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span class="ttl" style="font-size:18px">⭐ จัดการคอมมิชชั่น</span>
+      </div>
+      <div class="cd">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="comm-month" value="" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
+          <button class="btn btn-a btn-s" onclick="commLoad()">🗄️ ดึงรายชื่อพนักงาน</button>
+          <button class="btn btn-g btn-s" onclick="commLoadPrev()">📋 ดึงจากเดือนก่อน</button>
+        </div>
+        <div id="comm-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+        <div id="comm-filters" class="hide" style="display:none;gap:4px;margin-bottom:10px;flex-wrap:wrap"></div>
+        <div id="comm-table"></div>
+        <div id="comm-actions" class="hide" style="display:none;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn btn-a" onclick="commSave()">💾 บันทึกคอมมิชชั่น</button>
+          <button class="btn btn-g btn-s" onclick="commExport()">📥 Export</button>
+          <span id="comm-save-status" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+      </div>
+    </div>
+
     <!-- TAB: Payroll History -->
     <div id="T-paydb" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -550,11 +573,12 @@ function page(p){
   window.scrollTo(0,0);
 }
 
-var TAB_LABELS={app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',pay:'💰 คิดเงินเดือน',paydb:'🗂️ ประวัติ',slip:'📧 สลิป'};
+var TAB_LABELS={app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',paydb:'🗂️ ประวัติ',slip:'📧 สลิป'};
 
 function showTab(t){
-  ['app','dept','pos','usr','rpt','pay','paydb','slip'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
+  ['app','dept','pos','usr','rpt','pay','comm','paydb','slip'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
+  if(t==='comm'&&!$('comm-month').value){var now=new Date();$('comm-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   // Update mobile topbar label
   if($('sb-active-label'))$('sb-active-label').textContent=TAB_LABELS[t]||t;
   // Close sidebar on mobile
@@ -1467,20 +1491,19 @@ function payDBRender(){
     if(!PAYDB2_FILTER||e.status===PAYDB2_FILTER)filtered.push({e:e,idx:i});
   });
 
-  var tSal=0,tDil=0,tI=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tCom=0;
-  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tCom+=e.commission});
+  var tSal=0,tDil=0,tI=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0;
+  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net});
 
   var cols=[
     {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
     {k:'diligence',l:'เบี้ยขยัน',w:75,type:'inc'},
-    {k:'commission',l:'คอมมิชชั่น',w:80,type:'inc'},
     {k:'tax3',l:'ภาษี 3% ⚡',w:80,type:'ded'},
     {k:'ss5',l:'ปกส. 5% ⚡',w:80,type:'ded'},
     {k:'loan',l:'กยศ.',w:70,type:'ded'},
     {k:'advance',l:'เบิกล่วงหน้า',w:85,type:'ded'}
   ];
   var totalCols=4+cols.length+3;
-  var sums=[tSal,tDil,tCom,tT3,tS5,tLo,tAd];
+  var sums=[tSal,tDil,tT3,tS5,tLo,tAd];
 
   var h='<div class="xls-wrap"><table class="xls"><thead><tr>';
   h+='<th class="xr" style="min-width:28px"></th>';
@@ -1547,7 +1570,7 @@ function payDBRender(){
 }
 
 function payDBCalcRow(e){
-  e.totalIncome=e.salary+e.diligence+e.commission;
+  e.totalIncome=e.salary+e.diligence;
   e.tax3=Math.round(e.totalIncome*0.03*100)/100;
   e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,750);
   e.totalDed=e.tax3+e.ss5+e.loan+e.advance;
@@ -1558,18 +1581,17 @@ function payDBCell(i,field,val){
   PAYDB2[i][field]=parseFloat(val)||0;
   var e=PAYDB2[i];
 
-  if(field==='salary'||field==='diligence'||field==='commission'){
+  if(field==='salary'||field==='diligence'){
     payDBCalcRow(e);
   }else{
-    e.totalIncome=e.salary+e.diligence+e.commission;
+    e.totalIncome=e.salary+e.diligence;
     e.totalDed=e.tax3+e.ss5+e.loan+e.advance;
     e.net=Math.max(0,e.totalIncome-e.totalDed);
   }
 
-  // Update tax3/ss5 inputs and summary in DOM
   var t3inp=$('paydb2-table').querySelector('input[data-i="'+i+'"][data-c="tax3"]');
   var s5inp=$('paydb2-table').querySelector('input[data-i="'+i+'"][data-c="ss5"]');
-  if(field==='salary'||field==='diligence'||field==='commission'){
+  if(field==='salary'||field==='diligence'){
     if(t3inp)t3inp.value=e.tax3||'';
     if(s5inp)s5inp.value=e.ss5||'';
   }
@@ -1584,15 +1606,15 @@ function payDBCell(i,field,val){
 }
 
 function payDBUpdateFooter(){
-  var tSal=0,tDil=0,tCom=0,tT3=0,tS5=0,tLo=0,tAd=0,tI=0,tD=0,tN=0;
-  PAYDB2.forEach(function(e){tSal+=e.salary;tDil+=e.diligence;tCom+=e.commission;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tI+=e.totalIncome;tD+=e.totalDed;tN+=e.net});
+  var tSal=0,tDil=0,tT3=0,tS5=0,tLo=0,tAd=0,tI=0,tD=0,tN=0;
+  PAYDB2.forEach(function(e){tSal+=e.salary;tDil+=e.diligence;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tI+=e.totalIncome;tD+=e.totalDed;tN+=e.net});
   var foot=$('paydb2-table').querySelectorAll('tfoot td.xsum');
-  var vals=[tSal,tDil,tCom,tT3,tS5,tLo,tAd,tI,tD,tN];
+  var vals=[tSal,tDil,tT3,tS5,tLo,tAd,tI,tD,tN];
   foot.forEach(function(td,j){if(j>0&&vals[j-1]!==undefined)td.textContent=payFmt(vals[j-1])});
 }
 
 function payDBNav(e,dispRow,col){
-  var cols=['salary','diligence','commission','tax3','ss5','loan','advance'];
+  var cols=['salary','diligence','tax3','ss5','loan','advance'];
   var ci=cols.indexOf(col);
   var nr=dispRow,nc=ci;
   if(e.key==='Tab'){
@@ -1679,6 +1701,125 @@ function payDBExportCSV(){
   });
   accDownload(csv,'เงินเดือน_'+($('paydb2-month').value||'export')+'.csv','text/csv;charset=utf-8');
   toast('Export '+valid.length+' คน','tok');
+}
+
+/* ═══ COMMISSION ═══ */
+var COMM_DATA=[],COMM_FILTER='';
+
+function commLoad(){
+  $('comm-status').textContent='⏳ กำลังดึงข้อมูล...';
+  var month=$('comm-month').value;
+  Promise.all([
+    sb("applications","GET",null,"?select=id,name,nickname,position,status,department&status=neq.terminated&order=status,name"),
+    month?sb("commissions","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*").catch(function(){return[]}):Promise.resolve([])
+  ]).then(function(res){
+    var emps=Array.isArray(res[0])?res[0]:[];
+    var comms=Array.isArray(res[1])?res[1]:[];
+    var commMap={};comms.forEach(function(c){commMap[c.emp_name]=c});
+    COMM_DATA=emps.map(function(a){
+      var c=commMap[a.name]||{};
+      return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',status:a.status||'',department:a.department||'',commission:c.amount||0,note:c.note||''};
+    });
+    $('comm-status').innerHTML='✅ '+COMM_DATA.length+' คน'+(month?' — เดือน '+month:'');
+    COMM_FILTER='';commBuildFilters();commRender();
+    $('comm-actions').classList.remove('hide');$('comm-actions').style.display='flex';
+  }).catch(function(e){$('comm-status').textContent='❌ '+e});
+}
+
+function commLoadPrev(){
+  var month=$('comm-month').value;
+  if(!month){toast('เลือกเดือน/ปี','terr');return}
+  var d=new Date(month+'-01');d.setMonth(d.getMonth()-1);
+  var prev=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  $('comm-status').textContent='⏳ ดึงจากเดือน '+prev+'...';
+  Promise.all([
+    sb("applications","GET",null,"?select=id,name,nickname,position,status,department&status=neq.terminated&order=status,name"),
+    sb("commissions","GET",null,"?month=eq."+encodeURIComponent(prev)+"&select=*").catch(function(){return[]})
+  ]).then(function(res){
+    var emps=Array.isArray(res[0])?res[0]:[];
+    var comms=Array.isArray(res[1])?res[1]:[];
+    var commMap={};comms.forEach(function(c){commMap[c.emp_name]=c});
+    var matched=0;
+    COMM_DATA=emps.map(function(a){
+      var c=commMap[a.name]||{};if(c.amount>0)matched++;
+      return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',status:a.status||'',department:a.department||'',commission:c.amount||0,note:c.note||''};
+    });
+    $('comm-status').innerHTML='✅ '+COMM_DATA.length+' คน — ดึงคอมฯจาก '+prev+' ได้ '+matched+' คน';
+    COMM_FILTER='';commBuildFilters();commRender();
+    $('comm-actions').classList.remove('hide');$('comm-actions').style.display='flex';
+  }).catch(function(e){$('comm-status').textContent='❌ '+e});
+}
+
+function commBuildFilters(){
+  var stMap={};
+  var stLabels={daily:'🟡 รายวัน',monthly:'🟢 ประจำ',new:'🔵 ใหม่'};
+  COMM_DATA.forEach(function(e){var s=e.status||'new';stMap[s]=(stMap[s]||0)+1});
+  var h='<button class="btn btn-s '+(COMM_FILTER===''?'btn-a':'btn-g')+'" onclick="COMM_FILTER=\'\';commBuildFilters();commRender()" style="font-size:11px;padding:5px 12px">ทั้งหมด ('+COMM_DATA.length+')</button>';
+  ['daily','monthly','new'].forEach(function(s){
+    if(!stMap[s])return;
+    h+='<button class="btn btn-s '+(COMM_FILTER===s?'btn-a':'btn-g')+'" onclick="COMM_FILTER=\''+s+'\';commBuildFilters();commRender()" style="font-size:11px;padding:5px 12px">'+(stLabels[s]||s)+' ('+stMap[s]+')</button>';
+  });
+  $('comm-filters').innerHTML=h;$('comm-filters').classList.remove('hide');$('comm-filters').style.display='flex';
+}
+
+function commRender(){
+  if(!COMM_DATA.length){$('comm-table').innerHTML='';return}
+  var filtered=COMM_DATA.filter(function(e){return!COMM_FILTER||e.status===COMM_FILTER});
+  var total=0,cnt=0;
+  filtered.forEach(function(e){total+=e.commission;if(e.commission>0)cnt++});
+
+  var h='<div style="font-size:12px;margin-bottom:8px;color:var(--muted)">'+filtered.length+' คน | มีคอมฯ <b style="color:var(--acc)">'+cnt+'</b> คน | รวม <b style="color:var(--acc)">'+payFmt(total)+'</b> บาท</div>';
+  h+='<div class="xls-wrap"><table class="xls"><thead><tr>';
+  h+='<th class="xr" style="min-width:28px"></th><th style="min-width:30px">ลำดับ</th><th style="min-width:150px;text-align:left;padding-left:6px">ชื่อ-สกุล</th><th style="min-width:80px;text-align:left;padding-left:6px">แผนก</th><th style="min-width:90px;text-align:left;padding-left:6px">ตำแหน่ง</th><th style="min-width:110px;background:#fff8e0">คอมมิชชั่น (บาท)</th><th style="min-width:150px">หมายเหตุ</th>';
+  h+='</tr></thead><tbody>';
+
+  filtered.forEach(function(e,i){
+    var idx=COMM_DATA.indexOf(e);
+    h+='<tr>';
+    h+='<td class="xr">'+(i+1)+'</td>';
+    h+='<td class="xr">'+(i+1)+'</td>';
+    h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
+    h+='<td class="xpos">'+esc(e.department||'-')+'</td>';
+    h+='<td class="xpos">'+esc(e.position)+'</td>';
+    h+='<td style="background:#fff8e0"><input value="'+(e.commission||'')+'" onfocus="this.select()" onchange="COMM_DATA['+idx+'].commission=parseFloat(this.value)||0;commUpdateTotal()" placeholder="0" style="width:100%;border:none;background:transparent;text-align:right;font-size:13px;font-family:inherit;font-weight:600;color:#856404;outline:none;padding:2px 6px"></td>';
+    h+='<td><input value="'+esc(e.note)+'" onchange="COMM_DATA['+idx+'].note=this.value" placeholder="หมายเหตุ..." style="width:100%;border:none;background:transparent;font-size:11px;font-family:inherit;outline:none;padding:2px 6px"></td>';
+    h+='</tr>';
+  });
+
+  h+='</tbody><tfoot><tr style="background:#e8dfc8"><td class="xr"></td><td class="xsum xsum-pri" colspan="4" style="text-align:left;padding-left:6px">รวม '+filtered.length+' คน'+(COMM_FILTER?' (กรอง)':'')+'</td><td class="xsum" style="color:#856404;font-size:14px">'+payFmt(total)+'</td><td></td></tr></tfoot></table></div>';
+  $('comm-table').innerHTML=h;
+}
+
+function commUpdateTotal(){commRender()}
+
+function commSave(){
+  var month=$('comm-month').value;
+  if(!month){toast('เลือกเดือน/ปี','terr');return}
+  var valid=COMM_DATA.filter(function(e){return e.commission>0});
+  if(!valid.length){toast('ยังไม่มีข้อมูลคอมมิชชั่น','terr');return}
+  if(!confirm('บันทึกคอมมิชชั่น '+valid.length+' คน เดือน '+month+'?'))return;
+
+  $('comm-save-status').textContent='⏳ กำลังบันทึก...';
+  sb("commissions","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
+    var records=valid.map(function(e){
+      return{id:'COM-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,amount:e.commission,note:e.note||''};
+    });
+    sb("commissions","POST",records).then(function(){
+      $('comm-save-status').innerHTML='<span style="color:var(--ok)">✅ บันทึก '+valid.length+' คน เดือน '+month+'</span>';
+      toast('บันทึกคอมมิชชั่นแล้ว','tok');
+    }).catch(function(e){$('comm-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
+  }).catch(function(e){$('comm-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
+}
+
+function commExport(){
+  var valid=COMM_DATA.filter(function(e){return e.commission>0});
+  if(!valid.length){toast('ไม่มีข้อมูล','terr');return}
+  var month=$('comm-month').value||'export';
+  var csv='\uFEFF';
+  csv+='ชื่อ,ชื่อเล่น,แผนก,ตำแหน่ง,คอมมิชชั่น,หมายเหตุ\n';
+  valid.forEach(function(e){csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.department)+'","'+esc(e.position)+'",'+e.commission+',"'+esc(e.note)+'"\n'});
+  accDownload(csv,'คอมมิชชั่น_'+month+'.csv','text/csv;charset=utf-8');
+  toast('Export คอมมิชชั่น '+valid.length+' คน','tok');
 }
 
 /* ═══ SCB PAYROLL FILE EXPORT (File mode) ═══ */

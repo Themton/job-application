@@ -1275,11 +1275,13 @@ function payShowMode(mode){
 var PAYDB2_FILTER='';
 
 function payDBBuildFilters(){
-  var posMap={};
-  PAYDB2.forEach(function(e){if(e.position)posMap[e.position]=(posMap[e.position]||0)+1});
+  var stMap={};
+  var stLabels={daily:'🟡 พนักงานรายวัน',monthly:'🟢 พนักงานประจำ',new:'🔵 พนักงานใหม่'};
+  PAYDB2.forEach(function(e){var s=e.status||'new';stMap[s]=(stMap[s]||0)+1});
   var h='<button class="btn btn-s '+(PAYDB2_FILTER===''?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">ทั้งหมด ('+PAYDB2.length+')</button>';
-  Object.keys(posMap).sort().forEach(function(p){
-    h+='<button class="btn btn-s '+(PAYDB2_FILTER===p?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\''+esc(p)+'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">'+esc(p)+' ('+posMap[p]+')</button>';
+  ['daily','monthly','new'].forEach(function(s){
+    if(!stMap[s])return;
+    h+='<button class="btn btn-s '+(PAYDB2_FILTER===s?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\''+s+'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">'+(stLabels[s]||s)+' ('+stMap[s]+')</button>';
   });
   $('paydb2-filters').innerHTML=h;
   $('paydb2-filters').classList.remove('hide');$('paydb2-filters').style.display='flex';
@@ -1287,11 +1289,12 @@ function payDBBuildFilters(){
 
 function payDBLoad(){
   $('paydb2-status').textContent='⏳ กำลังดึงข้อมูลพนักงาน...';
-  sb("applications","GET",null,"?select=*&status=neq.terminated&order=name").then(function(r){
+  sb("applications","GET",null,"?select=*&status=neq.terminated&order=status,name").then(function(r){
     if(!Array.isArray(r)||!r.length){$('paydb2-status').textContent='ไม่พบพนักงาน';return}
     PAYDB2=r.map(function(a){
       return{
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
+        status:a.status||'new',
         bank:a.bank||'',account:a.bank_account||'',
         salary:0,diligence:0,tax3:0,ss5:0,loan:0,advance:0,commission:0,
         totalIncome:0,totalDed:0,net:0,
@@ -1314,7 +1317,7 @@ function payDBLoadPrev(){
   $('paydb2-status').textContent='⏳ ดึงข้อมูลเดือน '+prevMonth+'...';
 
   Promise.all([
-    sb("applications","GET",null,"?select=*&status=neq.terminated&order=name"),
+    sb("applications","GET",null,"?select=*&status=neq.terminated&order=status,name"),
     sb("payroll","GET",null,"?month=eq."+encodeURIComponent(prevMonth)+"&select=*")
   ]).then(function(res){
     var emps=Array.isArray(res[0])?res[0]:[];
@@ -1330,6 +1333,7 @@ function payDBLoadPrev(){
       var p=prevMap[a.name.trim()]||{};
       return{
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
+        status:a.status||'new',
         bank:a.bank||'',account:a.bank_account||'',
         salary:p.salary||0,diligence:p.diligence||0,
         tax3:p.tax3||0,ss5:p.ss5||0,loan:p.loan||0,advance:p.advance||0,commission:p.commission||0,
@@ -1348,10 +1352,13 @@ function payDBLoadPrev(){
 function payDBRender(){
   if(!PAYDB2.length){$('paydb2-table').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่มีข้อมูล</p></div>';return}
 
+  var stLabels={daily:'พนักงานรายวัน',monthly:'พนักงานประจำ',new:'พนักงานใหม่'};
+  var stColors={daily:'#f59e0b',monthly:'#28a745',new:'#007bff'};
+
   // Build filtered list with original indices
   var filtered=[];
   PAYDB2.forEach(function(e,i){
-    if(!PAYDB2_FILTER||e.position===PAYDB2_FILTER)filtered.push({e:e,idx:i});
+    if(!PAYDB2_FILTER||e.status===PAYDB2_FILTER)filtered.push({e:e,idx:i});
   });
 
   var tSal=0,tDil=0,tI=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tCom=0;
@@ -1366,6 +1373,7 @@ function payDBRender(){
     {k:'loan',l:'กยศ.',w:70,type:'ded'},
     {k:'advance',l:'เบิกล่วงหน้า',w:85,type:'ded'}
   ];
+  var totalCols=4+cols.length+3;
   var sums=[tSal,tDil,tCom,tT3,tS5,tLo,tAd];
 
   var h='<div class="xls-wrap"><table class="xls"><thead><tr>';
@@ -1388,11 +1396,23 @@ function payDBRender(){
   h+='<th style="background:#c0d8f0">สุทธิ</th>';
   h+='</tr></thead><tbody>';
 
+  var lastGroup='',rowNum=0;
   filtered.forEach(function(f,ri){
     var e=f.e,i=f.idx;
+
+    // Group header when showing all
+    if(!PAYDB2_FILTER&&e.status!==lastGroup){
+      lastGroup=e.status;
+      var grpLabel=stLabels[e.status]||e.status;
+      var grpColor=stColors[e.status]||'#888';
+      var grpCount=filtered.filter(function(ff){return ff.e.status===e.status}).length;
+      h+='<tr><td colspan="'+totalCols+'" style="background:linear-gradient(90deg,'+grpColor+'18,transparent);border-left:4px solid '+grpColor+';padding:8px 14px;font-weight:700;font-size:13px;color:'+grpColor+'">'+grpLabel+' ('+grpCount+' คน)</td></tr>';
+    }
+    rowNum++;
+
     h+='<tr>';
-    h+='<td class="xr">'+(ri+1)+'</td>';
-    h+='<td class="xr" style="font-size:10px">'+(ri+1)+'</td>';
+    h+='<td class="xr">'+rowNum+'</td>';
+    h+='<td class="xr" style="font-size:10px">'+rowNum+'</td>';
     h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
     h+='<td class="xpos">'+esc(e.position)+'</td>';
     cols.forEach(function(c){
@@ -1409,7 +1429,7 @@ function payDBRender(){
   // Totals row
   h+='</tbody><tfoot><tr style="background:#e8dfc8">';
   h+='<td class="xr"></td>';
-  h+='<td class="xsum xsum-pri" colspan="2" style="text-align:left;padding-left:6px">รวม '+filtered.length+' คน'+(PAYDB2_FILTER?' ('+esc(PAYDB2_FILTER)+')':'')+'</td>';
+  h+='<td class="xsum xsum-pri" colspan="2" style="text-align:left;padding-left:6px">รวม '+filtered.length+' คน'+(PAYDB2_FILTER?' ('+esc(stLabels[PAYDB2_FILTER]||PAYDB2_FILTER)+')':'')+'</td>';
   h+='<td></td>';
   sums.forEach(function(s){h+='<td class="xsum">'+payFmt(s)+'</td>'});
   h+='<td class="xsum xsum-ok">'+payFmt(tI)+'</td>';

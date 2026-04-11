@@ -786,6 +786,24 @@ function empToggleAll(checked){
 }
 function empClearSel(){EMP_SEL={};empUpdateSelBar();doFilter()}
 
+function empSaveEmail(idx,val){
+  var a=window._empFiltered[idx];if(!a)return;
+  var email=val.trim();
+  a.email=email;
+  ALL.forEach(function(x){if(x.id===a.id)x.email=email});
+  // Save to Supabase
+  sb("applications","PATCH",{email:email},"?id=eq."+a.id).then(function(){
+    if(email)emailSet(a.name,email);
+  }).catch(function(){});
+  // Update input border color
+  var inp=event.target;
+  if(inp){
+    inp.style.borderColor=email&&email.indexOf('@')>=0?'var(--ok)':'var(--bdr)';
+    inp.style.background=email&&email.indexOf('@')>=0?'rgba(40,167,69,.05)':'var(--inp)';
+  }
+  stats();
+}
+
 function empExport(){
   var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value,bank=$('f-bank').value,em=$('f-email').value;
   var list=ALL.filter(function(a){
@@ -884,7 +902,7 @@ function doFilter(){
   var allChk=f.length>0&&f.every(function(a){return EMP_SEL[a.id]});
   var h='<div class="tw"><table><thead><tr>';
   h+='<th style="width:36px;text-align:center;padding:4px"><button onclick="empToggleAll2()" style="background:none;border:2px solid '+(allChk?'#b8860b':'#ccc')+';border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:18px;color:#b8860b">'+(allChk?'✓':'')+'</button></th>';
-  h+='<th>ชื่อ-สกุล</th><th>แผนก</th><th>ตำแหน่ง</th><th>ธนาคาร</th><th>ประเภท</th><th>เอกสาร</th><th style="text-align:center">จัดการ</th>';
+  h+='<th>ชื่อ-สกุล</th><th>แผนก</th><th>ตำแหน่ง</th><th>ธนาคาร</th><th>ประเภท</th><th style="min-width:160px">📧 อีเมล</th><th style="text-align:center">จัดการ</th>';
   h+='</tr></thead><tbody>';
 
   f.forEach(function(a,idx){
@@ -903,7 +921,8 @@ function doFilter(){
     var isSCB=a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0);
     h+='<td style="font-size:11px" data-detail="'+idx+'">'+(a.bank?'<span style="background:'+(isSCB?'rgba(75,0,130,.08);color:#4b0082':'rgba(0,100,0,.08);color:#006400')+';padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600">'+esc(a.bank)+'</span>':'-')+'</td>';
     h+='<td data-detail="'+idx+'"><span style="'+typeBg+';padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap">'+typeLabel+'</span></td>';
-    h+='<td data-detail="'+idx+'">'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td>';
+    h+='<td style="padding:2px"><input value="'+esc(a.email||'')+'" placeholder="email@..." onchange="empSaveEmail('+idx+',this.value)" style="width:100%;padding:4px 6px;border:1px solid '+(a.email&&a.email.indexOf('@')>=0?'var(--ok)':'var(--bdr)');
+    h+=';border-radius:4px;font-size:11px;font-family:inherit;background:'+(a.email&&a.email.indexOf('@')>=0?'rgba(40,167,69,.05)':'var(--inp)')+'" type="email"></td>';
     h+='<td style="text-align:center;white-space:nowrap">';
     if(a.status!=='terminated'){
       h+='<button class="btn btn-d btn-s" style="font-size:10px;padding:3px 8px" onclick="quickTerminate(window._empFiltered['+idx+'].id,window._empFiltered['+idx+'].name)">⛔ ลาออก</button>';

@@ -458,31 +458,18 @@
         <span class="ttl" style="font-size:18px">📜 ออกหนังสือรับรองเงินเดือน</span>
       </div>
       <div class="cd" style="max-width:750px">
-        <div class="cd-t"><span class="dot"></span> ข้อมูลบริษัท</div>
-        <div class="g2">
-          <div class="fld"><label>ชื่อบริษัท</label><input id="cert-company" value="บริษัท เดอะ เอ็มที จำกัด"></div>
-          <div class="fld"><label>ที่อยู่บริษัท</label><input id="cert-addr" value="" placeholder="เลขที่ ... ถนน ... แขวง/ตำบล ... เขต/อำเภอ ... จังหวัด ... รหัสไปรษณีย์"></div>
-          <div class="fld"><label>เลขทะเบียนนิติบุคคล / เลขประจำตัวผู้เสียภาษี</label><input id="cert-taxid" value="" placeholder="0-0000-00000-00-0"></div>
-          <div class="fld"><label>เลขที่หนังสือ</label><input id="cert-docno" value="" placeholder="MT-2569/001"></div>
-        </div>
-
-        <div class="cd-t" style="margin-top:18px"><span class="dot"></span> ข้อมูลพนักงาน</div>
+        <div class="cd-t"><span class="dot"></span> ข้อมูลหนังสือรับรอง</div>
         <div class="g2">
           <div class="fld"><label>เลือกพนักงาน <span class="rq">*</span></label><select id="cert-emp" onchange="certFillEmp()"><option value="">-- เลือกพนักงาน --</option></select></div>
-          <div class="fld"><label>เลขบัตรประชาชน</label><input id="cert-idcard" placeholder="0-0000-00000-00-0" maxlength="17"></div>
           <div class="fld"><label>ตำแหน่ง</label><input id="cert-pos"></div>
-          <div class="fld"><label>แผนก</label><input id="cert-dept"></div>
           <div class="fld"><label>วันที่เริ่มงาน</label><input id="cert-start" type="date"></div>
           <div class="fld"><label>เงินเดือน (บาท) <span class="rq">*</span></label><input id="cert-salary" type="number" placeholder="15000" inputmode="numeric"></div>
-        </div>
-
-        <div class="cd-t" style="margin-top:18px"><span class="dot"></span> รายละเอียดหนังสือ</div>
-        <div class="g2">
-          <div class="fld"><label>วัตถุประสงค์</label><select id="cert-purpose" onchange="$('cert-purpose-custom-wrap').classList.toggle('hide',this.value!=='custom')"><option>เพื่อนำไปใช้ตามที่เห็นสมควร</option><option>เพื่อใช้ประกอบการขอสินเชื่อกับสถาบันการเงิน</option><option>เพื่อใช้ประกอบการสมัครงาน</option><option>เพื่อใช้ประกอบการขอวีซ่า</option><option>เพื่อยื่นต่อหน่วยงานราชการ</option><option>เพื่อใช้เป็นหลักฐานในการค้ำประกัน</option><option value="custom">อื่นๆ (พิมพ์เอง)</option></select></div>
+          <div class="fld"><label>วัตถุประสงค์</label><select id="cert-purpose" onchange="$('cert-purpose-custom-wrap').classList.toggle('hide',this.value!=='custom')"><option>เพื่อใช้เป็นหลักฐานในการยืนยันรายได้ของพนักงานตามที่ระบุข้างต้น</option><option>เพื่อใช้ประกอบการขอสินเชื่อกับสถาบันการเงิน</option><option>เพื่อใช้ประกอบการสมัครงาน</option><option>เพื่อใช้ประกอบการขอวีซ่า</option><option>เพื่อยื่นต่อหน่วยงานราชการ</option><option value="custom">อื่นๆ (พิมพ์เอง)</option></select></div>
           <div class="fld hide" id="cert-purpose-custom-wrap"><label>ระบุวัตถุประสงค์</label><input id="cert-purpose-custom" placeholder="พิมพ์วัตถุประสงค์..."></div>
           <div class="fld"><label>วันที่ออกหนังสือ</label><input id="cert-date" type="date"></div>
-          <div class="fld"><label>ผู้มีอำนาจลงนาม</label><input id="cert-signer" value=""></div>
-          <div class="fld"><label>ตำแหน่งผู้ลงนาม</label><input id="cert-signer-pos" value="กรรมการผู้จัดการ"></div>
+          <div class="fld"><label>ผู้ลงนาม</label><input id="cert-signer" value=""></div>
+          <div class="fld"><label>ตำแหน่งผู้ลงนาม</label><input id="cert-signer-pos" value="กรรมการบริษัท"></div>
+          <div class="fld"><label>ชื่อบริษัท</label><input id="cert-company" value="บริษัท เดอะ เอ็มที จำกัด"></div>
         </div>
         <div class="brow" style="margin-top:14px">
           <button class="btn btn-a" onclick="certPreview()">👁️ ดูตัวอย่าง</button>
@@ -1743,12 +1730,10 @@ function certInit(){
 
 function certFillEmp(){
   var id=$('cert-emp').value;
-  if(!id){$('cert-pos').value='';$('cert-dept').value='';$('cert-salary').value='';$('cert-idcard').value='';return}
+  if(!id){$('cert-pos').value='';$('cert-salary').value='';return}
   var a;ALL.forEach(function(x){if(x.id===id)a=x});if(!a)return;
   $('cert-pos').value=a.position||'';
-  $('cert-dept').value=a.department||'';
   $('cert-start').value=a.created_at?a.created_at.substring(0,10):'';
-  $('cert-idcard').value=a.id_card_no||'';
   sb("payroll","GET",null,"?emp_name=eq."+encodeURIComponent(a.name)+"&select=salary&order=month.desc&limit=1").then(function(r){
     if(Array.isArray(r)&&r.length&&r[0].salary)$('cert-salary').value=r[0].salary;
   }).catch(function(){});
@@ -1795,73 +1780,48 @@ function certBuildHTML(){
   if(!salary){toast('กรอกเงินเดือน','terr');return null}
 
   var company=$('cert-company').value||'บริษัท เดอะ เอ็มที จำกัด';
-  var addr=$('cert-addr').value||'';
-  var taxid=$('cert-taxid').value||'';
-  var docno=$('cert-docno').value||'';
-  var idcard=$('cert-idcard').value||'';
   var pos=$('cert-pos').value||'';
-  var dept=$('cert-dept').value||'';
   var startDate=$('cert-start').value||'';
   var purpose=$('cert-purpose').value==='custom'?$('cert-purpose-custom').value:$('cert-purpose').value;
   var certDate=$('cert-date').value||new Date().toISOString().substring(0,10);
   var signer=$('cert-signer').value||'';
-  var signerPos=$('cert-signer-pos').value||'กรรมการผู้จัดการ';
-  var empId=a.id||'';
-  var prefix='นาย/นาง/นางสาว';
+  var signerPos=$('cert-signer-pos').value||'กรรมการบริษัท';
 
-  // Dotted underline helper
-  var dot=function(text,w){return'<span style="display:inline-block;min-width:'+(w||120)+'px;border-bottom:1px dotted #000;text-align:center;padding:0 8px;font-weight:600">'+esc(text)+'</span>'};
+  var s='<div style="width:700px;margin:0 auto;padding:60px 70px;font-family:\'Noto Sans Thai\',sans-serif;color:#000;background:#fff;font-size:16px;line-height:2">';
 
-  var s='<div style="width:700px;margin:0 auto;padding:50px 60px;font-family:\'Noto Sans Thai\',sans-serif;color:#000;background:#fff;font-size:15px;line-height:2.2">';
-
-  // === Header ===
-  s+='<div style="text-align:center;margin-bottom:6px">';
-  s+='<img src="'+LOGO_URL+'" width="55" height="55" style="border-radius:8px;margin-bottom:4px"><br>';
-  s+='<div style="font-size:18px;font-weight:700">'+esc(company)+'</div>';
-  if(addr){
-    var addrLines=addr.split('\n');
-    s+='<div style="font-size:13px">ที่อยู่ '+dot(addrLines[0]||addr,400)+'</div>';
-    if(addrLines[1])s+='<div style="font-size:13px">'+dot(addrLines[1],450)+'</div>';
-  }else{
-    s+='<div style="font-size:13px">ที่อยู่ '+dot('',400)+'</div>';
-    s+='<div style="font-size:13px">'+dot('',450)+'</div>';
-  }
-  if(taxid)s+='<div style="font-size:13px">เลขประจำตัวผู้เสียภาษี '+dot(taxid,250)+'</div>';
+  // Logo
+  s+='<div style="text-align:center;margin-bottom:30px">';
+  s+='<img src="'+LOGO_URL+'" width="80" height="80" style="border-radius:12px">';
   s+='</div>';
 
-  // === Title ===
-  s+='<div style="text-align:center;margin:24px 0 20px">';
-  s+='<div style="font-size:22px;font-weight:700;text-decoration:underline;text-underline-offset:6px">หนังสือรับรองเงินเดือน</div>';
+  // Title
+  s+='<div style="text-align:center;margin-bottom:30px">';
+  s+='<div style="font-size:24px;font-weight:700">หนังสือรับรองเงินเดือน</div>';
   s+='</div>';
 
-  // === Body paragraph ===
-  s+='<div style="text-indent:60px;margin-bottom:8px">';
-  s+='หนังสือฉบับนี้ออกเพื่อให้รับรองว่า นาย/นาง/นางสาว '+dot(a.name,220)+' เป็นพนักงานของ บริษัท ';
-  s+=dot(company,200);
-  s+='</div>';
+  // Body - single paragraph
+  s+='<p style="text-indent:60px;margin:0 0 20px;text-align:justify">';
+  s+=esc(company)+' ขอรับรองว่า '+esc(a.name);
+  s+=' ได้ปฏิบัติงานในตำแหน่ง '+esc(pos);
+  if(startDate)s+=' ตั้งแต่วันที่ '+certThaiDate(startDate);
+  s+='จนถึงปัจจุบัน มีอัตราเงินเดือนประจำเดือนละ '+certThaiNum(salary)+' บาท';
+  s+=' ('+certBahtText(salary)+')';
+  s+=' ซึ่งอัตรานี้ไม่รวมค่าตอบแทนและเงินพิเศษอื่นๆ</p>';
 
-  s+='<div style="margin-bottom:8px">';
-  s+=dot('',80)+' ปฏิบัติงานในตำแหน่ง '+dot(pos,150)+' แผนก '+dot(dept,120)+' ฝ่าย '+dot(dept,100);
-  s+='</div>';
+  // Purpose
+  s+='<p style="text-indent:60px;margin:0 0 8px">บริษัทฯ จึงได้ออกหนังสือรับรองฉบับนี้ให้</p>';
+  s+='<p style="text-indent:60px;margin:0 0 30px">'+esc(purpose)+'</p>';
 
-  s+='<div style="margin-bottom:8px">';
-  s+='รหัสพนักงาน '+dot(empId,130)+' ตั้งแต่วันที่ '+dot(startDate?certThaiDate(startDate):'',160)+' จนถึงปัจจุบัน มีอัตราเงินเดือนประจำเดือนละ';
-  s+='</div>';
-
-  s+='<div style="margin-bottom:8px">';
-  s+=dot(certThaiNum(salary),150)+' บาท ( '+dot(certBahtText(salary),280)+' )';
-  s+='</div>';
-
-  s+='<div style="margin-bottom:20px">';
-  s+='<b>หนังสือรับรองเงินเดือนฉบับนี้ใช้เพื่อ</b> '+dot(purpose,200)+' เท่านั้น';
-  s+='</div>';
-
-  // === Signature ===
+  // Date
   s+='<div style="text-align:center;margin-top:40px">';
-  s+='<div>ออกให้ ณ วันที่ '+dot(certThaiDate(certDate),200)+'</div>';
-  s+='<div style="margin-top:40px">ลงชื่อ '+dot('',250)+'</div>';
-  s+='<div style="margin-top:8px">( '+dot(signer||'',220)+' )</div>';
-  s+='<div style="margin-top:8px"><b>ตำแหน่ง</b> '+dot(signerPos,250)+'</div>';
+  s+='<div>ออกให้เมื่อวันที่ '+certThaiDate(certDate)+'</div>';
+  s+='</div>';
+
+  // Signature
+  s+='<div style="text-align:center;margin-top:50px">';
+  s+='<div>ลงชื่อ………………………………………………</div>';
+  s+='<div style="margin-top:6px">('+esc(signer||'...........................')+')</div>';
+  s+='<div style="margin-top:4px">ตำแหน่ง '+esc(signerPos)+'</div>';
   s+='</div>';
 
   s+='</div>';

@@ -1019,6 +1019,21 @@ function editEmp(id){
   var deptOpts='<option value="">-- เลือก --</option>';
   DEPT.forEach(function(d){deptOpts+='<option value="'+esc(d.title)+'"'+(d.title===a.department?' selected':'')+'>'+esc(d.title)+'</option>'});
 
+  var stOpts='<option value="new"'+(a.status==='new'?' selected':'')+'>ใหม่</option><option value="daily"'+(a.status==='daily'?' selected':'')+'>รายวัน</option><option value="monthly"'+(a.status==='monthly'?' selected':'')+'>ประจำ</option>';
+
+  var docRow=function(label,icon,key,link){
+    var has=link&&link.length>5;
+    var fid=has?driveId(link):null;
+    var thumb=fid?'https://drive.google.com/thumbnail?id='+fid+'&sz=w200':'';
+    var h='<div style="border:1px solid var(--bdr);border-radius:8px;padding:10px;background:var(--inp)">';
+    h+='<div style="font-size:11px;font-weight:600;color:var(--pri);margin-bottom:6px">'+icon+' '+label+'</div>';
+    if(has){h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><img src="'+thumb+'" style="width:60px;height:40px;object-fit:cover;border-radius:4px;border:1px solid var(--bdr)" onerror="this.style.display=\'none\'"><a href="'+esc(link)+'" target="_blank" style="font-size:10px;color:var(--pri2)">ดูไฟล์ปัจจุบัน ↗</a></div>'}
+    h+='<input type="file" accept="image/*,.pdf" onchange="edPickFile(this,\''+key+'\')" style="font-size:11px;width:100%">';
+    h+='<div id="ed-f-'+key+'" style="font-size:10px;color:var(--muted);margin-top:2px">'+(has?'✅ มีไฟล์แล้ว — เลือกไฟล์ใหม่เพื่อเปลี่ยน':'ยังไม่มีไฟล์')+'</div>';
+    h+='</div>';
+    return h;
+  };
+
   $('edit-section').innerHTML=
     '<div class="cd edit-form" style="border:2px solid var(--acc)"><div class="cd-t"><span class="dot"></span> ✏️ แก้ไขข้อมูลพนักงาน</div>'+
     '<div class="g2">'+
@@ -1028,15 +1043,36 @@ function editEmp(id){
       '<div class="fld"><label>อีเมล</label><input id="ed-email" value="'+esc(a.email||'')+'" type="email"></div>'+
       '<div class="fld"><label>แผนก</label><select id="ed-dept">'+deptOpts+'</select></div>'+
       '<div class="fld"><label>ตำแหน่ง</label><select id="ed-pos">'+posOpts+'</select></div>'+
+      '<div class="fld"><label>ประเภท</label><select id="ed-status">'+stOpts+'</select></div>'+
       '<div class="fld"><label>วุฒิการศึกษา</label><select id="ed-edu">'+eduOpts+'</select></div>'+
       '<div class="fld"><label>ธนาคาร</label><select id="ed-bank">'+bankOpts+'</select></div>'+
       '<div class="fld"><label>เลขบัญชี</label><input id="ed-baccount" value="'+esc(a.bank_account||'')+'" maxlength="15" inputmode="numeric"></div>'+
     '</div>'+
-    '<div class="brow"><button class="btn btn-g btn-s" onclick="cancelEdit()">ยกเลิก</button><button class="btn btn-a btn-s" onclick="saveEmp(\''+a.id+'\')">💾 บันทึก</button></div></div>';
+    '<div style="margin-top:14px"><div class="cd-t"><span class="dot"></span> 📎 เอกสาร / รูปภาพ</div>'+
+    '<div class="g2" style="margin-top:8px">'+
+      docRow('บัตรประชาชน','🪪','id',a.id_link)+
+      docRow('วุฒิการศึกษา','📄','cred',a.cred_link)+
+      docRow('ทะเบียนบ้าน','🏠','house',a.house_link)+
+      docRow('Book Bank','🏦','bank',a.bank_link)+
+    '</div></div>'+
+    '<div class="brow" style="margin-top:14px"><button class="btn btn-g btn-s" onclick="cancelEdit()">ยกเลิก</button><button class="btn btn-a" onclick="saveEmp(\''+a.id+'\')" id="ed-save-btn">💾 บันทึกข้อมูล</button></div>'+
+    '<div id="ed-upload-status" style="font-size:12px;margin-top:8px"></div></div>';
+  window._edFiles={id:null,cred:null,house:null,bank:null};
   $('edit-section').scrollIntoView({behavior:'smooth'});
 }
 
-function cancelEdit(){$('edit-section').innerHTML=''}
+function cancelEdit(){$('edit-section').innerHTML='';window._edFiles=null}
+
+function edPickFile(inp,key){
+  var f=inp.files[0];if(!f)return;
+  if(f.size>5*1024*1024){toast('ไฟล์ใหญ่เกิน 5MB','terr');inp.value='';return}
+  var r=new FileReader();
+  r.onload=function(e){
+    window._edFiles[key]={n:f.name,t:f.type,d:e.target.result.split(',')[1]};
+    $('ed-f-'+key).innerHTML='<span style="color:var(--ok)">✅ เลือกไฟล์ใหม่: '+esc(f.name)+'</span>';
+  };
+  r.readAsDataURL(f);
+}
 
 function saveEmp(id){
   var d={
@@ -1046,6 +1082,7 @@ function saveEmp(id){
     email:$('ed-email').value.trim(),
     department:$('ed-dept').value,
     position:$('ed-pos').value,
+    status:$('ed-status').value,
     education:$('ed-edu').value,
     bank:$('ed-bank').value,
     bank_account:$('ed-baccount').value.trim()
@@ -1053,15 +1090,56 @@ function saveEmp(id){
   if(!d.name){toast('กรุณากรอกชื่อ','terr');return}
   if(!d.phone||d.phone.replace(/\D/g,'').length!==10){toast('เบอร์โทรต้อง 10 หลัก','terr');return}
 
+  var btn=$('ed-save-btn');btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';
+
+  // Check if any files need uploading
+  var ef=window._edFiles||{};
+  var hasNewFiles=ef.id||ef.cred||ef.house||ef.bank;
+
   sb("applications","PATCH",d,"?id=eq."+id).then(function(){
-    toast('บันทึกเรียบร้อย','tok');
     if(d.email)emailSet(d.name,d.email);
-    ALL.forEach(function(a){if(a.id===id){a.name=d.name;a.nickname=d.nickname;a.phone=d.phone;a.email=d.email;a.department=d.department;a.position=d.position;a.education=d.education;a.bank=d.bank;a.bank_account=d.bank_account}});
-    stats();doFilter();detail(id);
+    ALL.forEach(function(a){if(a.id===id){for(var k in d)a[k]=d[k]}});
+
+    if(hasNewFiles){
+      $('ed-upload-status').innerHTML='<span style="color:var(--acc)">📤 กำลังอัปโหลดเอกสาร...</span>';
+      var body=JSON.stringify({
+        action:'upload_files',id:id,
+        idData:ef.id?ef.id.d:'',idType:ef.id?ef.id.t:'',idName:ef.id?ef.id.n:'',
+        credData:ef.cred?ef.cred.d:'',credType:ef.cred?ef.cred.t:'',credName:ef.cred?ef.cred.n:'',
+        houseData:ef.house?ef.house.d:'',houseType:ef.house?ef.house.t:'',houseName:ef.house?ef.house.n:'',
+        bankData:ef.bank?ef.bank.d:'',bankType:ef.bank?ef.bank.t:'',bankName:ef.bank?ef.bank.n:''
+      });
+      fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body}).then(function(r){return r.json()}).then(function(r2){
+        if(r2&&r2.ok){
+          var patch={};
+          if(r2.idLink)patch.id_link=r2.idLink;
+          if(r2.credLink)patch.cred_link=r2.credLink;
+          if(r2.houseLink)patch.house_link=r2.houseLink;
+          if(r2.bankLink)patch.bank_link=r2.bankLink;
+          if(Object.keys(patch).length){
+            sb("applications","PATCH",patch,"?id=eq."+id).then(function(){
+              ALL.forEach(function(a){if(a.id===id){for(var k in patch)a[k]=patch[k]}});
+            });
+          }
+          $('ed-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย</span>';
+        }else{
+          $('ed-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ</span>';
+        }
+        btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
+        toast('บันทึกเรียบร้อย','tok');stats();doFilter();
+        setTimeout(function(){detail(id)},1500);
+      }).catch(function(){
+        $('ed-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ</span>';
+        btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
+        toast('บันทึกข้อมูลแล้ว แต่อัปโหลดไม่สำเร็จ','terr');stats();doFilter();
+      });
+    }else{
+      btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
+      toast('บันทึกเรียบร้อย','tok');stats();doFilter();detail(id);
+    }
   }).catch(function(e){
-    if(d.email)emailSet(d.name,d.email);
-    ALL.forEach(function(a){if(a.id===id){a.name=d.name;a.nickname=d.nickname;a.phone=d.phone;a.email=d.email;a.department=d.department;a.position=d.position;a.education=d.education;a.bank=d.bank;a.bank_account=d.bank_account}});
-    toast('บันทึกแล้ว','tok');stats();doFilter();detail(id);
+    btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
+    toast('Error: '+e,'terr');
   });
 }
 

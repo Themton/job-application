@@ -478,12 +478,12 @@
 
         <div class="cd-t" style="margin-top:18px"><span class="dot"></span> รายละเอียดหนังสือ</div>
         <div class="g2">
-          <div class="fld"><label>ประเภทหนังสือ</label><select id="cert-type"><option value="salary">หนังสือรับรองเงินเดือน</option><option value="work">หนังสือรับรองการทำงาน</option><option value="both">หนังสือรับรองการทำงานและเงินเดือน</option></select></div>
           <div class="fld"><label>วัตถุประสงค์</label><select id="cert-purpose" onchange="$('cert-purpose-custom-wrap').classList.toggle('hide',this.value!=='custom')"><option>เพื่อนำไปใช้ตามที่เห็นสมควร</option><option>เพื่อใช้ประกอบการขอสินเชื่อกับสถาบันการเงิน</option><option>เพื่อใช้ประกอบการสมัครงาน</option><option>เพื่อใช้ประกอบการขอวีซ่า</option><option>เพื่อยื่นต่อหน่วยงานราชการ</option><option>เพื่อใช้เป็นหลักฐานในการค้ำประกัน</option><option value="custom">อื่นๆ (พิมพ์เอง)</option></select></div>
           <div class="fld hide" id="cert-purpose-custom-wrap"><label>ระบุวัตถุประสงค์</label><input id="cert-purpose-custom" placeholder="พิมพ์วัตถุประสงค์..."></div>
           <div class="fld"><label>วันที่ออกหนังสือ</label><input id="cert-date" type="date"></div>
           <div class="fld"><label>ผู้มีอำนาจลงนาม</label><input id="cert-signer" value=""></div>
           <div class="fld"><label>ตำแหน่งผู้ลงนาม</label><input id="cert-signer-pos" value="กรรมการผู้จัดการ"></div>
+          <div class="fld"><label>เบอร์โทรฝ่ายบุคคล</label><input id="cert-hrphone" placeholder="02-XXX-XXXX"></div>
         </div>
         <div class="brow" style="margin-top:14px">
           <button class="btn btn-a" onclick="certPreview()">👁️ ดูตัวอย่าง</button>
@@ -1803,87 +1803,77 @@ function certBuildHTML(){
   var pos=$('cert-pos').value||'';
   var dept=$('cert-dept').value||'';
   var startDate=$('cert-start').value||'';
-  var certType=$('cert-type').value;
   var purpose=$('cert-purpose').value==='custom'?$('cert-purpose-custom').value:$('cert-purpose').value;
   var certDate=$('cert-date').value||new Date().toISOString().substring(0,10);
   var signer=$('cert-signer').value||'';
   var signerPos=$('cert-signer-pos').value||'กรรมการผู้จัดการ';
+  var empId=a.id||'';
+  var prefix='นาย/นาง/นางสาว';
 
-  var titleMap={salary:'หนังสือรับรองเงินเดือน',work:'หนังสือรับรองการทำงาน',both:'หนังสือรับรองการทำงานและเงินเดือน'};
-  var title=titleMap[certType]||titleMap.salary;
+  // Dotted underline helper
+  var dot=function(text,w){return'<span style="display:inline-block;min-width:'+(w||120)+'px;border-bottom:1px dotted #000;text-align:center;padding:0 8px;font-weight:600">'+esc(text)+'</span>'};
 
-  var s='<div style="width:700px;margin:0 auto;padding:50px 60px;font-family:\'Noto Sans Thai\',sans-serif;color:#000;background:#fff;line-height:1.9;font-size:15px">';
+  var s='<div style="width:700px;margin:0 auto;padding:50px 60px;font-family:\'Noto Sans Thai\',sans-serif;color:#000;background:#fff;font-size:15px;line-height:2.2">';
 
   // === Header ===
-  s+='<div style="text-align:center;margin-bottom:10px">';
-  s+='<img src="'+LOGO_URL+'" width="65" height="65" style="border-radius:10px;margin-bottom:6px"><br>';
-  s+='<div style="font-size:19px;font-weight:700">'+esc(company)+'</div>';
-  if(addr)s+='<div style="font-size:12px;color:#555;margin-top:2px">'+esc(addr)+'</div>';
-  if(taxid)s+='<div style="font-size:12px;color:#555">เลขประจำตัวผู้เสียภาษี: '+esc(taxid)+'</div>';
-  s+='</div>';
-
-  // === Doc number + Date line ===
-  s+='<div style="display:flex;justify-content:space-between;margin:20px 0 6px;font-size:14px">';
-  s+='<div>'+(docno?'ที่ '+esc(docno):'')+'</div>';
-  s+='<div>วันที่ '+certThaiDate(certDate)+'</div>';
+  s+='<div style="text-align:center;margin-bottom:6px">';
+  s+='<img src="'+LOGO_URL+'" width="55" height="55" style="border-radius:8px;margin-bottom:4px"><br>';
+  s+='<div style="font-size:18px;font-weight:700">'+esc(company)+'</div>';
+  if(addr){
+    var addrLines=addr.split('\n');
+    s+='<div style="font-size:13px">ที่อยู่ '+dot(addrLines[0]||addr,400)+'</div>';
+    if(addrLines[1])s+='<div style="font-size:13px">'+dot(addrLines[1],450)+'</div>';
+  }else{
+    s+='<div style="font-size:13px">ที่อยู่ '+dot('',400)+'</div>';
+    s+='<div style="font-size:13px">'+dot('',450)+'</div>';
+  }
+  if(taxid)s+='<div style="font-size:13px">เลขประจำตัวผู้เสียภาษี '+dot(taxid,250)+'</div>';
   s+='</div>';
 
   // === Title ===
-  s+='<div style="text-align:center;margin:16px 0 24px">';
-  s+='<div style="font-size:20px;font-weight:700;text-decoration:underline;text-underline-offset:6px">'+esc(title)+'</div>';
+  s+='<div style="text-align:center;margin:24px 0 20px">';
+  s+='<div style="font-size:22px;font-weight:700;text-decoration:underline;text-underline-offset:6px">หนังสือรับรองเงินเดือน</div>';
   s+='</div>';
 
-  // === Body ===
-  s+='<p style="text-indent:60px;margin:0 0 12px">หนังสือฉบับนี้ขอรับรองว่า</p>';
+  // === Body paragraph ===
+  s+='<div style="text-indent:60px;margin-bottom:8px">';
+  s+='หนังสือฉบับนี้ออกเพื่อให้รับรองว่า นาย/นาง/นางสาว '+dot(a.name,220)+' เป็นพนักงานของ บริษัท ';
+  s+=dot(company,200);
+  s+='</div>';
 
-  // Employee info table
-  s+='<table style="width:100%;border-collapse:collapse;margin:0 0 16px 30px;font-size:15px">';
-  s+='<tr><td style="padding:4px 0;width:160px;vertical-align:top">ชื่อ - สกุล</td><td style="padding:4px 0;font-weight:600">'+esc(a.name)+'</td></tr>';
-  if(idcard)s+='<tr><td style="padding:4px 0">เลขบัตรประชาชน</td><td style="padding:4px 0">'+esc(idcard)+'</td></tr>';
-  if(pos)s+='<tr><td style="padding:4px 0">ตำแหน่ง</td><td style="padding:4px 0">'+esc(pos)+'</td></tr>';
-  if(dept)s+='<tr><td style="padding:4px 0">สังกัดแผนก</td><td style="padding:4px 0">'+esc(dept)+'</td></tr>';
-  if(startDate)s+='<tr><td style="padding:4px 0">เริ่มปฏิบัติงานตั้งแต่วันที่</td><td style="padding:4px 0">'+certThaiDate(startDate)+'</td></tr>';
-  s+='</table>';
+  s+='<div style="margin-bottom:8px">';
+  s+=dot('',80)+' ปฏิบัติงานในตำแหน่ง '+dot(pos,150)+' แผนก '+dot(dept,120)+' ฝ่าย '+dot(dept,100);
+  s+='</div>';
 
-  // Salary section
-  if(certType==='salary'||certType==='both'){
-    s+='<p style="text-indent:60px;margin:0 0 6px">เป็นพนักงานของ'+esc(company)+' โดยได้รับอัตราเงินเดือน เดือนละ</p>';
-    s+='<div style="text-align:center;margin:10px 0;font-size:22px;font-weight:700">'+certThaiNum(salary)+' บาท</div>';
-    s+='<div style="text-align:center;margin:0 0 16px;font-size:14px;color:#555">('+certBahtText(salary)+')</div>';
-  }
+  s+='<div style="margin-bottom:8px">';
+  s+='รหัสพนักงาน '+dot(empId,130)+' ตั้งแต่วันที่ '+dot(startDate?certThaiDate(startDate):'',160)+' จนถึงปัจจุบัน มีอัตราเงินเดือนประจำเดือนละ';
+  s+='</div>';
 
-  // Work certification
-  if(certType==='work'){
-    s+='<p style="text-indent:60px;margin:0 0 12px">เป็นพนักงานของ'+esc(company)+' จริง</p>';
-  }
+  s+='<div style="margin-bottom:8px">';
+  s+=dot(certThaiNum(salary),150)+' บาท ( '+dot(certBahtText(salary),280)+' )';
+  s+='</div>';
 
-  // Current status
-  s+='<p style="text-indent:60px;margin:0 0 12px">ปัจจุบันยังคงเป็นพนักงานและปฏิบัติงานอยู่ ณ บริษัทแห่งนี้</p>';
-
-  // Purpose
-  s+='<p style="text-indent:60px;margin:0 0 8px">จึงออกหนังสือรับรองฉบับนี้ให้ไว้เพื่อเป็นหลักฐาน <b>'+esc(purpose)+'</b></p>';
-
-  // Disclaimer
-  s+='<p style="text-indent:60px;margin:0 0 30px;font-size:13px;color:#666">ทั้งนี้ บริษัทไม่รับผิดชอบในกรณีที่พนักงานนำหนังสือฉบับนี้ไปใช้นอกเหนือจากวัตถุประสงค์ที่ระบุไว้ข้างต้น</p>';
+  s+='<div style="margin-bottom:20px">';
+  s+='<b>หนังสือรับรองเงินเดือนฉบับนี้ใช้เพื่อ</b> '+dot(purpose,200)+' เท่านั้น';
+  s+='</div>';
 
   // === Signature ===
-  s+='<div style="text-align:center;margin-top:50px">';
-  s+='<div>ขอแสดงความนับถือ</div>';
-  s+='<div style="margin-top:60px">ลงชื่อ ..................................................</div>';
-  s+='<div style="margin-top:6px">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( '+esc(signer||'.................................................')+'  )</div>';
-  s+='<div style="margin-top:4px;font-size:14px">'+esc(signerPos)+'</div>';
-  s+='<div style="font-size:13px;color:#555">'+esc(company)+'</div>';
+  s+='<div style="text-align:center;margin-top:40px">';
+  s+='<div>ออกให้ ณ วันที่ '+dot(certThaiDate(certDate),200)+'</div>';
+  s+='<div style="margin-top:40px">ลงชื่อ '+dot('',250)+'</div>';
+  s+='<div style="margin-top:8px">( '+dot(signer||'',220)+' )</div>';
+  s+='<div style="margin-top:8px"><b>ตำแหน่ง</b> '+dot(signerPos,250)+'</div>';
   s+='</div>';
 
-  // Seal area
+  // === Seal area ===
   s+='<div style="margin-top:30px;text-align:center">';
-  s+='<div style="display:inline-block;border:2px dashed #ccc;border-radius:50%;width:100px;height:100px;line-height:100px;font-size:11px;color:#ccc">ประทับตราบริษัท</div>';
+  s+='<div style="display:inline-block;border:2px dashed #bbb;border-radius:50%;width:90px;height:90px;line-height:90px;font-size:10px;color:#bbb">ประทับตราบริษัท</div>';
   s+='</div>';
 
-  // Footer
-  s+='<div style="margin-top:30px;border-top:1px solid #ddd;padding-top:10px;font-size:10px;color:#999;text-align:center">'+esc(company);
-  if(addr)s+=' | '+esc(addr);
-  if(taxid)s+=' | เลขที่ผู้เสียภาษี '+esc(taxid);
+  // === Footer ===
+  var hrphone=$('cert-hrphone').value||'';
+  s+='<div style="margin-top:50px;font-size:13px">';
+  s+='สอบถามฝ่ายบุคคล โทร. '+dot(hrphone||'',250);
   s+='</div>';
 
   s+='</div>';

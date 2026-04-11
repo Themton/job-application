@@ -214,7 +214,7 @@
         <button class="sb-item" id="tab-dept" onclick="showTab('dept')"><span class="sb-ic">🏢</span><span class="sb-tx">แผนก</span></button>
         <button class="sb-item" id="tab-pos" onclick="showTab('pos')"><span class="sb-ic">💼</span><span class="sb-tx">ตำแหน่ง</span></button>
         <button class="sb-item" id="tab-usr" onclick="showTab('usr')"><span class="sb-ic">👤</span><span class="sb-tx">ผู้ใช้ / สิทธิ์</span></button>
-        <button class="sb-item" id="tab-rpt" onclick="showTab('rpt')"><span class="sb-ic">📊</span><span class="sb-tx">รายงาน</span></button>
+        <button class="sb-item" id="tab-rpt" onclick="showTab('rpt')"><span class="sb-ic">📊</span><span class="sb-tx">รายงาน / ตรวจสอบ</span></button>
         <div class="sb-sep">เงินเดือน</div>
         <button class="sb-item" id="tab-pay" onclick="showTab('pay')"><span class="sb-ic">💰</span><span class="sb-tx">คิดเงินเดือน</span></button>
         <button class="sb-item" id="tab-comm" onclick="showTab('comm')"><span class="sb-ic">⭐</span><span class="sb-tx">คอมมิชชั่น</span></button>
@@ -306,8 +306,17 @@
     <!-- TAB: Report -->
     <div id="T-rpt" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <span class="ttl" style="font-size:18px">📊 รายงานวันลาคงเหลือ</span>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span class="ttl" style="font-size:18px">📊 รายงาน / ตรวจสอบข้อมูล</span>
+        <button class="btn btn-a btn-s" onclick="runAudit()">🔍 ตรวจสอบข้อมูลทั้งหมด</button>
+      </div>
+
+      <!-- Data Audit Section -->
+      <div id="audit-result" class="hide" style="margin-bottom:20px"></div>
+
+      <!-- Leave Report -->
+      <div class="cd" style="margin-bottom:14px">
+        <div class="cd-t"><span class="dot"></span> รายงานวันลาคงเหลือ</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
           <button class="btn btn-g btn-s" onclick="rptDownloadAll('id_link','บัตรประชาชน')" title="ดาวน์โหลดบัตร ปชช. ทั้งหมด">🪪 โหลดบัตรทั้งหมด</button>
           <button class="btn btn-g btn-s" onclick="rptDownloadAll('cred_link','วุฒิการศึกษา')">📄 โหลดวุฒิ</button>
           <button class="btn btn-g btn-s" onclick="rptDownloadAll('house_link','ทะเบียนบ้าน')">🏠 โหลดทะเบียนบ้าน</button>
@@ -1218,6 +1227,116 @@ function saveEmp(id){
     prog(-1);
     toast('Error: '+e,'terr');
   });
+}
+
+/* ═══ DATA AUDIT ═══ */
+function runAudit(){
+  prog(10,'กำลังตรวจสอบข้อมูล...');
+  var total=ALL.length;
+  var daily=0,monthly=0,newE=0,term=0;
+  var posMap={},deptMap={},bankMap={};
+  var hasEmail=0,hasPhone=0,hasBank=0,hasBankAcc=0,hasIdLink=0,hasCredLink=0;
+  var noDept=0,noPos=0,noBank=0,noBankAcc=0,noEmail=0,noPhone=0;
+  var issues=[];
+
+  ALL.forEach(function(a){
+    if(a.status==='daily')daily++;
+    else if(a.status==='monthly')monthly++;
+    else if(a.status==='terminated')term++;
+    else newE++;
+
+    if(a.position)posMap[a.position]=(posMap[a.position]||0)+1;else noPos++;
+    if(a.department)deptMap[a.department]=(deptMap[a.department]||0)+1;else noDept++;
+    if(a.bank){bankMap[a.bank]=(bankMap[a.bank]||0)+1;hasBank++}else noBank++;
+    if(a.bank_account)hasBankAcc++;else noBankAcc++;
+    if(a.email&&a.email.indexOf('@')>=0)hasEmail++;else noEmail++;
+    if(a.phone)hasPhone++;else noPhone++;
+    if(a.id_link)hasIdLink++;
+    if(a.cred_link)hasCredLink++;
+
+    // Check issues per person
+    var iss=[];
+    if(!a.phone)iss.push('ไม่มีเบอร์โทร');
+    if(!a.bank)iss.push('ไม่มีธนาคาร');
+    if(!a.bank_account)iss.push('ไม่มีเลขบัญชี');
+    if(!a.email||a.email.indexOf('@')<0)iss.push('ไม่มีอีเมล');
+    if(!a.department)iss.push('ไม่มีแผนก');
+    if(!a.position)iss.push('ไม่มีตำแหน่ง');
+    if(!a.id_link)iss.push('ไม่มีบัตร ปชช.');
+    if(!a.cred_link)iss.push('ไม่มีวุฒิ');
+    if(iss.length)issues.push({name:a.name,status:a.status,issues:iss});
+  });
+
+  var ok=total-issues.length;
+  var h='<div class="cd" style="border:2px solid '+(issues.length?'#f59e0b':'var(--ok)')+'">';
+  h+='<div class="cd-t"><span class="dot"></span> 🔍 ผลการตรวจสอบข้อมูลพนักงาน</div>';
+
+  // Summary stats
+  h+='<div class="sts" style="margin-bottom:14px">';
+  h+='<div class="st"><div class="ic">👥</div><div class="l">ทั้งหมด</div><div class="v">'+total+'</div></div>';
+  h+='<div class="st"><div class="ic">🟡</div><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+daily+'</div></div>';
+  h+='<div class="st"><div class="ic">🟢</div><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+monthly+'</div></div>';
+  h+='<div class="st"><div class="ic">🔵</div><div class="l">ใหม่</div><div class="v" style="color:#007bff">'+newE+'</div></div>';
+  h+='<div class="st"><div class="ic">🔴</div><div class="l">พ้นสภาพ</div><div class="v" style="color:var(--err)">'+term+'</div></div>';
+  h+='<div class="st"><div class="ic">✅</div><div class="l">ข้อมูลครบ</div><div class="v" style="color:var(--ok)">'+ok+'</div></div>';
+  h+='</div>';
+
+  // Field completion
+  h+='<div style="margin-bottom:14px"><b>ความครบถ้วนของข้อมูล:</b></div>';
+  h+='<div class="tw"><table><thead><tr><th>รายการ</th><th style="text-align:center">มี</th><th style="text-align:center">ไม่มี</th><th style="text-align:center">%</th></tr></thead><tbody>';
+  var fields=[
+    {l:'เบอร์โทร',y:hasPhone,n:noPhone},
+    {l:'ตำแหน่ง',y:total-noPos,n:noPos},
+    {l:'แผนก',y:total-noDept,n:noDept},
+    {l:'ธนาคาร',y:hasBank,n:noBank},
+    {l:'เลขบัญชี',y:hasBankAcc,n:noBankAcc},
+    {l:'อีเมล',y:hasEmail,n:noEmail},
+    {l:'บัตรประชาชน',y:hasIdLink,n:total-hasIdLink},
+    {l:'วุฒิการศึกษา',y:hasCredLink,n:total-hasCredLink}
+  ];
+  fields.forEach(function(f){
+    var pct=total?Math.round(f.y/total*100):0;
+    var color=pct>=90?'var(--ok)':pct>=50?'#f59e0b':'var(--err)';
+    h+='<tr><td>'+f.l+'</td><td style="text-align:center;color:var(--ok);font-weight:600">'+f.y+'</td><td style="text-align:center;color:'+(f.n?'var(--err)':'var(--muted)')+'">'+f.n+'</td><td style="text-align:center"><div style="display:inline-block;background:'+color+'22;color:'+color+';padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600">'+pct+'%</div></td></tr>';
+  });
+  h+='</tbody></table></div>';
+
+  // By position
+  h+='<div style="display:flex;gap:20px;flex-wrap:wrap;margin:14px 0">';
+  h+='<div><b>ตำแหน่ง:</b><ul style="margin:4px 0;padding-left:20px;font-size:13px">';
+  Object.keys(posMap).sort().forEach(function(p){h+='<li>'+esc(p)+': <b>'+posMap[p]+'</b> คน</li>'});
+  if(noPos)h+='<li style="color:var(--err)">(ไม่มีตำแหน่ง): '+noPos+' คน</li>';
+  h+='</ul></div>';
+
+  h+='<div><b>แผนก:</b><ul style="margin:4px 0;padding-left:20px;font-size:13px">';
+  Object.keys(deptMap).sort().forEach(function(d){h+='<li>'+esc(d)+': <b>'+deptMap[d]+'</b> คน</li>'});
+  if(noDept)h+='<li style="color:var(--err)">(ไม่มีแผนก): '+noDept+' คน</li>';
+  h+='</ul></div>';
+
+  h+='<div><b>ธนาคาร:</b><ul style="margin:4px 0;padding-left:20px;font-size:13px">';
+  Object.keys(bankMap).sort().forEach(function(b){h+='<li>'+esc(b)+': <b>'+bankMap[b]+'</b> คน</li>'});
+  if(noBank)h+='<li style="color:var(--err)">(ไม่มีธนาคาร): '+noBank+' คน</li>';
+  h+='</ul></div>';
+  h+='</div>';
+
+  // Issues list
+  if(issues.length){
+    h+='<div style="margin-top:14px"><b style="color:var(--err)">⚠️ พนักงานที่ข้อมูลไม่ครบ ('+issues.length+' คน):</b></div>';
+    h+='<div class="tw" style="margin-top:8px;max-height:400px;overflow:auto"><table><thead><tr><th>ชื่อ</th><th>สถานะ</th><th>ข้อมูลที่ขาด</th></tr></thead><tbody>';
+    issues.forEach(function(item){
+      var stLabel=item.status==='daily'?'รายวัน':item.status==='monthly'?'ประจำ':item.status==='terminated'?'พ้นสภาพ':'ใหม่';
+      h+='<tr><td class="nm">'+esc(item.name)+'</td><td>'+stLabel+'</td><td style="font-size:11px;color:var(--err)">'+item.issues.join(', ')+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }else{
+    h+='<div style="margin-top:14px;text-align:center;color:var(--ok);font-size:16px;font-weight:700;padding:20px">✅ ข้อมูลพนักงานครบทุกคน!</div>';
+  }
+
+  h+='</div>';
+  $('audit-result').innerHTML=h;
+  $('audit-result').classList.remove('hide');
+  $('audit-result').scrollIntoView({behavior:'smooth'});
+  prog(100,'ตรวจสอบเสร็จ ✅ '+total+' คน');
 }
 
 /* ═══ LEAVES ═══ */

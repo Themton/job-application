@@ -219,6 +219,8 @@
         <button class="sb-item" id="tab-pay" onclick="showTab('pay')"><span class="sb-ic">💰</span><span class="sb-tx">คิดเงินเดือน</span></button>
         <button class="sb-item" id="tab-comm" onclick="showTab('comm')"><span class="sb-ic">⭐</span><span class="sb-tx">คอมมิชชั่น</span></button>
         <button class="sb-item" id="tab-paydb" onclick="showTab('paydb')"><span class="sb-ic">🗂️</span><span class="sb-tx">รายงานรวม + ส่งสลิป</span></button>
+        <div class="sb-sep">เอกสาร</div>
+        <button class="sb-item" id="tab-cert" onclick="showTab('cert')"><span class="sb-ic">📜</span><span class="sb-tx">หนังสือรับรองเงินเดือน</span></button>
       </div>
       <div class="sb-foot">
         <button class="sb-item sb-logout" onclick="sessionStorage.removeItem('mt_logged');location.reload()"><span class="sb-ic">🚪</span><span class="sb-tx">ออกจากระบบ</span></button>
@@ -450,6 +452,32 @@
       <div id="paydb-send-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
     </div>
 
+    <!-- TAB: Salary Certificate -->
+    <div id="T-cert" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span class="ttl" style="font-size:18px">📜 ออกหนังสือรับรองเงินเดือน</span>
+      </div>
+      <div class="cd" style="max-width:700px">
+        <div class="cd-t"><span class="dot"></span> กรอกข้อมูล</div>
+        <div class="g2">
+          <div class="fld"><label>เลือกพนักงาน <span class="rq">*</span></label><select id="cert-emp" onchange="certFillEmp()"><option value="">-- เลือกพนักงาน --</option></select></div>
+          <div class="fld"><label>ตำแหน่ง</label><input id="cert-pos" readonly style="background:var(--bg)"></div>
+          <div class="fld"><label>แผนก</label><input id="cert-dept" readonly style="background:var(--bg)"></div>
+          <div class="fld"><label>วันที่เริ่มงาน</label><input id="cert-start" type="date"></div>
+          <div class="fld"><label>เงินเดือน (บาท) <span class="rq">*</span></label><input id="cert-salary" type="number" placeholder="15000" inputmode="numeric"></div>
+          <div class="fld"><label>วัตถุประสงค์</label><select id="cert-purpose"><option>เพื่อใช้ในกิจธุระส่วนตัว</option><option>เพื่อประกอบการขอสินเชื่อ</option><option>เพื่อประกอบการสมัครงาน</option><option>เพื่อประกอบการขอวีซ่า</option><option>เพื่อยื่นต่อหน่วยงานราชการ</option><option value="custom">อื่นๆ (พิมพ์เอง)</option></select></div>
+          <div class="fld hide" id="cert-purpose-custom-wrap"><label>ระบุวัตถุประสงค์</label><input id="cert-purpose-custom" placeholder="พิมพ์วัตถุประสงค์..."></div>
+          <div class="fld"><label>วันที่ออกหนังสือ</label><input id="cert-date" type="date"></div>
+          <div class="fld"><label>ผู้ลงนาม</label><input id="cert-signer" value="กรรมการผู้จัดการ"></div>
+        </div>
+        <div class="brow" style="margin-top:14px">
+          <button class="btn btn-a" onclick="certPreview()">👁️ ดูตัวอย่าง</button>
+          <button class="btn btn-a btn-s" onclick="certPrint()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">🖨️ พิมพ์ / PDF</button>
+        </div>
+      </div>
+      <div id="cert-preview" style="margin-top:20px"></div>
+    </div>
+
     <!-- TAB: Payslip Email -->
     <div id="T-slip" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -602,12 +630,13 @@ function page(p){
   window.scrollTo(0,0);
 }
 
-var TAB_LABELS={app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',paydb:'🗂️ รายงานรวม + ส่งสลิป'};
+var TAB_LABELS={app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',paydb:'🗂️ รายงานรวม + ส่งสลิป',cert:'📜 หนังสือรับรอง'};
 
 function showTab(t){
-  ['app','dept','pos','usr','rpt','pay','comm','paydb'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
+  ['app','dept','pos','usr','rpt','pay','comm','paydb','cert'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   if(t==='comm'&&!$('comm-month').value){var now=new Date();$('comm-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
+  if(t==='cert')certInit();
   // Update mobile topbar label
   if($('sb-active-label'))$('sb-active-label').textContent=TAB_LABELS[t]||t;
   // Close sidebar on mobile
@@ -1687,6 +1716,130 @@ function slipAutoEmail(){
     if(nick){var em=nick.toLowerCase().replace(/\s+/g,'')+domain;SLIP_EMAILS[i]=em;emailSet(e.name,em);count++}
   });
   slipRender();toast('สร้างอีเมลอัตโนมัติ '+count+' คน','tok');
+}
+
+/* ═══ SALARY CERTIFICATE ═══ */
+function certInit(){
+  var sel=$('cert-emp');sel.innerHTML='<option value="">-- เลือกพนักงาน --</option>';
+  ALL.filter(function(a){return a.status!=='terminated'}).forEach(function(a){
+    sel.innerHTML+='<option value="'+esc(a.id)+'">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</option>';
+  });
+  if(!$('cert-date').value){$('cert-date').value=new Date().toISOString().substring(0,10)}
+  $('cert-purpose').onchange=function(){
+    $('cert-purpose-custom-wrap').classList.toggle('hide',this.value!=='custom');
+  };
+}
+
+function certFillEmp(){
+  var id=$('cert-emp').value;if(!id){$('cert-pos').value='';$('cert-dept').value='';$('cert-salary').value='';return}
+  var a;ALL.forEach(function(x){if(x.id===id)a=x});if(!a)return;
+  $('cert-pos').value=a.position||'';
+  $('cert-dept').value=a.department||'';
+  $('cert-start').value=a.created_at?a.created_at.substring(0,10):'';
+  // Try to get salary from latest payroll
+  sb("payroll","GET",null,"?emp_name=eq."+encodeURIComponent(a.name)+"&select=salary&order=month.desc&limit=1").then(function(r){
+    if(Array.isArray(r)&&r.length&&r[0].salary)$('cert-salary').value=r[0].salary;
+  }).catch(function(){});
+}
+
+function certThaiDate(d){
+  var months=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  var dt=new Date(d);
+  return dt.getDate()+' '+months[dt.getMonth()]+' '+(dt.getFullYear()+543);
+}
+
+function certThaiNum(n){
+  return n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function certBahtText(n){
+  var t=['','หนึ่ง','สอง','สาม','สี่','ห้า','หก','เจ็ด','แปด','เก้า'];
+  var u=['','สิบ','ร้อย','พัน','หมื่น','แสน','ล้าน'];
+  if(n===0)return'ศูนย์บาทถ้วน';
+  var b=Math.floor(n),s=Math.round((n-b)*100);
+  function c(num){
+    if(num===0)return'';
+    var str='',d=String(num).split('').reverse();
+    for(var i=0;i<d.length;i++){
+      var v=parseInt(d[i]);
+      if(v===0)continue;
+      if(i===0&&v===1&&d.length>1)str='เอ็ด'+str;
+      else if(i===1&&v===2)str='ยี่'+u[i]+str;
+      else if(i===1&&v===1)str=u[i]+str;
+      else str=t[v]+u[i]+str;
+    }
+    return str;
+  }
+  var result=c(b)+'บาท';
+  if(s>0)result+=c(s)+'สตางค์';else result+='ถ้วน';
+  return result;
+}
+
+function certBuildHTML(){
+  var id=$('cert-emp').value;
+  var a;ALL.forEach(function(x){if(x.id===id)a=x});
+  if(!a){toast('เลือกพนักงาน','terr');return null}
+  var salary=parseFloat($('cert-salary').value)||0;
+  if(!salary){toast('กรอกเงินเดือน','terr');return null}
+
+  var purpose=$('cert-purpose').value==='custom'?$('cert-purpose-custom').value:$('cert-purpose').value;
+  var certDate=$('cert-date').value||new Date().toISOString().substring(0,10);
+  var startDate=$('cert-start').value;
+  var signer=$('cert-signer').value||'กรรมการผู้จัดการ';
+
+  return'<div style="width:700px;margin:0 auto;padding:50px 60px;font-family:\'Noto Sans Thai\',sans-serif;color:#1a1a1a;background:#fff;line-height:2;font-size:15px">'
+    +'<div style="text-align:center;margin-bottom:30px">'
+    +'<img src="LOGO_THEMT.png" width="70" height="70" style="border-radius:12px;margin-bottom:8px"><br>'
+    +'<div style="font-size:20px;font-weight:700;color:#5c4a1e">บริษัท เดอะ เอ็มที จำกัด</div>'
+    +'<div style="font-size:12px;color:#888;margin-top:2px">The MT Co., Ltd.</div>'
+    +'</div>'
+
+    +'<div style="text-align:center;margin-bottom:30px">'
+    +'<div style="font-size:22px;font-weight:700;text-decoration:underline;text-underline-offset:6px">หนังสือรับรองเงินเดือน</div>'
+    +'</div>'
+
+    +'<p style="text-indent:60px;margin-bottom:16px">หนังสือฉบับนี้ออกให้เพื่อรับรองว่า</p>'
+
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:20px">'
+    +'<tr><td style="padding:6px 0;width:140px;color:#555">ชื่อ - สกุล</td><td style="padding:6px 0;font-weight:600;border-bottom:1px dotted #ccc">'+esc(a.name)+'</td></tr>'
+    +(a.position?'<tr><td style="padding:6px 0;color:#555">ตำแหน่ง</td><td style="padding:6px 0;font-weight:600;border-bottom:1px dotted #ccc">'+esc(a.position)+'</td></tr>':'')
+    +(a.department?'<tr><td style="padding:6px 0;color:#555">แผนก</td><td style="padding:6px 0;font-weight:600;border-bottom:1px dotted #ccc">'+esc(a.department)+'</td></tr>':'')
+    +(startDate?'<tr><td style="padding:6px 0;color:#555">วันที่เริ่มงาน</td><td style="padding:6px 0;font-weight:600;border-bottom:1px dotted #ccc">'+certThaiDate(startDate)+'</td></tr>':'')
+    +'<tr><td style="padding:6px 0;color:#555">อัตราเงินเดือน</td><td style="padding:6px 0;font-weight:700;font-size:17px;color:#5c4a1e;border-bottom:1px dotted #ccc">'+certThaiNum(salary)+' บาท</td></tr>'
+    +'<tr><td style="padding:6px 0;color:#555"></td><td style="padding:6px 0;font-size:13px;color:#856404">('+certBahtText(salary)+')</td></tr>'
+    +'</table>'
+
+    +'<p style="text-indent:60px;margin-bottom:8px">เป็นพนักงานของบริษัทจริง ปัจจุบันยังคงปฏิบัติงานอยู่ในบริษัท</p>'
+    +'<p style="text-indent:60px;margin-bottom:30px">จึงออกหนังสือรับรองฉบับนี้ให้ไว้ <b>'+esc(purpose)+'</b></p>'
+
+    +'<div style="text-align:right;margin-top:50px">'
+    +'<div>ออก ณ วันที่ '+certThaiDate(certDate)+'</div>'
+    +'<div style="margin-top:50px">ลงชื่อ ................................................</div>'
+    +'<div style="margin-top:8px;font-weight:600;padding-right:40px">('+esc(signer)+')</div>'
+    +'<div style="font-size:13px;color:#888;padding-right:40px">บริษัท เดอะ เอ็มที จำกัด</div>'
+    +'</div>'
+
+    +'<div style="margin-top:40px;border-top:1px solid #e0d8c8;padding-top:12px;text-align:center;font-size:10px;color:#aaa">เอกสารนี้ออกโดยระบบ HR — บริษัท เดอะ เอ็มที จำกัด</div>'
+    +'</div>';
+}
+
+function certPreview(){
+  var html=certBuildHTML();if(!html)return;
+  $('cert-preview').innerHTML='<div style="border:2px solid var(--bdr);border-radius:12px;overflow:hidden;box-shadow:var(--sh3);background:#fff">'+html+'</div>';
+  $('cert-preview').scrollIntoView({behavior:'smooth'});
+}
+
+function certPrint(){
+  var html=certBuildHTML();if(!html)return;
+  var win=window.open('','_blank','width=800,height=1000');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>หนังสือรับรองเงินเดือน</title>');
+  win.document.write('<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">');
+  win.document.write('<style>@media print{body{margin:0;padding:0}@page{margin:15mm 10mm}}</style>');
+  win.document.write('</head><body style="margin:0;padding:0">');
+  win.document.write(html);
+  win.document.write('</body></html>');
+  win.document.close();
+  setTimeout(function(){win.print()},500);
 }
 
 /* ═══ SCB PAYROLL FILE EXPORT ═══ */

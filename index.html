@@ -558,6 +558,12 @@
 
 <div id="lbox" class="lbox hide" onclick="closeLB()"><button class="lbox-close" onclick="closeLB()">✕</button><img id="lbox-img" src=""></div>
 <div id="toast" class="toast hide"></div>
+<div id="g-prog" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999">
+  <div style="background:rgba(0,0,0,.7);padding:0">
+    <div id="g-prog-bar" style="height:4px;background:linear-gradient(90deg,#c6952b,#ffd166);width:0;transition:width .3s"></div>
+  </div>
+  <div id="g-prog-txt" style="background:rgba(0,0,0,.75);color:#fff;text-align:center;padding:6px 14px;font-size:12px;font-weight:600;backdrop-filter:blur(4px)"></div>
+</div>
 
 <script>
 /* ═══ CONFIG ═══ */
@@ -707,10 +713,13 @@ function doLogin(){
 /* ═══ ADMIN LOAD ═══ */
 function loadAdmin(){
   $('A-ld').classList.remove('hide');$('A-main').classList.add('hide');$('A-det').classList.add('hide');
+  prog(10,'กำลังโหลดข้อมูลพนักงาน...');
   Promise.all([sb("applications","GET",null,"?select=*&order=created_at.desc"),sb("positions","GET",null,"?select=*&order=title"),sb("users","GET",null,"?select=id,username,display_name,role,created_at"),sb("departments","GET",null,"?select=*&order=title").catch(function(){return[]})]).then(function(r){
+    prog(80,'ประมวลผลข้อมูล...');
     ALL=Array.isArray(r[0])?r[0]:[];POS=Array.isArray(r[1])?r[1]:[];USR=Array.isArray(r[2])?r[2]:[];DEPT=Array.isArray(r[3])?r[3]:[];
     $('A-ld').classList.add('hide');$('A-main').classList.remove('hide');emailSyncFromAll();stats();doFilter();renderPos();renderUsr();renderDept();
-  }).catch(function(e){$('A-ld').classList.add('hide');$('A-main').classList.remove('hide');toast('โหลดไม่สำเร็จ: '+e,'terr')});
+    prog(100,'โหลดเสร็จ ✅ '+ALL.length+' คน');
+  }).catch(function(e){$('A-ld').classList.add('hide');$('A-main').classList.remove('hide');prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
 }
 
 /* ═══ STATS ═══ */
@@ -856,13 +865,14 @@ function empBulkSetDept(){
   var ids=Object.keys(EMP_SEL);
   if(!ids.length)return;
   if(!confirm('กำหนดแผนก "'+dept+'" ให้ '+ids.length+' คน?'))return;
-  // Batch update - one request per employee (Supabase doesn't support bulk PATCH by multiple IDs easily)
-  var pending=ids.length,ok=0;
+  var pending=ids.length,ok=0,total=ids.length;
+  prog(0,'กำหนดแผนก '+dept+'...');
   ids.forEach(function(id){
     sb("applications","PATCH",{department:dept},"?id=eq."+id).then(function(){
       ALL.forEach(function(a){if(a.id===id)a.department=dept});ok++;
-      if(--pending===0){toast('กำหนดแผนก '+dept+' ให้ '+ok+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();stats();doFilter()}
-    }).catch(function(){if(--pending===0){toast('สำเร็จ '+ok+' จาก '+ids.length,'terr');stats();doFilter()}});
+      prog((ok+total-pending)/total*100,'กำหนดแผนก '+ok+'/'+total);
+      if(--pending===0){prog(100,'กำหนดแผนก '+dept+' ✅ '+ok+' คน');toast('กำหนดแผนก '+dept+' ให้ '+ok+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();stats();doFilter()}
+    }).catch(function(){if(--pending===0){prog(100,'เสร็จสิ้น');stats();doFilter()}});
   });
 }
 
@@ -873,12 +883,14 @@ function empBulkSetStatus(){
   var ids=Object.keys(EMP_SEL);
   if(!ids.length)return;
   if(!confirm('กำหนดประเภท "'+stLabel[st]+'" ให้ '+ids.length+' คน?'))return;
-  var pending=ids.length,ok=0;
+  var pending=ids.length,ok=0,total=ids.length;
+  prog(0,'กำหนดประเภท '+stLabel[st]+'...');
   ids.forEach(function(id){
     sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){
       ALL.forEach(function(a){if(a.id===id)a.status=st});ok++;
-      if(--pending===0){toast('กำหนด '+stLabel[st]+' ให้ '+ok+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();stats();doFilter()}
-    }).catch(function(){if(--pending===0){toast('สำเร็จ '+ok+' จาก '+ids.length,'terr');stats();doFilter()}});
+      prog((ok+total-pending)/total*100,'กำหนดประเภท '+ok+'/'+total);
+      if(--pending===0){prog(100,'กำหนด '+stLabel[st]+' ✅ '+ok+' คน');toast('กำหนด '+stLabel[st]+' ให้ '+ok+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();stats();doFilter()}
+    }).catch(function(){if(--pending===0){prog(100,'เสร็จสิ้น');stats();doFilter()}});
   });
 }
 
@@ -988,10 +1000,11 @@ function adminAddEmp(){
 
   var id='EMP-'+Date.now();
   var data={id:id,name:nm,nickname:nick,phone:ph,email:em,department:dept,position:pos,status:st,education:edu,bank:bk,bank_account:ba};
-
+  prog(20,'กำลังเพิ่มพนักงาน...');
   sb("applications","POST",data).then(function(r){
     if(Array.isArray(r)&&r.length){
       toast('เพิ่ม '+nm+' เรียบร้อย','tok');
+      prog(100,'เพิ่มพนักงาน ✅ '+nm);
       ALL.unshift(r[0]);
       stats();doFilter();
       adminClearEmp();
@@ -1119,6 +1132,7 @@ function saveEmp(id){
   if(!d.phone||d.phone.replace(/\D/g,'').length!==10){toast('เบอร์โทรต้อง 10 หลัก','terr');return}
 
   var btn=$('ed-save-btn');btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';
+  prog(10,'บันทึกข้อมูลพนักงาน...');
 
   // Check if any files need uploading
   var ef=window._edFiles||{};
@@ -1129,6 +1143,7 @@ function saveEmp(id){
     ALL.forEach(function(a){if(a.id===id){for(var k in d)a[k]=d[k]}});
 
     if(hasNewFiles){
+      prog(50,'อัปโหลดเอกสาร...');
       $('ed-upload-status').innerHTML='<span style="color:var(--acc)">📤 กำลังอัปโหลดเอกสาร...</span>';
       var body=JSON.stringify({
         action:'upload_files',id:id,
@@ -1154,19 +1169,23 @@ function saveEmp(id){
           $('ed-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ</span>';
         }
         btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
+        prog(100,'บันทึกข้อมูลเสร็จ ✅');
         toast('บันทึกเรียบร้อย','tok');stats();doFilter();
         setTimeout(function(){detail(id)},1500);
       }).catch(function(){
         $('ed-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ</span>';
         btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
+        prog(100,'บันทึกข้อมูลแล้ว ⚠️ อัปโหลดไม่สำเร็จ');
         toast('บันทึกข้อมูลแล้ว แต่อัปโหลดไม่สำเร็จ','terr');stats();doFilter();
       });
     }else{
       btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
+      prog(100,'บันทึกข้อมูลเสร็จ ✅');
       toast('บันทึกเรียบร้อย','tok');stats();doFilter();detail(id);
     }
   }).catch(function(e){
     btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
+    prog(-1);
     toast('Error: '+e,'terr');
   });
 }
@@ -1702,6 +1721,7 @@ function payDBBuildFilters(){
 
 function payDBLoad(){
   $('paydb2-status').textContent='⏳ กำลังดึงข้อมูลพนักงาน...';
+  prog(10,'ดึงข้อมูลพนักงาน...');
   sb("applications","GET",null,"?select=*&status=neq.terminated&order=status,name").then(function(r){
     if(!Array.isArray(r)||!r.length){$('paydb2-status').textContent='ไม่พบพนักงาน';return}
     PAYDB2=r.map(function(a){
@@ -1715,6 +1735,7 @@ function payDBLoad(){
       };
     });
     $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — กรอกเงินเดือนแล้วกด คำนวณ';
+    prog(100,'ดึงข้อมูล ✅ '+PAYDB2.length+' คน');
     PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
     $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';
   }).catch(function(e){$('paydb2-status').textContent='❌ ดึงไม่สำเร็จ: '+e});
@@ -1936,16 +1957,19 @@ function payDBSave(){
   if(!confirm('บันทึกเงินเดือน '+valid.length+' คน เดือน '+month+'?'))return;
 
   $('paydb2-save-status').textContent='⏳ กำลังบันทึก...';
+  prog(10,'กำลังลบข้อมูลเดือนเก่า...');
 
   sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
+    prog(40,'กำลังบันทึก '+valid.length+' คน...');
     var records=valid.map(function(e){
       return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,salary:e.salary,diligence:e.diligence,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net,commission:e.commission};
     });
     sb("payroll","POST",records).then(function(){
+      prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');
       $('paydb2-save-status').innerHTML='<span style="color:var(--ok)">✅ บันทึก '+valid.length+' คน เดือน '+month+'</span>';
       toast('บันทึกเรียบร้อย','tok');
-    }).catch(function(e){$('paydb2-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
-  }).catch(function(e){$('paydb2-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
+    }).catch(function(e){prog(-1);$('paydb2-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
+  }).catch(function(e){prog(-1);$('paydb2-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
 }
 
 function payDBExportSCB(){
@@ -1997,6 +2021,7 @@ var COMM_DATA=[],COMM_FILTER='';
 
 function commLoad(){
   $('comm-status').textContent='⏳ กำลังดึงข้อมูล...';
+  prog(10,'ดึงข้อมูลคอมมิชชั่น...');
   var month=$('comm-month').value;
   Promise.all([
     sb("applications","GET",null,"?select=id,name,nickname,position,status,department,email&status=neq.terminated&order=status,name"),
@@ -2010,6 +2035,7 @@ function commLoad(){
       return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',status:a.status||'',department:a.department||'',email:a.email||'',commission:c.amount||0,late:c.late||0,note:c.note||''};
     });
     $('comm-status').innerHTML='✅ '+COMM_DATA.length+' คน'+(month?' — เดือน '+month:'');
+    prog(100,'ดึงข้อมูลคอมฯ ✅ '+COMM_DATA.length+' คน');
     COMM_FILTER='';commBuildFilters();commRender();
     $('comm-actions').classList.remove('hide');$('comm-actions').style.display='flex';
   }).catch(function(e){$('comm-status').textContent='❌ '+e});
@@ -2106,15 +2132,18 @@ function commSave(){
   if(!confirm('บันทึกคอมมิชชั่น '+valid.length+' คน เดือน '+month+'?'))return;
 
   $('comm-save-status').textContent='⏳ กำลังบันทึก...';
+  prog(10,'กำลังบันทึกคอมมิชชั่น...');
   sb("commissions","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
+    prog(40,'บันทึก '+valid.length+' คน...');
     var records=valid.map(function(e){
       return{id:'COM-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,amount:e.commission,late:e.late||0,note:e.note||''};
     });
     sb("commissions","POST",records).then(function(){
+      prog(100,'บันทึกคอมมิชชั่น ✅ '+valid.length+' คน');
       $('comm-save-status').innerHTML='<span style="color:var(--ok)">✅ บันทึก '+valid.length+' คน เดือน '+month+'</span>';
       toast('บันทึกคอมมิชชั่นแล้ว','tok');
-    }).catch(function(e){$('comm-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
-  }).catch(function(e){$('comm-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
+    }).catch(function(e){prog(-1);$('comm-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
+  }).catch(function(e){prog(-1);$('comm-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
 }
 
 function commExport(){
@@ -2159,12 +2188,14 @@ function commSendOne(idx){
   if(!e.commission||e.commission<=0){toast('ยังไม่มีค่าคอมมิชชั่น','terr');return}
   if(!e.email||e.email.indexOf('@')<0){toast('กรุณากรอกอีเมลของ '+e.name,'terr');return}
   e._sending=true;commRender();
+  prog(30,'ส่งคอมฯให้ '+e.name+'...');
   fetch(EM,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify({action:'send_email',to:e.email,subject:'แจ้งค่าคอมมิชชั่น - บริษัท เดอะ เอ็มที จำกัด',htmlBody:commBuildSlipHTML(e)})
   }).then(function(r){return r.json()}).then(function(d){
     e._sending=false;e._sent=d&&d.ok;commRender();
-    if(d&&d.ok)toast('ส่งให้ '+e.name+' แล้ว','tok');else toast('ส่งไม่สำเร็จ','terr');
-  }).catch(function(){e._sending=false;commRender();toast('เชื่อมต่อไม่ได้','terr')});
+    if(d&&d.ok){prog(100,'ส่งคอมฯให้ '+e.name+' ✅');toast('ส่งให้ '+e.name+' แล้ว','tok')}
+    else{prog(-1);toast('ส่งไม่สำเร็จ','terr')}
+  }).catch(function(){e._sending=false;commRender();prog(-1);toast('เชื่อมต่อไม่ได้','terr')});
 }
 
 function commSendAll(){
@@ -2172,13 +2203,16 @@ function commSendAll(){
   if(!toSend.length){toast('ไม่มีพนักงานที่มีคอมฯ+อีเมล หรือส่งครบแล้ว','terr');return}
   if(!confirm('ส่งแจ้งค่าคอมมิชชั่นให้ '+toSend.length+' คน?'))return;
   $('comm-save-status').textContent='⏳ กำลังส่ง...';
-  var idx=0,ok=0,fail=0;
+  var idx=0,ok=0,fail=0,total=toSend.length;
+  prog(0,'เริ่มส่งแจ้งคอมมิชชั่น...');
   function next(){
-    if(idx>=toSend.length){
+    if(idx>=total){
+      prog(100,'ส่งแจ้งคอมฯเสร็จ ✅ '+ok+' คน'+(fail?' ❌ '+fail:''));
       $('comm-save-status').innerHTML='✅ ส่งครบ! สำเร็จ '+ok+' คน'+(fail?' ล้มเหลว '+fail:'');
       toast('ส่งแจ้งคอมฯ '+ok+' คนแล้ว','tok');return;
     }
-    $('comm-save-status').textContent='⏳ ส่ง '+(idx+1)+'/'+toSend.length+'...';
+    prog(idx/total*100,'ส่งคอมฯ '+(idx+1)+'/'+total+' — '+toSend[idx].name);
+    $('comm-save-status').textContent='⏳ ส่ง '+(idx+1)+'/'+total+'...';
     var e=toSend[idx];e._sending=true;commRender();
     fetch(EM,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({action:'send_email',to:e.email,subject:'แจ้งค่าคอมมิชชั่น - บริษัท เดอะ เอ็มที จำกัด',htmlBody:commBuildSlipHTML(e)})
@@ -2399,6 +2433,7 @@ function loadPayDBMonths(){
 function loadPayDB(){
   var month=$('paydb-month').value;
   if(!month)return;
+  prog(10,'ดึงรายงานเดือน '+month+'...');
   Promise.all([
     sb("payroll","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*&order=emp_name"),
     sb("commissions","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*").catch(function(){return[]})
@@ -2415,7 +2450,8 @@ function loadPayDB(){
       return r;
     });
     paydbRender();
-  }).catch(function(e){toast('โหลดไม่สำเร็จ: '+e,'terr')});
+    prog(100,'โหลดรายงาน ✅ '+PAYDB_DATA.length+' คน');
+  }).catch(function(e){prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
 }
 
 function paydbRender(){
@@ -2516,14 +2552,15 @@ function paydbSendOne(i){
   var r=PAYDB_DATA[i];if(!r)return;
   if(!r.email||r.email.indexOf('@')<0){toast('กรุณากรอกอีเมลของ '+r.emp_name,'terr');return}
   r._sending=true;paydbRender();
+  prog(30,'ส่งสลิปให้ '+r.emp_name+'...');
   var html=paydbBuildSlipHTML(r);
   fetch(EM,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify({action:'send_email',to:r.email,subject:'สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด',htmlBody:html})
   }).then(function(res){return res.json()}).then(function(d){
     r._sending=false;r._sent=d&&d.ok;paydbRender();
-    if(d&&d.ok)toast('ส่งสลิปให้ '+r.emp_name+' แล้ว','tok');
-    else toast('ส่งไม่สำเร็จ: '+(d.error||''),'terr');
-  }).catch(function(){r._sending=false;paydbRender();toast('เชื่อมต่อไม่ได้','terr')});
+    if(d&&d.ok){prog(100,'ส่งสลิปให้ '+r.emp_name+' ✅');toast('ส่งสลิปให้ '+r.emp_name+' แล้ว','tok')}
+    else{prog(-1);toast('ส่งไม่สำเร็จ','terr')}
+  }).catch(function(){r._sending=false;paydbRender();prog(-1);toast('เชื่อมต่อไม่ได้','terr')});
 }
 
 function paydbSendAll(){
@@ -2531,13 +2568,16 @@ function paydbSendAll(){
   if(!toSend.length){toast('ไม่มีพนักงานที่มีอีเมล หรือส่งครบแล้ว','terr');return}
   if(!confirm('ส่งสลิปเงินเดือน+คอมมิชชั่น ให้ '+toSend.length+' คน?'))return;
   $('paydb-send-status').textContent='⏳ กำลังส่ง...';
-  var idx=0,ok=0,fail=0;
+  var idx=0,ok=0,fail=0,total=toSend.length;
+  prog(0,'เริ่มส่งสลิป...');
   function next(){
-    if(idx>=toSend.length){
+    if(idx>=total){
+      prog(100,'ส่งสลิปเสร็จ ✅ '+ok+' คน'+(fail?' ❌ '+fail:''));
       $('paydb-send-status').innerHTML='✅ ส่งครบ! สำเร็จ '+ok+' คน'+(fail?' ล้มเหลว '+fail+' คน':'');
       toast('ส่งสลิปครบ '+ok+' คนแล้ว','tok');return;
     }
-    $('paydb-send-status').textContent='⏳ ส่ง '+(idx+1)+'/'+toSend.length+'...';
+    prog(idx/total*100,'ส่งสลิป '+(idx+1)+'/'+total+' — '+toSend[idx].name);
+    $('paydb-send-status').textContent='⏳ ส่ง '+(idx+1)+'/'+total+'...';
     var r=toSend[idx];r._sending=true;paydbRender();
     var html=paydbBuildSlipHTML(r);
     fetch(EM,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -3028,6 +3068,15 @@ function accExportXLS(data,title){
 
 /* ═══ UTILS ═══ */
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function prog(pct,txt){
+  var el=$('g-prog'),bar=$('g-prog-bar'),tx=$('g-prog-txt');
+  if(pct<0){el.style.display='none';return}
+  el.style.display='block';
+  bar.style.width=Math.min(pct,100)+'%';
+  tx.textContent=(pct<100?Math.round(pct)+'% — ':'')+txt;
+  if(pct>=100)setTimeout(function(){el.style.display='none'},1500);
+}
+
 function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinfo'?'📤 ':'❌ ')+t;el.className='toast '+(c||'terr');el.classList.remove('hide');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.add('hide')},3500)}
 
 /* ═══ INIT ═══ */

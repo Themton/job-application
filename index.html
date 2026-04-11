@@ -263,6 +263,16 @@
         </div>
       </div>
 
+      <div id="emp-sel-bar" class="hide" style="background:var(--pri);color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:10px;display:none;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span id="emp-sel-cnt">เลือก 0 คน</span>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <select id="emp-bulk-dept" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;font-size:12px;font-family:inherit"><option value="">-- เลือกแผนก --</option></select>
+          <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empBulkSetDept()">🏢 กำหนดแผนก</button>
+          <select id="emp-bulk-st" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;font-size:12px;font-family:inherit"><option value="">-- เลือกประเภท --</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="new">ใหม่</option></select>
+          <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empBulkSetStatus()">📋 กำหนดประเภท</button>
+          <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empClearSel()">✕ ยกเลิก</button>
+        </div>
+      </div>
       <div id="A-cnt" class="rcnt"></div><div id="A-tbl"></div>
     </div>
     <!-- TAB: Departments -->
@@ -708,12 +718,71 @@ function stats(){
 }
 
 /* ═══ FILTER ═══ */
+var EMP_SEL={};
+
+function empUpdateSelBar(){
+  var cnt=Object.keys(EMP_SEL).length;
+  if(cnt>0){
+    $('emp-sel-bar').classList.remove('hide');$('emp-sel-bar').style.display='flex';
+    $('emp-sel-cnt').textContent='เลือก '+cnt+' คน';
+    // Populate dept dropdown
+    var dsel=$('emp-bulk-dept');dsel.innerHTML='<option value="">-- เลือกแผนก --</option>';
+    DEPT.forEach(function(d){dsel.innerHTML+='<option value="'+esc(d.title)+'">'+esc(d.title)+'</option>'});
+  }else{
+    $('emp-sel-bar').classList.add('hide');$('emp-sel-bar').style.display='none';
+  }
+}
+
+function empToggle(id,checked){if(checked)EMP_SEL[id]=true;else delete EMP_SEL[id];empUpdateSelBar()}
+function empToggleAll(checked){
+  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value;
+  ALL.forEach(function(a){
+    var match=[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)&&(!pos||a.position===pos)&&(!dept||a.department===dept);
+    if(match){if(checked)EMP_SEL[a.id]=true;else delete EMP_SEL[a.id]}
+  });
+  empUpdateSelBar();doFilter();
+}
+function empClearSel(){EMP_SEL={};empUpdateSelBar();doFilter()}
+
+function empBulkSetDept(){
+  var dept=$('emp-bulk-dept').value;
+  if(!dept){toast('เลือกแผนกก่อน','terr');return}
+  var ids=Object.keys(EMP_SEL);
+  if(!ids.length)return;
+  if(!confirm('กำหนดแผนก "'+dept+'" ให้ '+ids.length+' คน?'))return;
+  var done=0,fail=0;
+  ids.forEach(function(id){
+    sb("applications","PATCH",{department:dept},"?id=eq."+id).then(function(){
+      ALL.forEach(function(a){if(a.id===id)a.department=dept});
+      done++;if(done+fail===ids.length){toast('กำหนดแผนก '+dept+' ให้ '+done+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();stats();doFilter()}
+    }).catch(function(){fail++;if(done+fail===ids.length){toast('สำเร็จ '+done+' ล้มเหลว '+fail,'terr');stats();doFilter()}});
+  });
+}
+
+function empBulkSetStatus(){
+  var st=$('emp-bulk-st').value;
+  if(!st){toast('เลือกประเภทก่อน','terr');return}
+  var stLabel={daily:'รายวัน',monthly:'ประจำ',new:'ใหม่'};
+  var ids=Object.keys(EMP_SEL);
+  if(!ids.length)return;
+  if(!confirm('กำหนดประเภท "'+stLabel[st]+'" ให้ '+ids.length+' คน?'))return;
+  var done=0,fail=0;
+  ids.forEach(function(id){
+    sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){
+      ALL.forEach(function(a){if(a.id===id)a.status=st});
+      done++;if(done+fail===ids.length){toast('กำหนด '+stLabel[st]+' ให้ '+done+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();stats();doFilter()}
+    }).catch(function(){fail++;if(done+fail===ids.length){toast('สำเร็จ '+done+' ล้มเหลว '+fail,'terr');stats();doFilter()}});
+  });
+}
+
 function doFilter(){
   var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value;
   var f=ALL.filter(function(a){return[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)&&(!pos||a.position===pos)&&(!dept||a.department===dept)});
   $('A-cnt').textContent='พบ '+f.length+' คน';
   if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูล</p></div>';return}
-  var h='<div class="tw"><table><thead><tr><th>ชื่อ-สกุล</th><th>แผนก</th><th>ตำแหน่ง</th><th>ประเภท</th><th>เอกสาร</th><th>วันที่</th><th style="text-align:center">จัดการ</th></tr></thead><tbody>';
+
+  var allChecked=f.length>0&&f.every(function(a){return EMP_SEL[a.id]});
+  var h='<div class="tw"><table><thead><tr><th style="width:30px;text-align:center"><input type="checkbox" '+(allChecked?'checked':'')+' onchange="empToggleAll(this.checked)" style="accent-color:var(--pri2)"></th><th>ชื่อ-สกุล</th><th>แผนก</th><th>ตำแหน่ง</th><th>ประเภท</th><th>เอกสาร</th><th>วันที่</th><th style="text-align:center">จัดการ</th></tr></thead><tbody>';
   f.forEach(function(a){
     var s=ST[a.status]||ST.new;var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
     var typeLabel,typeBg;
@@ -721,13 +790,14 @@ function doFilter(){
     else if(a.status==='monthly'){typeLabel='ประจำ';typeBg='background:#d4edda;color:#155724;border:1px solid #28a745'}
     else if(a.status==='terminated'){typeLabel='พ้นสภาพ';typeBg='background:#f8d7da;color:#721c24;border:1px solid #dc3545'}
     else{typeLabel='ใหม่';typeBg='background:#cce5ff;color:#004085;border:1px solid #007bff'}
-    h+='<tr onclick="detail(\''+a.id+'\')" style="'+(a.status==='terminated'?'background:rgba(220,38,38,.04);opacity:.6':'')+'">';
-    h+='<td class="nm">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'')+'</td>';
-    h+='<td style="font-size:11px">'+(a.department?'<span style="background:rgba(92,74,30,.08);color:var(--pri);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600">'+esc(a.department)+'</span>':'-')+'</td>';
-    h+='<td style="font-size:12px">'+esc(a.position||'-')+'</td>';
-    h+='<td><span style="'+typeBg+';padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap">'+typeLabel+'</span></td>';
-    h+='<td>'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td>';
-    h+='<td><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td>';
+    h+='<tr style="'+(EMP_SEL[a.id]?'background:rgba(198,149,43,.08)':'')+(a.status==='terminated'?'background:rgba(220,38,38,.04);opacity:.6':'')+'">';
+    h+='<td style="text-align:center" onclick="event.stopPropagation()"><input type="checkbox" '+(EMP_SEL[a.id]?'checked':'')+' onchange="empToggle(\''+a.id+'\',this.checked);doFilter()" style="accent-color:var(--pri2)"></td>';
+    h+='<td class="nm" onclick="detail(\''+a.id+'\')">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'')+'</td>';
+    h+='<td style="font-size:11px" onclick="detail(\''+a.id+'\')">'+(a.department?'<span style="background:rgba(92,74,30,.08);color:var(--pri);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600">'+esc(a.department)+'</span>':'-')+'</td>';
+    h+='<td style="font-size:12px" onclick="detail(\''+a.id+'\')">'+esc(a.position||'-')+'</td>';
+    h+='<td onclick="detail(\''+a.id+'\')"><span style="'+typeBg+';padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap">'+typeLabel+'</span></td>';
+    h+='<td onclick="detail(\''+a.id+'\')">'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td>';
+    h+='<td onclick="detail(\''+a.id+'\')"><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td>';
     h+='<td style="text-align:center;white-space:nowrap" onclick="event.stopPropagation()">';
     if(a.status!=='terminated'){
       h+='<button class="btn btn-d btn-s" style="font-size:10px;padding:3px 8px" onclick="quickTerminate(\''+a.id+'\',\''+esc(a.name)+'\')">⛔ ลาออก</button>';

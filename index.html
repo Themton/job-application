@@ -830,17 +830,11 @@ function empSaveEmail(idx,val){
   var email=val.trim();
   a.email=email;
   ALL.forEach(function(x){if(x.id===a.id)x.email=email});
-  // Save to Supabase
   sb("applications","PATCH",{email:email},"?id=eq."+a.id).then(function(){
     if(email)emailSet(a.name,email);
-  }).catch(function(){});
-  // Update input border color
-  var inp=event.target;
-  if(inp){
-    inp.style.borderColor=email&&email.indexOf('@')>=0?'var(--ok)':'var(--bdr)';
-    inp.style.background=email&&email.indexOf('@')>=0?'rgba(40,167,69,.05)':'var(--inp)';
-  }
-  stats();
+    toast('บันทึกอีเมล '+a.name+' แล้ว','tok');
+    stats();doFilter();
+  }).catch(function(){toast('บันทึกไม่สำเร็จ','terr')});
 }
 
 function empExport(){
@@ -963,8 +957,13 @@ function doFilter(){
     var isSCB=a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0);
     h+='<td style="font-size:11px" data-detail="'+idx+'">'+(a.bank?'<span style="background:'+(isSCB?'rgba(75,0,130,.08);color:#4b0082':'rgba(0,100,0,.08);color:#006400')+';padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600">'+esc(a.bank)+'</span>':'-')+'</td>';
     h+='<td data-detail="'+idx+'"><span style="'+typeBg+';padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap">'+typeLabel+'</span></td>';
-    h+='<td style="padding:2px"><input value="'+esc(a.email||'')+'" placeholder="email@..." onchange="empSaveEmail('+idx+',this.value)" style="width:100%;padding:4px 6px;border:1px solid '+(a.email&&a.email.indexOf('@')>=0?'var(--ok)':'var(--bdr)');
-    h+=';border-radius:4px;font-size:11px;font-family:inherit;background:'+(a.email&&a.email.indexOf('@')>=0?'rgba(40,167,69,.05)':'var(--inp)')+'" type="email"></td>';
+    h+='<td style="padding:2px">';
+    if(a.email&&a.email.indexOf('@')>=0){
+      h+='<span style="font-size:11px;color:var(--ok)">'+esc(a.email)+'</span>';
+    }else{
+      h+='<input value="" placeholder="email@..." onchange="empSaveEmail('+idx+',this.value)" style="width:100%;padding:4px 6px;border:1px solid var(--bdr);border-radius:4px;font-size:11px;font-family:inherit;background:var(--inp)" type="email">';
+    }
+    h+='</td>';
     h+='<td style="text-align:center;white-space:nowrap">';
     if(a.status!=='terminated'){
       h+='<button class="btn btn-d btn-s" style="font-size:10px;padding:3px 8px" onclick="quickTerminate(window._empFiltered['+idx+'].id,window._empFiltered['+idx+'].name)">⛔ ลาออก</button>';

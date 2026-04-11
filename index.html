@@ -483,7 +483,6 @@
           <div class="fld"><label>วันที่ออกหนังสือ</label><input id="cert-date" type="date"></div>
           <div class="fld"><label>ผู้มีอำนาจลงนาม</label><input id="cert-signer" value=""></div>
           <div class="fld"><label>ตำแหน่งผู้ลงนาม</label><input id="cert-signer-pos" value="กรรมการผู้จัดการ"></div>
-          <div class="fld"><label>เบอร์โทรฝ่ายบุคคล</label><input id="cert-hrphone" placeholder="02-XXX-XXXX"></div>
         </div>
         <div class="brow" style="margin-top:14px">
           <button class="btn btn-a" onclick="certPreview()">👁️ ดูตัวอย่าง</button>
@@ -1863,17 +1862,6 @@ function certBuildHTML(){
   s+='<div style="margin-top:40px">ลงชื่อ '+dot('',250)+'</div>';
   s+='<div style="margin-top:8px">( '+dot(signer||'',220)+' )</div>';
   s+='<div style="margin-top:8px"><b>ตำแหน่ง</b> '+dot(signerPos,250)+'</div>';
-  s+='</div>';
-
-  // === Seal area ===
-  s+='<div style="margin-top:30px;text-align:center">';
-  s+='<div style="display:inline-block;border:2px dashed #bbb;border-radius:50%;width:90px;height:90px;line-height:90px;font-size:10px;color:#bbb">ประทับตราบริษัท</div>';
-  s+='</div>';
-
-  // === Footer ===
-  var hrphone=$('cert-hrphone').value||'';
-  s+='<div style="margin-top:50px;font-size:13px">';
-  s+='สอบถามฝ่ายบุคคล โทร. '+dot(hrphone||'',250);
   s+='</div>';
 
   s+='</div>';

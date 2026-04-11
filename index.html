@@ -2271,7 +2271,7 @@ function paydbSendOne(i){
   r._sending=true;paydbRender();
   var html=paydbBuildSlipHTML(r);
   fetch(EM,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({action:'send_email',to:r.email,subject:'&#3626;&#3621;&#3636;&#3611;&#3648;&#3591;&#3636;&#3609;&#3648;&#3604;&#3639;&#3629;&#3609; - &#3610;&#3619;&#3636;&#3625;&#3633;&#3607; &#3648;&#3604;&#3629;&#3632; &#3648;&#3629;&#3655;&#3617;&#3607;&#3637; &#3592;&#3635;&#3585;&#3633;&#3604;',htmlBody:html})
+    body:JSON.stringify({action:'send_email',to:r.email,subject:'สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด',htmlBody:html})
   }).then(function(res){return res.json()}).then(function(d){
     r._sending=false;r._sent=d&&d.ok;paydbRender();
     if(d&&d.ok)toast('ส่งสลิปให้ '+r.emp_name+' แล้ว','tok');

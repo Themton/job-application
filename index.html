@@ -738,6 +738,8 @@ function empUpdateSelBar(){
 }
 
 function empToggle(id,checked){if(checked)EMP_SEL[id]=true;else delete EMP_SEL[id];empUpdateSelBar()}
+function empToggle2(idx){var a=window._empFiltered[idx];if(EMP_SEL[a.id])delete EMP_SEL[a.id];else EMP_SEL[a.id]=true;empUpdateSelBar();doFilter()}
+function empToggleAll2(){var allChk=window._empFiltered.every(function(a){return EMP_SEL[a.id]});window._empFiltered.forEach(function(a){if(allChk)delete EMP_SEL[a.id];else EMP_SEL[a.id]=true});empUpdateSelBar();doFilter()}
 function empToggleAll(checked){
   var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value;
   ALL.forEach(function(a){
@@ -788,7 +790,7 @@ function doFilter(){
 
   var allChk=f.length>0&&f.every(function(a){return EMP_SEL[a.id]});
   var h='<div class="tw"><table><thead><tr>';
-  h+='<th style="width:32px;text-align:center;padding:6px"><input type="checkbox" id="chk-all" '+(allChk?'checked':'')+' style="width:16px;height:16px;accent-color:#b8860b;cursor:pointer"></th>';
+  h+='<th style="width:36px;text-align:center;padding:4px"><button onclick="empToggleAll2()" style="background:none;border:2px solid '+(allChk?'#b8860b':'#ccc')+';border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:18px;color:#b8860b">'+(allChk?'✓':'')+'</button></th>';
   h+='<th>ชื่อ-สกุล</th><th>แผนก</th><th>ตำแหน่ง</th><th>ประเภท</th><th>เอกสาร</th><th>วันที่</th><th style="text-align:center">จัดการ</th>';
   h+='</tr></thead><tbody>';
 
@@ -801,7 +803,7 @@ function doFilter(){
     else{typeLabel='ใหม่';typeBg='background:#cce5ff;color:#004085;border:1px solid #007bff'}
     var sel=EMP_SEL[a.id];
     h+='<tr style="'+(sel?'background:rgba(198,149,43,.1);':'')+(a.status==='terminated'?'opacity:.5':'')+'"">';
-    h+='<td style="text-align:center;padding:6px"><input type="checkbox" class="emp-chk" data-idx="'+idx+'" '+(sel?'checked':'')+' style="width:16px;height:16px;accent-color:#b8860b;cursor:pointer"></td>';
+    h+='<td style="text-align:center;padding:4px"><button onclick="empToggle2('+idx+')" style="background:'+(sel?'#b8860b':'none')+';border:2px solid '+(sel?'#b8860b':'#ccc')+';border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:18px;color:'+(sel?'#fff':'transparent')+'">✓</button></td>';
     h+='<td class="nm" style="cursor:pointer" data-detail="'+idx+'">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'')+'</td>';
     h+='<td style="font-size:11px" data-detail="'+idx+'">'+(a.department?'<span style="background:rgba(92,74,30,.08);color:var(--pri);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600">'+esc(a.department)+'</span>':'-')+'</td>';
     h+='<td style="font-size:12px" data-detail="'+idx+'">'+esc(a.position||'-')+'</td>';
@@ -810,7 +812,7 @@ function doFilter(){
     h+='<td data-detail="'+idx+'"><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td>';
     h+='<td style="text-align:center;white-space:nowrap">';
     if(a.status!=='terminated'){
-      h+='<button class="btn btn-d btn-s" style="font-size:10px;padding:3px 8px" data-term="'+idx+'">⛔ ลาออก</button>';
+      h+='<button class="btn btn-d btn-s" style="font-size:10px;padding:3px 8px" onclick="quickTerminate(window._empFiltered['+idx+'].id,window._empFiltered['+idx+'].name)">⛔ ลาออก</button>';
     }else{
       h+='<span style="color:var(--err);font-size:10px;font-weight:600">⛔ ลาออกแล้ว</span>';
     }
@@ -819,31 +821,12 @@ function doFilter(){
   h+='</tbody></table></div>';
   $('A-tbl').innerHTML=h;
 
-  // Event delegation
+  // Click on name/dept/position cells -> detail view
   $('A-tbl').onclick=function(ev){
     var t=ev.target;
-    // Checkbox
-    if(t.classList.contains('emp-chk')){
-      var idx=parseInt(t.getAttribute('data-idx'));
-      var a=window._empFiltered[idx];
-      if(t.checked)EMP_SEL[a.id]=true;else delete EMP_SEL[a.id];
-      empUpdateSelBar();return;
-    }
-    // Select all
-    if(t.id==='chk-all'){
-      var chk=t.checked;
-      window._empFiltered.forEach(function(a){if(chk)EMP_SEL[a.id]=true;else delete EMP_SEL[a.id]});
-      empUpdateSelBar();doFilter();return;
-    }
-    // Detail click
+    if(t.tagName==='BUTTON'||t.tagName==='INPUT')return;
     var dd=t.closest('[data-detail]');
-    if(dd){detail(window._empFiltered[parseInt(dd.getAttribute('data-detail'))].id);return}
-    // Terminate
-    var dt=t.closest('[data-term]');
-    if(dt){
-      var a2=window._empFiltered[parseInt(dt.getAttribute('data-term'))];
-      quickTerminate(a2.id,a2.name);return;
-    }
+    if(dd)detail(window._empFiltered[parseInt(dd.getAttribute('data-detail'))].id);
   };
 }
 

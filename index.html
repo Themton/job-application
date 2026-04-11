@@ -242,6 +242,7 @@
         <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
         <select class="fsel" id="f-bank" onchange="doFilter()"><option value="">ทุกธนาคาร</option><option value="scb">ไทยพาณิชย์ (SCB)</option><option value="other">ธนาคารอื่น</option></select>
         <button class="btn btn-a btn-s" onclick="showAdminAddEmp()">➕ เพิ่มพนักงาน</button>
+        <button class="btn btn-a btn-s" onclick="empExport()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">📥 Export</button>
         <button class="btn btn-g btn-s" onclick="loadAdmin()">🔄</button></div>
 
       <!-- Add Employee Form -->
@@ -275,6 +276,7 @@
           <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empBulkSetDept()">🏢 กำหนดแผนก</button>
           <select id="emp-bulk-st" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;font-size:12px;font-family:inherit"><option value="">-- เลือกประเภท --</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="new">ใหม่</option></select>
           <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empBulkSetStatus()">📋 กำหนดประเภท</button>
+          <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empExport()">📥 Export ที่เลือก</button>
           <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empClearSel()">✕ ยกเลิก</button>
         </div>
       </div>
@@ -778,6 +780,50 @@ function empToggleAll(checked){
   empUpdateSelBar();doFilter();
 }
 function empClearSel(){EMP_SEL={};empUpdateSelBar();doFilter()}
+
+function empExport(){
+  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value,bank=$('f-bank').value;
+  var list=ALL.filter(function(a){
+    if(q&&[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)<0)return false;
+    if(st&&a.status!==st)return false;if(pos&&a.position!==pos)return false;if(dept&&a.department!==dept)return false;
+    if(bank==='scb'&&(!a.bank||a.bank.indexOf('SCB')<0&&a.bank.indexOf('ไทยพาณิชย์')<0))return false;
+    if(bank==='other'&&a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))return false;
+    return true;
+  });
+  // If has selection, export only selected
+  var selIds=Object.keys(EMP_SEL);
+  if(selIds.length){list=list.filter(function(a){return EMP_SEL[a.id]})}
+
+  if(!list.length){toast('ไม่มีข้อมูล','terr');return}
+
+  var h='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"><style>td,th{border:1px solid #ccc;padding:4px 8px;font-size:12px;font-family:sans-serif}th{background:#5c4a1e;color:#fff}.term{background:#ffe0e0;color:#c00;font-weight:bold}.daily{background:#fff8e0}.monthly{background:#e8f5e9}.scb{background:#f0e8ff}</style></head><body><table>';
+  h+='<tr><th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>แผนก</th><th>ตำแหน่ง</th><th>ประเภท</th><th>ธนาคาร</th><th>เลขบัญชี</th><th>เบอร์โทร</th><th>อีเมล</th><th>วุฒิ</th><th>วันที่</th></tr>';
+  list.forEach(function(a){
+    var stL=a.status==='daily'?'รายวัน':a.status==='monthly'?'ประจำ':a.status==='terminated'?'⛔ ลาออก':'ใหม่';
+    var cls=a.status==='terminated'?'term':a.status==='daily'?'daily':a.status==='monthly'?'monthly':'';
+    var isSCB=a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0);
+    h+='<tr class="'+cls+'">';
+    h+='<td'+(a.status==='terminated'?' class="term"':'')+'>'+esc(a.name)+'</td>';
+    h+='<td>'+esc(a.nickname||'')+'</td>';
+    h+='<td>'+esc(a.department||'')+'</td>';
+    h+='<td>'+esc(a.position||'')+'</td>';
+    h+='<td class="'+cls+'">'+stL+'</td>';
+    h+='<td class="'+(isSCB?'scb':'')+'">'+esc(a.bank||'')+'</td>';
+    h+='<td>'+esc(a.bank_account||'')+'</td>';
+    h+='<td>'+esc(a.phone||'')+'</td>';
+    h+='<td>'+esc(a.email||'')+'</td>';
+    h+='<td>'+esc(a.education||'')+'</td>';
+    h+='<td>'+String(a.created_at||'').substring(0,10)+'</td>';
+    h+='</tr>';
+  });
+  h+='</table></body></html>';
+  var blob=new Blob(['\uFEFF'+h],{type:'application/vnd.ms-excel;charset=utf-8'});
+  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;
+  a.download='พนักงาน'+(selIds.length?'_เลือก'+list.length+'คน':'')+'_'+new Date().toISOString().substring(0,10)+'.xls';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  var termCnt=list.filter(function(x){return x.status==='terminated'}).length;
+  toast('Export '+list.length+' คน'+(termCnt?' (ลาออก '+termCnt+' คน สีแดง)':''),'tok');
+}
 
 function empBulkSetDept(){
   var dept=$('emp-bulk-dept').value;

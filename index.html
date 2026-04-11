@@ -240,6 +240,7 @@
         <select class="fsel" id="f-dept" onchange="doFilter()"><option value="">ทุกแผนก</option></select>
         <select class="fsel" id="f-pos" onchange="doFilter()"><option value="">ทุกตำแหน่ง</option></select>
         <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
+        <select class="fsel" id="f-bank" onchange="doFilter()"><option value="">ทุกธนาคาร</option><option value="scb">ไทยพาณิชย์ (SCB)</option><option value="other">ธนาคารอื่น</option></select>
         <button class="btn btn-a btn-s" onclick="showAdminAddEmp()">➕ เพิ่มพนักงาน</button>
         <button class="btn btn-g btn-s" onclick="loadAdmin()">🔄</button></div>
 
@@ -708,9 +709,10 @@ function loadAdmin(){
 
 /* ═══ STATS ═══ */
 function stats(){
-  var t=ALL.length,dy=0,mt=0,tm=0,posMap={};
-  ALL.forEach(function(a){if(a.status==='daily')dy++;if(a.status==='monthly')mt++;if(a.status==='terminated')tm++;if(a.position)posMap[a.position]=(posMap[a.position]||0)+1});
-  $('A-sts').innerHTML='<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div><div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div><div class="st"><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+mt+'</div></div><div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div>';
+  var t=ALL.length,dy=0,mt=0,tm=0,posMap={},scbCnt=0,otherCnt=0;
+  ALL.forEach(function(a){if(a.status==='daily')dy++;if(a.status==='monthly')mt++;if(a.status==='terminated')tm++;if(a.position)posMap[a.position]=(posMap[a.position]||0)+1;
+    if(a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))scbCnt++;else if(a.bank)otherCnt++});
+  $('A-sts').innerHTML='<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div><div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div><div class="st"><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+mt+'</div></div><div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div><div class="st"><div class="l">SCB</div><div class="v" style="color:#4b0082">'+scbCnt+'</div></div><div class="st"><div class="l">ธ.อื่น</div><div class="v" style="color:#006400">'+otherCnt+'</div></div>';
   var sel=$('f-pos'),cur=sel.value;
   sel.innerHTML='<option value="">ทุกตำแหน่ง ('+t+')</option>';
   Object.keys(posMap).sort().forEach(function(p){sel.innerHTML+='<option value="'+esc(p)+'"'+(cur===p?' selected':'')+'>'+esc(p)+' ('+posMap[p]+')</option>'});
@@ -810,8 +812,16 @@ function empBulkSetStatus(){
 }
 
 function doFilter(){
-  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value;
-  var f=ALL.filter(function(a){return[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)>=0&&(!st||a.status===st)&&(!pos||a.position===pos)&&(!dept||a.department===dept)});
+  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value,bank=$('f-bank').value;
+  var f=ALL.filter(function(a){
+    if(q&&[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)<0)return false;
+    if(st&&a.status!==st)return false;
+    if(pos&&a.position!==pos)return false;
+    if(dept&&a.department!==dept)return false;
+    if(bank==='scb'&&(!a.bank||a.bank.indexOf('SCB')<0&&a.bank.indexOf('ไทยพาณิชย์')<0))return false;
+    if(bank==='other'&&a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))return false;
+    return true;
+  });
   window._empFiltered=f;
   $('A-cnt').textContent='พบ '+f.length+' คน';
   if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูล</p></div>';return}
@@ -819,7 +829,7 @@ function doFilter(){
   var allChk=f.length>0&&f.every(function(a){return EMP_SEL[a.id]});
   var h='<div class="tw"><table><thead><tr>';
   h+='<th style="width:36px;text-align:center;padding:4px"><button onclick="empToggleAll2()" style="background:none;border:2px solid '+(allChk?'#b8860b':'#ccc')+';border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:18px;color:#b8860b">'+(allChk?'✓':'')+'</button></th>';
-  h+='<th>ชื่อ-สกุล</th><th>แผนก</th><th>ตำแหน่ง</th><th>ประเภท</th><th>เอกสาร</th><th>วันที่</th><th style="text-align:center">จัดการ</th>';
+  h+='<th>ชื่อ-สกุล</th><th>แผนก</th><th>ตำแหน่ง</th><th>ธนาคาร</th><th>ประเภท</th><th>เอกสาร</th><th style="text-align:center">จัดการ</th>';
   h+='</tr></thead><tbody>';
 
   f.forEach(function(a,idx){
@@ -835,9 +845,10 @@ function doFilter(){
     h+='<td class="nm" style="cursor:pointer" data-detail="'+idx+'">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'')+'</td>';
     h+='<td style="font-size:11px" data-detail="'+idx+'">'+(a.department?'<span style="background:rgba(92,74,30,.08);color:var(--pri);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600">'+esc(a.department)+'</span>':'-')+'</td>';
     h+='<td style="font-size:12px" data-detail="'+idx+'">'+esc(a.position||'-')+'</td>';
+    var isSCB=a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0);
+    h+='<td style="font-size:11px" data-detail="'+idx+'">'+(a.bank?'<span style="background:'+(isSCB?'rgba(75,0,130,.08);color:#4b0082':'rgba(0,100,0,.08);color:#006400')+';padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600">'+esc(a.bank)+'</span>':'-')+'</td>';
     h+='<td data-detail="'+idx+'"><span style="'+typeBg+';padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap">'+typeLabel+'</span></td>';
     h+='<td data-detail="'+idx+'">'+(a.cred_link?'<span class="dy">วุฒิ✓</span>':'<span class="dn2">วุฒิ✗</span>')+' '+(a.id_link?'<span class="dy">บัตร✓</span>':'<span class="dn2">บัตร✗</span>')+'</td>';
-    h+='<td data-detail="'+idx+'"><div>'+esc(dt.substring(0,10))+'</div><div class="em">'+esc(dt.substring(10))+'</div></td>';
     h+='<td style="text-align:center;white-space:nowrap">';
     if(a.status!=='terminated'){
       h+='<button class="btn btn-d btn-s" style="font-size:10px;padding:3px 8px" onclick="quickTerminate(window._empFiltered['+idx+'].id,window._empFiltered['+idx+'].name)">⛔ ลาออก</button>';

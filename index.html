@@ -738,8 +738,35 @@ function empUpdateSelBar(){
 }
 
 function empToggle(id,checked){if(checked)EMP_SEL[id]=true;else delete EMP_SEL[id];empUpdateSelBar()}
-function empToggle2(idx){var a=window._empFiltered[idx];if(EMP_SEL[a.id])delete EMP_SEL[a.id];else EMP_SEL[a.id]=true;empUpdateSelBar();doFilter()}
-function empToggleAll2(){var allChk=window._empFiltered.every(function(a){return EMP_SEL[a.id]});window._empFiltered.forEach(function(a){if(allChk)delete EMP_SEL[a.id];else EMP_SEL[a.id]=true});empUpdateSelBar();doFilter()}
+function empToggle2(idx,btn){
+  var a=window._empFiltered[idx];
+  if(EMP_SEL[a.id]){delete EMP_SEL[a.id]}else{EMP_SEL[a.id]=true}
+  var sel=EMP_SEL[a.id];
+  // Update only this button + row (no full re-render)
+  btn.style.background=sel?'#b8860b':'none';
+  btn.style.borderColor=sel?'#b8860b':'#ccc';
+  btn.style.color=sel?'#fff':'transparent';
+  btn.closest('tr').style.background=sel?'rgba(198,149,43,.1)':'';
+  empUpdateSelBar();
+}
+function empToggleAll2(){
+  var allChk=window._empFiltered.length>0&&window._empFiltered.every(function(a){return EMP_SEL[a.id]});
+  window._empFiltered.forEach(function(a){if(allChk)delete EMP_SEL[a.id];else EMP_SEL[a.id]=true});
+  // Update all buttons visually
+  var btns=$('A-tbl').querySelectorAll('tbody button[onclick*="empToggle2"]');
+  btns.forEach(function(btn,i){
+    var a=window._empFiltered[i];if(!a)return;
+    var sel=EMP_SEL[a.id];
+    btn.style.background=sel?'#b8860b':'none';
+    btn.style.borderColor=sel?'#b8860b':'#ccc';
+    btn.style.color=sel?'#fff':'transparent';
+    btn.closest('tr').style.background=sel?'rgba(198,149,43,.1)':'';
+  });
+  // Update header button
+  var hdrBtn=$('A-tbl').querySelector('thead button');
+  if(hdrBtn){hdrBtn.style.borderColor=allChk?'#ccc':'#b8860b';hdrBtn.textContent=allChk?'':'✓'}
+  empUpdateSelBar();
+}
 function empToggleAll(checked){
   var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value;
   ALL.forEach(function(a){
@@ -756,12 +783,13 @@ function empBulkSetDept(){
   var ids=Object.keys(EMP_SEL);
   if(!ids.length)return;
   if(!confirm('กำหนดแผนก "'+dept+'" ให้ '+ids.length+' คน?'))return;
-  var done=0,fail=0;
+  // Batch update - one request per employee (Supabase doesn't support bulk PATCH by multiple IDs easily)
+  var pending=ids.length,ok=0;
   ids.forEach(function(id){
     sb("applications","PATCH",{department:dept},"?id=eq."+id).then(function(){
-      ALL.forEach(function(a){if(a.id===id)a.department=dept});
-      done++;if(done+fail===ids.length){toast('กำหนดแผนก '+dept+' ให้ '+done+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();stats();doFilter()}
-    }).catch(function(){fail++;if(done+fail===ids.length){toast('สำเร็จ '+done+' ล้มเหลว '+fail,'terr');stats();doFilter()}});
+      ALL.forEach(function(a){if(a.id===id)a.department=dept});ok++;
+      if(--pending===0){toast('กำหนดแผนก '+dept+' ให้ '+ok+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();stats();doFilter()}
+    }).catch(function(){if(--pending===0){toast('สำเร็จ '+ok+' จาก '+ids.length,'terr');stats();doFilter()}});
   });
 }
 
@@ -772,12 +800,12 @@ function empBulkSetStatus(){
   var ids=Object.keys(EMP_SEL);
   if(!ids.length)return;
   if(!confirm('กำหนดประเภท "'+stLabel[st]+'" ให้ '+ids.length+' คน?'))return;
-  var done=0,fail=0;
+  var pending=ids.length,ok=0;
   ids.forEach(function(id){
     sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){
-      ALL.forEach(function(a){if(a.id===id)a.status=st});
-      done++;if(done+fail===ids.length){toast('กำหนด '+stLabel[st]+' ให้ '+done+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();stats();doFilter()}
-    }).catch(function(){fail++;if(done+fail===ids.length){toast('สำเร็จ '+done+' ล้มเหลว '+fail,'terr');stats();doFilter()}});
+      ALL.forEach(function(a){if(a.id===id)a.status=st});ok++;
+      if(--pending===0){toast('กำหนด '+stLabel[st]+' ให้ '+ok+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();stats();doFilter()}
+    }).catch(function(){if(--pending===0){toast('สำเร็จ '+ok+' จาก '+ids.length,'terr');stats();doFilter()}});
   });
 }
 
@@ -803,7 +831,7 @@ function doFilter(){
     else{typeLabel='ใหม่';typeBg='background:#cce5ff;color:#004085;border:1px solid #007bff'}
     var sel=EMP_SEL[a.id];
     h+='<tr style="'+(sel?'background:rgba(198,149,43,.1);':'')+(a.status==='terminated'?'opacity:.5':'')+'"">';
-    h+='<td style="text-align:center;padding:4px"><button onclick="empToggle2('+idx+')" style="background:'+(sel?'#b8860b':'none')+';border:2px solid '+(sel?'#b8860b':'#ccc')+';border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:18px;color:'+(sel?'#fff':'transparent')+'">✓</button></td>';
+    h+='<td style="text-align:center;padding:4px"><button onclick="empToggle2('+idx+',this)" style="background:'+(sel?'#b8860b':'none')+';border:2px solid '+(sel?'#b8860b':'#ccc')+';border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:18px;color:'+(sel?'#fff':'transparent')+'">✓</button></td>';
     h+='<td class="nm" style="cursor:pointer" data-detail="'+idx+'">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'')+'</td>';
     h+='<td style="font-size:11px" data-detail="'+idx+'">'+(a.department?'<span style="background:rgba(92,74,30,.08);color:var(--pri);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600">'+esc(a.department)+'</span>':'-')+'</td>';
     h+='<td style="font-size:12px" data-detail="'+idx+'">'+esc(a.position||'-')+'</td>';

@@ -1826,8 +1826,14 @@ function payDBRender(){
 
 function payDBCalcRow(e){
   e.totalIncome=e.salary+e.diligence;
-  e.tax3=Math.round(e.totalIncome*0.03*100)/100;
-  e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,750);
+  // รายวัน: หัก 3% ไม่หัก ปกส. / ประจำ: ไม่หัก 3% หัก ปกส.5%
+  if(e.status==='daily'){
+    e.tax3=Math.round(e.totalIncome*0.03*100)/100;
+    e.ss5=0;
+  }else{
+    e.tax3=0;
+    e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,750);
+  }
   e.totalDed=e.tax3+e.ss5+e.loan+e.advance;
   e.net=Math.max(0,e.totalIncome-e.totalDed);
 }
@@ -1891,7 +1897,7 @@ function payDBUpdate(i,field,val){
 function payDBCalcAll(){
   PAYDB2.forEach(function(e){payDBCalcRow(e)});
   payDBRender();
-  toast('คำนวณ '+PAYDB2.length+' คน — ภาษี 3% + ปกส. 5% อัตโนมัติ','tok');
+  toast('คำนวณ '+PAYDB2.length+' คน — รายวัน:หัก3% / ประจำ:หักปกส.5%','tok');
 }
 
 function payDBSave(){

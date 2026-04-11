@@ -1982,7 +1982,7 @@ function commLoad(){
     var commMap={};comms.forEach(function(c){commMap[c.emp_name]=c});
     COMM_DATA=emps.map(function(a){
       var c=commMap[a.name]||{};
-      return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',status:a.status||'',department:a.department||'',email:a.email||'',commission:c.amount||0,note:c.note||''};
+      return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',status:a.status||'',department:a.department||'',email:a.email||'',commission:c.amount||0,late:c.late||0,note:c.note||''};
     });
     $('comm-status').innerHTML='✅ '+COMM_DATA.length+' คน'+(month?' — เดือน '+month:'');
     COMM_FILTER='';commBuildFilters();commRender();
@@ -2006,7 +2006,7 @@ function commLoadPrev(){
     var matched=0;
     COMM_DATA=emps.map(function(a){
       var c=commMap[a.name]||{};if(c.amount>0)matched++;
-      return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',status:a.status||'',department:a.department||'',email:a.email||'',commission:c.amount||0,note:c.note||''};
+      return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',status:a.status||'',department:a.department||'',email:a.email||'',commission:c.amount||0,late:c.late||0,note:c.note||''};
     });
     $('comm-status').innerHTML='✅ '+COMM_DATA.length+' คน — ดึงคอมฯจาก '+prev+' ได้ '+matched+' คน';
     COMM_FILTER='';commBuildFilters();commRender();
@@ -2029,23 +2029,28 @@ function commBuildFilters(){
 function commRender(){
   if(!COMM_DATA.length){$('comm-table').innerHTML='';return}
   var filtered=COMM_DATA.filter(function(e){return!COMM_FILTER||e.status===COMM_FILTER});
-  var total=0,cnt=0;
-  filtered.forEach(function(e){total+=e.commission;if(e.commission>0)cnt++});
+  var total=0,totalLate=0,totalNet=0,cnt=0;
+  filtered.forEach(function(e){
+    var net=Math.max(0,(e.commission||0)-(e.late||0));
+    total+=e.commission;totalLate+=e.late||0;totalNet+=net;if(e.commission>0)cnt++;
+  });
 
-  var h='<div style="font-size:12px;margin-bottom:8px;color:var(--muted)">'+filtered.length+' คน | มีคอมฯ <b style="color:var(--acc)">'+cnt+'</b> คน | รวม <b style="color:var(--acc)">'+payFmt(total)+'</b> บาท</div>';
+  var h='<div style="font-size:12px;margin-bottom:8px;color:var(--muted)">'+filtered.length+' คน | มีคอมฯ <b style="color:var(--acc)">'+cnt+'</b> คน | รวม <b style="color:var(--acc)">'+payFmt(total)+'</b> | หักมาสาย <b style="color:var(--err)">'+payFmt(totalLate)+'</b> | สุทธิ <b style="color:var(--ok)">'+payFmt(totalNet)+'</b></div>';
   h+='<div class="xls-wrap"><table class="xls"><thead><tr>';
-  h+='<th class="xr" style="min-width:28px"></th><th style="min-width:30px">ลำดับ</th><th style="min-width:150px;text-align:left;padding-left:6px">ชื่อ-สกุล</th><th style="min-width:80px;text-align:left;padding-left:6px">แผนก</th><th style="min-width:90px;text-align:left;padding-left:6px">ตำแหน่ง</th><th style="min-width:110px;background:#fff8e0">คอมมิชชั่น (บาท)</th><th style="min-width:120px">หมายเหตุ</th><th style="min-width:180px;text-align:center">อีเมล / ส่งสลิป</th>';
+  h+='<th class="xr" style="min-width:28px"></th><th style="min-width:30px">ลำดับ</th><th style="min-width:140px;text-align:left;padding-left:6px">ชื่อ-สกุล</th><th style="min-width:80px;text-align:left;padding-left:6px">ตำแหน่ง</th><th style="min-width:100px;background:#fff8e0">คอมมิชชั่น</th><th style="min-width:90px;background:#fde8e8">หักมาสาย</th><th style="min-width:100px;background:#d4ecc0">สุทธิ</th><th style="min-width:120px">หมายเหตุ</th><th style="min-width:180px;text-align:center">อีเมล / ส่งสลิป</th>';
   h+='</tr></thead><tbody>';
 
   filtered.forEach(function(e,i){
     var idx=COMM_DATA.indexOf(e);
+    var net=Math.max(0,(e.commission||0)-(e.late||0));
     h+='<tr>';
     h+='<td class="xr">'+(i+1)+'</td>';
     h+='<td class="xr">'+(i+1)+'</td>';
     h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
-    h+='<td class="xpos">'+esc(e.department||'-')+'</td>';
     h+='<td class="xpos">'+esc(e.position)+'</td>';
-    h+='<td style="background:#fff8e0"><input value="'+(e.commission||'')+'" onfocus="this.select()" onchange="COMM_DATA['+idx+'].commission=parseFloat(this.value)||0;commUpdateTotal()" placeholder="0" style="width:100%;border:none;background:transparent;text-align:right;font-size:13px;font-family:inherit;font-weight:600;color:#856404;outline:none;padding:2px 6px"></td>';
+    h+='<td style="background:#fff8e0"><input value="'+(e.commission||'')+'" onfocus="this.select()" onchange="COMM_DATA['+idx+'].commission=parseFloat(this.value)||0;commUpdateRow('+idx+')" placeholder="0" style="width:100%;border:none;background:transparent;text-align:right;font-size:13px;font-family:inherit;font-weight:600;color:#856404;outline:none;padding:2px 6px"></td>';
+    h+='<td style="background:#fde8e8"><input value="'+(e.late||'')+'" onfocus="this.select()" onchange="COMM_DATA['+idx+'].late=parseFloat(this.value)||0;commUpdateRow('+idx+')" placeholder="0" style="width:100%;border:none;background:transparent;text-align:right;font-size:13px;font-family:inherit;font-weight:600;color:#c43e2a;outline:none;padding:2px 6px"></td>';
+    h+='<td class="xsum xsum-ok" style="font-size:13px" id="comm-net-'+idx+'">'+payFmt(net)+'</td>';
     h+='<td><input value="'+esc(e.note)+'" onchange="COMM_DATA['+idx+'].note=this.value" placeholder="หมายเหตุ..." style="width:100%;border:none;background:transparent;font-size:11px;font-family:inherit;outline:none;padding:2px 6px"></td>';
     h+='<td style="text-align:center;white-space:nowrap">';
     if(e._sent){h+='<span style="color:var(--ok);font-size:11px">✅ ส่งแล้ว</span>'}
@@ -2057,23 +2062,28 @@ function commRender(){
     h+='</td></tr>';
   });
 
-  h+='</tbody><tfoot><tr style="background:#e8dfc8"><td class="xr"></td><td class="xsum xsum-pri" colspan="4" style="text-align:left;padding-left:6px">รวม '+filtered.length+' คน'+(COMM_FILTER?' (กรอง)':'')+'</td><td class="xsum" style="color:#856404;font-size:14px">'+payFmt(total)+'</td><td colspan="2"></td></tr></tfoot></table></div>';
+  h+='</tbody><tfoot><tr style="background:#e8dfc8"><td class="xr"></td><td class="xsum xsum-pri" colspan="3" style="text-align:left;padding-left:6px">รวม '+filtered.length+' คน</td><td class="xsum" style="color:#856404">'+payFmt(total)+'</td><td class="xsum xsum-err">'+payFmt(totalLate)+'</td><td class="xsum xsum-ok" style="font-size:14px">'+payFmt(totalNet)+'</td><td colspan="2"></td></tr></tfoot></table></div>';
   $('comm-table').innerHTML=h;
 }
 
-function commUpdateTotal(){commRender()}
+function commUpdateRow(idx){
+  var e=COMM_DATA[idx];
+  var net=Math.max(0,(e.commission||0)-(e.late||0));
+  var cell=$('comm-net-'+idx);
+  if(cell)cell.textContent=payFmt(net);
+}
 
 function commSave(){
   var month=$('comm-month').value;
   if(!month){toast('เลือกเดือน/ปี','terr');return}
-  var valid=COMM_DATA.filter(function(e){return e.commission>0});
+  var valid=COMM_DATA.filter(function(e){return e.commission>0||e.late>0});
   if(!valid.length){toast('ยังไม่มีข้อมูลคอมมิชชั่น','terr');return}
   if(!confirm('บันทึกคอมมิชชั่น '+valid.length+' คน เดือน '+month+'?'))return;
 
   $('comm-save-status').textContent='⏳ กำลังบันทึก...';
   sb("commissions","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
     var records=valid.map(function(e){
-      return{id:'COM-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,amount:e.commission,note:e.note||''};
+      return{id:'COM-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,amount:e.commission,late:e.late||0,note:e.note||''};
     });
     sb("commissions","POST",records).then(function(){
       $('comm-save-status').innerHTML='<span style="color:var(--ok)">✅ บันทึก '+valid.length+' คน เดือน '+month+'</span>';
@@ -2083,18 +2093,19 @@ function commSave(){
 }
 
 function commExport(){
-  var valid=COMM_DATA.filter(function(e){return e.commission>0});
+  var valid=COMM_DATA.filter(function(e){return e.commission>0||e.late>0});
   if(!valid.length){toast('ไม่มีข้อมูล','terr');return}
   var month=$('comm-month').value||'export';
   var csv='\uFEFF';
-  csv+='ชื่อ,ชื่อเล่น,แผนก,ตำแหน่ง,คอมมิชชั่น,หมายเหตุ\n';
-  valid.forEach(function(e){csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.department)+'","'+esc(e.position)+'",'+e.commission+',"'+esc(e.note)+'"\n'});
+  csv+='ชื่อ,ชื่อเล่น,แผนก,ตำแหน่ง,คอมมิชชั่น,หักมาสาย,สุทธิ,หมายเหตุ\n';
+  valid.forEach(function(e){var net=Math.max(0,(e.commission||0)-(e.late||0));csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.department)+'","'+esc(e.position)+'",'+e.commission+','+(e.late||0)+','+net+',"'+esc(e.note)+'"\n'});
   accDownload(csv,'คอมมิชชั่น_'+month+'.csv','text/csv;charset=utf-8');
   toast('Export คอมมิชชั่น '+valid.length+' คน','tok');
 }
 
 function commBuildSlipHTML(e){
   var month=$('comm-month').value||'';
+  var net=Math.max(0,(e.commission||0)-(e.late||0));
   return'<html><head><meta charset="utf-8"></head><body style="margin:0">'
     +'<div style="max-width:500px;margin:0 auto;font-family:sans-serif;color:#3d3520">'
     +'<div style="background:linear-gradient(135deg,#5c4a1e,#8b6914,#c6952b);padding:20px;text-align:center;border-radius:12px 12px 0 0">'
@@ -2105,11 +2116,16 @@ function commBuildSlipHTML(e){
     +'<div style="background:#fff;border:1px solid #e2d5b8;border-radius:8px;padding:12px;margin-bottom:14px">'
     +'<div style="font-size:15px;font-weight:700;color:#5c4a1e">'+esc(e.name)+(e.nickname?' ('+esc(e.nickname)+')':'')+'</div>'
     +'<div style="font-size:12px;color:#706040">'+esc(e.position)+(e.department?' • '+esc(e.department):'')+'</div></div>'
-    +'<div style="background:#fff8e0;border:2px solid #ffc107;border-radius:10px;padding:16px;text-align:center">'
-    +'<div style="font-size:12px;color:#856404;margin-bottom:4px">ค่าคอมมิชชั่น</div>'
-    +'<div style="font-size:28px;font-weight:800;color:#856404">฿'+payFmt(e.commission)+'</div>'
-    +(e.note?'<div style="font-size:11px;color:#a08040;margin-top:6px">หมายเหตุ: '+esc(e.note)+'</div>':'')
-    +'</div></div>'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px">'
+    +'<tr><td style="padding:6px 0;color:#856404;font-size:13px">ค่าคอมมิชชั่น</td><td style="padding:6px 0;text-align:right;font-size:14px;font-weight:700;color:#856404">'+payFmt(e.commission)+'</td></tr>'
+    +(e.late>0?'<tr><td style="padding:6px 0;color:#c43e2a;font-size:13px">หักมาสาย</td><td style="padding:6px 0;text-align:right;font-size:14px;font-weight:700;color:#c43e2a">-'+payFmt(e.late)+'</td></tr>':'')
+    +'</table>'
+    +'<div style="background:linear-gradient(135deg,#5c4a1e,#8b6914);border-radius:10px;padding:16px;text-align:center">'
+    +'<div style="font-size:12px;color:rgba(255,255,255,.6)">คอมมิชชั่นสุทธิ</div>'
+    +'<div style="font-size:28px;font-weight:800;color:#fff">฿'+payFmt(net)+'</div>'
+    +'</div>'
+    +(e.note?'<div style="margin-top:10px;font-size:11px;color:#a08040;text-align:center">หมายเหตุ: '+esc(e.note)+'</div>':'')
+    +'</div>'
     +'<div style="background:#f0e8d4;padding:12px;text-align:center;font-size:10px;color:#a89870;border-radius:0 0 12px 12px;border:1px solid #e2d5b8;border-top:none">หากมีข้อสงสัยกรุณาติดต่อฝ่ายบุคคล</div></div></body></html>';
 }
 

@@ -240,6 +240,7 @@
         <select class="fsel" id="f-pos" onchange="doFilter()"><option value="">ทุกตำแหน่ง</option></select>
         <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
         <select class="fsel" id="f-bank" onchange="doFilter()"><option value="">ทุกธนาคาร</option><option value="scb">ไทยพาณิชย์ (SCB)</option><option value="other">ธนาคารอื่น</option></select>
+        <select class="fsel" id="f-email" onchange="doFilter()"><option value="">ทุกอีเมล</option><option value="has">มีอีเมล</option><option value="no">ไม่มีอีเมล</option></select>
         <button class="btn btn-a btn-s" onclick="showAdminAddEmp()">➕ เพิ่มพนักงาน</button>
         <button class="btn btn-a btn-s" onclick="empExport()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">📥 Export</button>
         <button class="btn btn-g btn-s" onclick="loadAdmin()">🔄</button></div>
@@ -714,10 +715,11 @@ function loadAdmin(){
 
 /* ═══ STATS ═══ */
 function stats(){
-  var t=ALL.length,dy=0,mt=0,tm=0,posMap={},scbCnt=0,otherCnt=0;
+  var t=ALL.length,dy=0,mt=0,tm=0,posMap={},scbCnt=0,otherCnt=0,hasEmail=0;
   ALL.forEach(function(a){if(a.status==='daily')dy++;if(a.status==='monthly')mt++;if(a.status==='terminated')tm++;if(a.position)posMap[a.position]=(posMap[a.position]||0)+1;
-    if(a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))scbCnt++;else if(a.bank)otherCnt++});
-  $('A-sts').innerHTML='<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div><div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div><div class="st"><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+mt+'</div></div><div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div><div class="st"><div class="l">SCB</div><div class="v" style="color:#4b0082">'+scbCnt+'</div></div><div class="st"><div class="l">ธ.อื่น</div><div class="v" style="color:#006400">'+otherCnt+'</div></div>';
+    if(a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))scbCnt++;else if(a.bank)otherCnt++;
+    if(a.email&&a.email.indexOf('@')>=0)hasEmail++});
+  $('A-sts').innerHTML='<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div><div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div><div class="st"><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+mt+'</div></div><div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div><div class="st"><div class="l">SCB</div><div class="v" style="color:#4b0082">'+scbCnt+'</div></div><div class="st"><div class="l">ธ.อื่น</div><div class="v" style="color:#006400">'+otherCnt+'</div></div><div class="st"><div class="l">มีอีเมล</div><div class="v" style="color:#2d5080">'+hasEmail+'</div></div>';
   var sel=$('f-pos'),cur=sel.value;
   sel.innerHTML='<option value="">ทุกตำแหน่ง ('+t+')</option>';
   Object.keys(posMap).sort().forEach(function(p){sel.innerHTML+='<option value="'+esc(p)+'"'+(cur===p?' selected':'')+'>'+esc(p)+' ('+posMap[p]+')</option>'});
@@ -785,12 +787,14 @@ function empToggleAll(checked){
 function empClearSel(){EMP_SEL={};empUpdateSelBar();doFilter()}
 
 function empExport(){
-  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value,bank=$('f-bank').value;
+  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value,bank=$('f-bank').value,em=$('f-email').value;
   var list=ALL.filter(function(a){
     if(q&&[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)<0)return false;
     if(st&&a.status!==st)return false;if(pos&&a.position!==pos)return false;if(dept&&a.department!==dept)return false;
     if(bank==='scb'&&(!a.bank||a.bank.indexOf('SCB')<0&&a.bank.indexOf('ไทยพาณิชย์')<0))return false;
     if(bank==='other'&&a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))return false;
+    if(em==='has'&&(!a.email||a.email.indexOf('@')<0))return false;
+    if(em==='no'&&a.email&&a.email.indexOf('@')>=0)return false;
     return true;
   });
   // If has selection, export only selected
@@ -861,7 +865,7 @@ function empBulkSetStatus(){
 }
 
 function doFilter(){
-  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value,bank=$('f-bank').value;
+  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value,bank=$('f-bank').value,em=$('f-email').value;
   var f=ALL.filter(function(a){
     if(q&&[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)<0)return false;
     if(st&&a.status!==st)return false;
@@ -869,6 +873,8 @@ function doFilter(){
     if(dept&&a.department!==dept)return false;
     if(bank==='scb'&&(!a.bank||a.bank.indexOf('SCB')<0&&a.bank.indexOf('ไทยพาณิชย์')<0))return false;
     if(bank==='other'&&a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))return false;
+    if(em==='has'&&(!a.email||a.email.indexOf('@')<0))return false;
+    if(em==='no'&&a.email&&a.email.indexOf('@')>=0)return false;
     return true;
   });
   window._empFiltered=f;

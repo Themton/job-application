@@ -352,6 +352,7 @@
           </div>
           <div id="paydb2-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
           <div id="paydb2-filters" class="hide" style="display:none;gap:4px;margin-bottom:10px;flex-wrap:wrap"></div>
+          <div style="margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="paydb2-srch" placeholder="ค้นหาชื่อ..." oninput="payDBRender()"></div></div>
           <div id="paydb2-table"></div>
           <div id="paydb2-actions" class="hide" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
             <button class="btn btn-a" onclick="payDBCalcAll()">📊 คำนวณทั้งหมด</button>
@@ -420,6 +421,7 @@
         </div>
         <div id="comm-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
         <div id="comm-filters" class="hide" style="display:none;gap:4px;margin-bottom:10px;flex-wrap:wrap"></div>
+        <div style="margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="comm-srch" placeholder="ค้นหาชื่อ..." oninput="commRender()"></div></div>
         <div id="comm-table"></div>
         <div id="comm-actions" class="hide" style="display:none;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-a" onclick="commSave()">💾 บันทึกคอมมิชชั่น</button>
@@ -2086,9 +2088,12 @@ function payDBRender(){
   var stColors={daily:'#f59e0b',monthly:'#28a745',new:'#007bff'};
 
   // Build filtered list with original indices
+  var srch=$('paydb2-srch')?$('paydb2-srch').value.toLowerCase():'';
   var filtered=[];
   PAYDB2.forEach(function(e,i){
-    if(!PAYDB2_FILTER||e.status===PAYDB2_FILTER)filtered.push({e:e,idx:i});
+    if(PAYDB2_FILTER&&e.status!==PAYDB2_FILTER)return;
+    if(srch&&(e.name+' '+e.nickname+' '+e.position).toLowerCase().indexOf(srch)<0)return;
+    filtered.push({e:e,idx:i});
   });
 
   var tSal=0,tDil=0,tI=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0;
@@ -2320,7 +2325,7 @@ function commLoad(){
   prog(10,'ดึงข้อมูลคอมมิชชั่น...');
   var month=$('comm-month').value;
   Promise.all([
-    sb("applications","GET",null,"?select=id,name,nickname,position,status,department,email&status=neq.terminated&order=status,name"),
+    sb("applications","GET",null,"?select=id,name,nickname,position,status,department,email,bank,bank_account&status=neq.terminated&order=status,name"),
     month?sb("commissions","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*").catch(function(){return[]}):Promise.resolve([])
   ]).then(function(res){
     var emps=Array.isArray(res[0])?res[0]:[];
@@ -2328,7 +2333,7 @@ function commLoad(){
     var commMap={};comms.forEach(function(c){commMap[c.emp_name]=c});
     COMM_DATA=emps.map(function(a){
       var c=commMap[a.name]||{};
-      return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',status:a.status||'',department:a.department||'',email:a.email||'',commission:c.amount||0,late:c.late||0,note:c.note||''};
+      return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',status:a.status||'',department:a.department||'',email:a.email||'',bank:a.bank||'',account:a.bank_account||'',commission:c.amount||0,late:c.late||0,note:c.note||''};
     });
     $('comm-status').innerHTML='✅ '+COMM_DATA.length+' คน'+(month?' — เดือน '+month:'');
     prog(100,'ดึงข้อมูลคอมฯ ✅ '+COMM_DATA.length+' คน');
@@ -2344,7 +2349,7 @@ function commLoadPrev(){
   var prev=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   $('comm-status').textContent='⏳ ดึงจากเดือน '+prev+'...';
   Promise.all([
-    sb("applications","GET",null,"?select=id,name,nickname,position,status,department,email&status=neq.terminated&order=status,name"),
+    sb("applications","GET",null,"?select=id,name,nickname,position,status,department,email,bank,bank_account&status=neq.terminated&order=status,name"),
     sb("commissions","GET",null,"?month=eq."+encodeURIComponent(prev)+"&select=*").catch(function(){return[]})
   ]).then(function(res){
     var emps=Array.isArray(res[0])?res[0]:[];
@@ -2353,7 +2358,7 @@ function commLoadPrev(){
     var matched=0;
     COMM_DATA=emps.map(function(a){
       var c=commMap[a.name]||{};if(c.amount>0)matched++;
-      return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',status:a.status||'',department:a.department||'',email:a.email||'',commission:c.amount||0,late:c.late||0,note:c.note||''};
+      return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',status:a.status||'',department:a.department||'',email:a.email||'',bank:a.bank||'',account:a.bank_account||'',commission:c.amount||0,late:c.late||0,note:c.note||''};
     });
     $('comm-status').innerHTML='✅ '+COMM_DATA.length+' คน — ดึงคอมฯจาก '+prev+' ได้ '+matched+' คน';
     COMM_FILTER='';commBuildFilters();commRender();
@@ -2375,7 +2380,12 @@ function commBuildFilters(){
 
 function commRender(){
   if(!COMM_DATA.length){$('comm-table').innerHTML='';return}
-  var filtered=COMM_DATA.filter(function(e){return!COMM_FILTER||e.status===COMM_FILTER});
+  var csrch=$('comm-srch')?$('comm-srch').value.toLowerCase():'';
+  var filtered=COMM_DATA.filter(function(e){
+    if(COMM_FILTER&&e.status!==COMM_FILTER)return false;
+    if(csrch&&(e.name+' '+e.nickname+' '+e.position+' '+e.department).toLowerCase().indexOf(csrch)<0)return false;
+    return true;
+  });
   var total=0,totalLate=0,totalNet=0,cnt=0;
   filtered.forEach(function(e){
     var net=Math.max(0,(e.commission||0)-(e.late||0));
@@ -2447,8 +2457,8 @@ function commExport(){
   if(!valid.length){toast('ไม่มีข้อมูล','terr');return}
   var month=$('comm-month').value||'export';
   var csv='\uFEFF';
-  csv+='ชื่อ,ชื่อเล่น,แผนก,ตำแหน่ง,คอมมิชชั่น,หักมาสาย,สุทธิ,หมายเหตุ\n';
-  valid.forEach(function(e){var net=Math.max(0,(e.commission||0)-(e.late||0));csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.department)+'","'+esc(e.position)+'",'+e.commission+','+(e.late||0)+','+net+',"'+esc(e.note)+'"\n'});
+  csv+='ชื่อ,ชื่อเล่น,แผนก,ตำแหน่ง,ธนาคาร,เลขบัญชี,คอมมิชชั่น,หักมาสาย,สุทธิ,หมายเหตุ\n';
+  valid.forEach(function(e){var net=Math.max(0,(e.commission||0)-(e.late||0));csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.department)+'","'+esc(e.position)+'","'+esc(e.bank||'')+'","'+esc(e.account||'')+'",'+e.commission+','+(e.late||0)+','+net+',"'+esc(e.note)+'"\n'});
   accDownload(csv,'คอมมิชชั่น_'+month+'.csv','text/csv;charset=utf-8');
   toast('Export คอมมิชชั่น '+valid.length+' คน','tok');
 }

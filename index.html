@@ -421,10 +421,12 @@
         <div id="comm-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
         <div id="comm-filters" class="hide" style="display:none;gap:4px;margin-bottom:10px;flex-wrap:wrap"></div>
         <div id="comm-table"></div>
-        <div id="comm-actions" class="hide" style="display:none;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <div id="comm-actions" class="hide" style="display:none;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-a" onclick="commSave()">💾 บันทึกคอมมิชชั่น</button>
           <button class="btn btn-a btn-s" onclick="commSendAll()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">📧 ส่งอีเมลทั้งหมด</button>
           <button class="btn btn-g btn-s" onclick="commExport()">📥 Export</button>
+          <button class="btn btn-d btn-s" onclick="commDelete()">🗑️ ลบข้อมูลเดือนนี้</button>
+          <button class="btn btn-g btn-s" onclick="commClearAll()">🧹 ล้างตัวเลขทั้งหมด</button>
           <span id="comm-save-status" style="font-size:12px;color:var(--muted)"></span>
         </div>
       </div>
@@ -2449,6 +2451,27 @@ function commExport(){
   valid.forEach(function(e){var net=Math.max(0,(e.commission||0)-(e.late||0));csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.department)+'","'+esc(e.position)+'",'+e.commission+','+(e.late||0)+','+net+',"'+esc(e.note)+'"\n'});
   accDownload(csv,'คอมมิชชั่น_'+month+'.csv','text/csv;charset=utf-8');
   toast('Export คอมมิชชั่น '+valid.length+' คน','tok');
+}
+
+function commDelete(){
+  var month=$('comm-month').value;
+  if(!month){toast('เลือกเดือน/ปี','terr');return}
+  if(!confirm('⚠️ ลบข้อมูลคอมมิชชั่นเดือน '+month+' ทั้งหมด?\n\nข้อมูลจะถูกลบจากระบบถาวร'))return;
+  prog(20,'กำลังลบคอมมิชชั่น...');
+  sb("commissions","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
+    prog(100,'ลบคอมมิชชั่น ✅ เดือน '+month);
+    toast('ลบคอมมิชชั่นเดือน '+month+' แล้ว','tok');
+    COMM_DATA.forEach(function(e){e.commission=0;e.late=0;e.note='';e._sent=false;e._sending=false});
+    commRender();
+    $('comm-save-status').innerHTML='<span style="color:var(--muted)">🗑️ ลบข้อมูลเดือน '+month+' แล้ว</span>';
+  }).catch(function(e){prog(-1);toast('ลบไม่สำเร็จ: '+e,'terr')});
+}
+
+function commClearAll(){
+  if(!confirm('ล้างตัวเลขคอมมิชชั่น+หักมาสาย ทั้งหมดในหน้าจอ?\n(ยังไม่ลบจากระบบ — ต้องกดบันทึกอีกครั้ง)'))return;
+  COMM_DATA.forEach(function(e){e.commission=0;e.late=0;e.note='';e._sent=false;e._sending=false});
+  commRender();
+  toast('ล้างตัวเลขแล้ว — กดบันทึกเพื่ออัปเดตระบบ','tinfo');
 }
 
 function commBuildSlipHTML(e){

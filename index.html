@@ -602,7 +602,7 @@ var EM="https://script.google.com/macros/s/AKfycbyDrEQweHxOpdKdZ3TA0niJ7YG02rqFF
 var MODE=location.search.indexOf('admin')>-1?'admin':location.search.indexOf('acc')>-1?'acc':'public';
 
 /* ═══ Supabase ═══ */
-function sb(t,m,b,q){var u=SB+"/rest/v1/"+t+(q||"");var o={method:m||"GET",headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Prefer":"return=representation"}};if(b)o.body=JSON.stringify(b);return fetch(u,o).then(function(r){return r.json()})}
+function sb(t,m,b,q){var u=SB+"/rest/v1/"+t+(q||"");var o={method:m||"GET",headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Prefer":"return=representation"}};if(b)o.body=JSON.stringify(b);return fetch(u,o).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(r.status+': '+t)});return r.json()})}
 
 /* ═══ STATE ═══ */
 var ALL=[],POS=[],USR=[],DEPT=[],FI={c:null,b:null,h:null,k:null},editPID=null,editUID=null,editDID=null;
@@ -2256,7 +2256,7 @@ function payDBSave(){
   sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
     prog(40,'กำลังบันทึก '+valid.length+' คน...');
     var records=valid.map(function(e){
-      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,salary:e.salary,diligence:e.diligence,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net,commission:e.commission};
+      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,salary:e.salary,diligence:e.diligence,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
     });
     sb("payroll","POST",records).then(function(){
       prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');
@@ -2302,9 +2302,9 @@ function payDBExportCSV(){
   var valid=PAYDB2.filter(function(e){return e.salary>0||e.net>0});
   if(!valid.length){toast('ไม่มีข้อมูล','terr');return}
   var csv='\uFEFF';
-  csv+='ชื่อ,ชื่อเล่น,ตำแหน่ง,ธนาคาร,เลขบัญชี,เงินเดือน,เบี้ยขยัน,รวมรายรับ,ภาษี3%,ประกันสังคม5%,กยศ.,เบิกล่วงหน้า,รวมหัก,สุทธิ,คอมมิชชั่น\n';
+  csv+='ชื่อ,ชื่อเล่น,ตำแหน่ง,ธนาคาร,เลขบัญชี,เงินเดือน,เบี้ยขยัน,รวมรายรับ,ภาษี3%,ประกันสังคม5%,กยศ.,เบิกล่วงหน้า,รวมหัก,สุทธิ\n';
   valid.forEach(function(e){
-    csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.position)+'","'+esc(e.bank)+'","'+esc(e.account)+'",'+e.salary+','+e.diligence+','+e.totalIncome+','+e.tax3+','+e.ss5+','+e.loan+','+e.advance+','+e.totalDed+','+e.net+','+e.commission+'\n';
+    csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.position)+'","'+esc(e.bank)+'","'+esc(e.account)+'",'+e.salary+','+e.diligence+','+e.totalIncome+','+e.tax3+','+e.ss5+','+e.loan+','+e.advance+','+e.totalDed+','+e.net+'\n';
   });
   accDownload(csv,'เงินเดือน_'+($('paydb2-month').value||'export')+'.csv','text/csv;charset=utf-8');
   toast('Export '+valid.length+' คน','tok');

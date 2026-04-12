@@ -2246,8 +2246,8 @@ function payDBCalcAll(){
 function payDBSave(){
   var month=$('paydb2-month').value;
   if(!month){toast('เลือกเดือน/ปี','terr');return}
-  var valid=PAYDB2.filter(function(e){return e.salary>0||e.net>0});
-  if(!valid.length){toast('ไม่มีข้อมูลเงินเดือน — กรอกเงินเดือนแล้วกดคำนวณก่อน','terr');return}
+  var valid=PAYDB2.filter(function(e){return e.salary>0||e.diligence>0||e.tax3>0||e.ss5>0||e.loan>0||e.advance>0||e.net>0});
+  if(!valid.length){toast('ไม่มีข้อมูล — กรอกตัวเลขอย่างน้อย 1 ช่องก่อน','terr');return}
   if(!confirm('บันทึกเงินเดือน '+valid.length+' คน เดือน '+month+'?'))return;
 
   $('paydb2-save-status').textContent='⏳ กำลังบันทึก...';
@@ -2299,7 +2299,7 @@ function payDBExportSCB(){
 }
 
 function payDBExportCSV(){
-  var valid=PAYDB2.filter(function(e){return e.salary>0||e.net>0});
+  var valid=PAYDB2.filter(function(e){return e.salary>0||e.diligence>0||e.tax3>0||e.ss5>0||e.loan>0||e.advance>0||e.net>0});
   if(!valid.length){toast('ไม่มีข้อมูล','terr');return}
   var csv='\uFEFF';
   csv+='ชื่อ,ชื่อเล่น,ตำแหน่ง,ธนาคาร,เลขบัญชี,เงินเดือน,เบี้ยขยัน,รวมรายรับ,ภาษี3%,ประกันสังคม5%,กยศ.,เบิกล่วงหน้า,รวมหัก,สุทธิ\n';

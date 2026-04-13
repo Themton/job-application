@@ -672,7 +672,7 @@ function page(p){
     var el=$(x);if(el){el.classList.add('hide');el.style.display='none'}
   });
   var target=$('P-'+p);
-  if(target){target.classList.remove('hide');target.style.display=p==='admin'?'block':''}
+  if(target){target.classList.remove('hide');target.style.display='block'}
   var hdr=document.querySelector('.hdr');if(hdr)hdr.style.display=(p==='admin')?'none':'';
   if(p==='admin')loadAdmin();
   if(p==='acc')loadAcc();

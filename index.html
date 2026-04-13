@@ -669,10 +669,11 @@ function pf(id){return $(id)}
 /* ═══ PAGE NAV ═══ */
 function page(p){
   ['P-form','P-success','P-login','P-admin','P-acc-login','P-acc','P-emp-login','P-emp'].forEach(function(x){
-    $(x).classList.add('hide');$(x).style.display='none';
+    var el=$(x);if(el){el.classList.add('hide');el.style.display='none'}
   });
-  $('P-'+p).classList.remove('hide');$('P-'+p).style.display=p==='admin'?'block':'';
-  document.querySelector('.hdr').style.display=(p==='admin')?'none':'';
+  var target=$('P-'+p);
+  if(target){target.classList.remove('hide');target.style.display=p==='admin'?'block':''}
+  var hdr=document.querySelector('.hdr');if(hdr)hdr.style.display=(p==='admin')?'none':'';
   if(p==='admin')loadAdmin();
   if(p==='acc')loadAcc();
   if(p==='form')loadPos();

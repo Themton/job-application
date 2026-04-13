@@ -600,6 +600,7 @@
 </div>
 
 <!-- PAGE: EMPLOYEE LOGIN -->
+<script>if(location.search.indexOf('emp')>-1){document.getElementById('P-form').style.display='none'}</script>
 <div id="P-emp-login" style="display:none">
 <div class="wrap"><div class="lw"><div class="lb">
 <div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>พนักงานเข้าสู่ระบบ</h2><p class="s">ดูข้อมูลส่วนตัว / ตรวจสอบวันลา</p>
@@ -3534,14 +3535,14 @@ function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinf
 
 /* ═══ EMPLOYEE PORTAL ═══ */
 function empLogin(){
-  var email=document.getElementById('emp-l-email').value.trim().toLowerCase();
+  var email=document.getElementById('emp-l-email').value.trim();
   var pass=document.getElementById('emp-l-pass').value;
   var errEl=document.getElementById('emp-l-err');
   if(!email||email.indexOf('@')<0){errEl.textContent='กรุณากรอกอีเมล';errEl.style.display='block';return}
   if(pass!=='1234'){errEl.textContent='รหัสผ่านไม่ถูกต้อง';errEl.style.display='block';return}
   errEl.style.display='none';
   prog(20,'กำลังตรวจสอบ...');
-  sb("applications","GET",null,"?email=eq."+encodeURIComponent(email)+"&select=*").then(function(r){
+  sb("applications","GET",null,"?email=ilike."+encodeURIComponent(email)+"&select=*").then(function(r){
     if(!Array.isArray(r)||!r.length){prog(-1);errEl.textContent='ไม่พบอีเมลนี้ในระบบ — ติดต่อฝ่ายบุคคล';errEl.style.display='block';return}
     var emp=r[0];
     prog(100,'เข้าสู่ระบบ ✅ '+emp.name);

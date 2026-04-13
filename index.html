@@ -601,8 +601,8 @@
 <!-- PAGE: EMPLOYEE LOGIN -->
 <div id="P-emp-login" class="wrap hide"><div class="lw"><div class="lb">
 <div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>พนักงานเข้าสู่ระบบ</h2><p class="s">ดูข้อมูลส่วนตัว / ตรวจสอบวันลา</p>
-<div class="fld"><label>เบอร์โทร</label><input id="emp-l-phone" placeholder="08XXXXXXXX" maxlength="10" inputmode="tel"></div>
-<div class="fld"><label>ชื่อเล่น</label><input id="emp-l-nick" placeholder="ชื่อเล่น"></div>
+<div class="fld"><label>อีเมล</label><input id="emp-l-email" placeholder="email@gmail.com" type="email" inputmode="email" onkeydown="if(event.key==='Enter')$('emp-l-pass').focus()"></div>
+<div class="fld"><label>รหัสผ่าน</label><input id="emp-l-pass" placeholder="รหัสผ่าน" type="password" onkeydown="if(event.key==='Enter')empLogin()"></div>
 <div id="emp-l-err" class="err hide"></div>
 <button class="btn btn-a" onclick="empLogin()" style="width:100%;margin-top:8px">🔑 เข้าสู่ระบบ</button>
 </div></div></div>
@@ -3528,17 +3528,16 @@ function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinf
 
 /* ═══ EMPLOYEE PORTAL ═══ */
 function empLogin(){
-  var ph=$('emp-l-phone').value.trim(),nick=$('emp-l-nick').value.trim().toLowerCase();
-  if(!ph||ph.length<10){$('emp-l-err').textContent='กรุณากรอกเบอร์โทร 10 หลัก';$('emp-l-err').classList.remove('hide');return}
-  if(!nick){$('emp-l-err').textContent='กรุณากรอกชื่อเล่น';$('emp-l-err').classList.remove('hide');return}
+  var email=$('emp-l-email').value.trim().toLowerCase(),pass=$('emp-l-pass').value;
+  if(!email||email.indexOf('@')<0){$('emp-l-err').textContent='กรุณากรอกอีเมล';$('emp-l-err').classList.remove('hide');return}
+  if(pass!=='1234'){$('emp-l-err').textContent='รหัสผ่านไม่ถูกต้อง';$('emp-l-err').classList.remove('hide');return}
   $('emp-l-err').classList.add('hide');
   prog(20,'กำลังตรวจสอบ...');
-  sb("applications","GET",null,"?phone=eq."+encodeURIComponent(ph)+"&select=*").then(function(r){
-    if(!Array.isArray(r)||!r.length){prog(-1);$('emp-l-err').textContent='ไม่พบข้อมูล — ตรวจสอบเบอร์โทรและชื่อเล่น';$('emp-l-err').classList.remove('hide');return}
-    var emp=null;r.forEach(function(a){if((a.nickname||'').toLowerCase()===nick)emp=a});
-    if(!emp){prog(-1);$('emp-l-err').textContent='ชื่อเล่นไม่ตรง — ตรวจสอบอีกครั้ง';$('emp-l-err').classList.remove('hide');return}
+  sb("applications","GET",null,"?email=eq."+encodeURIComponent(email)+"&select=*").then(function(r){
+    if(!Array.isArray(r)||!r.length){prog(-1);$('emp-l-err').textContent='ไม่พบอีเมลนี้ในระบบ — ติดต่อฝ่ายบุคคล';$('emp-l-err').classList.remove('hide');return}
+    var emp=r[0];
     prog(100,'เข้าสู่ระบบ ✅ '+emp.name);
-    sessionStorage.setItem('emp_data',JSON.stringify({id:emp.id,phone:ph,nick:nick}));
+    sessionStorage.setItem('emp_data',JSON.stringify({id:emp.id,email:email}));
     page('emp');
   }).catch(function(e){prog(-1);$('emp-l-err').textContent='เชื่อมต่อไม่ได้: '+e;$('emp-l-err').classList.remove('hide')});
 }

@@ -3633,8 +3633,18 @@ if(MODE==='admin'){
   if(sessionStorage.getItem('mt_acc_logged')==='1'){page('acc')}
   else{page('acc-login')}
 }else if(MODE==='emp'){
-  if(sessionStorage.getItem('emp_data')){page('emp')}
-  else{page('emp-login')}
+  // Hide all other pages first
+  ['P-form','P-success','P-login','P-admin','P-acc-login','P-acc'].forEach(function(x){
+    var el=$(x);if(el){el.style.display='none';el.classList.add('hide')}
+  });
+  if(sessionStorage.getItem('emp_data')){
+    $('P-emp-login').style.display='none';
+    $('P-emp').classList.remove('hide');$('P-emp').style.display='block';
+    loadEmpPortal();
+  }else{
+    $('P-emp').style.display='none';
+    $('P-emp-login').classList.remove('hide');$('P-emp-login').style.display='block';
+  }
 }else{
   page('form');
 }

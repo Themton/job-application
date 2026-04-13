@@ -599,16 +599,19 @@
 </div>
 
 <!-- PAGE: EMPLOYEE LOGIN -->
-<div id="P-emp-login" class="wrap hide"><div class="lw"><div class="lb">
+<div id="P-emp-login" style="display:none">
+<div class="wrap"><div class="lw"><div class="lb">
 <div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>พนักงานเข้าสู่ระบบ</h2><p class="s">ดูข้อมูลส่วนตัว / ตรวจสอบวันลา</p>
-<div class="fld"><label>อีเมล</label><input id="emp-l-email" placeholder="email@gmail.com" type="email" inputmode="email" onkeydown="if(event.key==='Enter')$('emp-l-pass').focus()"></div>
+<div class="fld"><label>อีเมล</label><input id="emp-l-email" placeholder="email@gmail.com" type="email" inputmode="email" onkeydown="if(event.key==='Enter')document.getElementById('emp-l-pass').focus()"></div>
 <div class="fld"><label>รหัสผ่าน</label><input id="emp-l-pass" placeholder="รหัสผ่าน" type="password" onkeydown="if(event.key==='Enter')empLogin()"></div>
-<div id="emp-l-err" class="err hide"></div>
+<div id="emp-l-err" style="display:none;color:#dc3545;background:rgba(220,53,69,.08);border:1px solid #dc3545;border-radius:6px;padding:8px 12px;font-size:12px;margin-top:8px"></div>
 <button class="btn btn-a" onclick="empLogin()" style="width:100%;margin-top:8px">🔑 เข้าสู่ระบบ</button>
 </div></div></div>
+</div>
 
 <!-- PAGE: EMPLOYEE PORTAL -->
-<div id="P-emp" class="wrap hide">
+<div id="P-emp" style="display:none">
+<div class="wrap">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:center;gap:12px"><img src="LOGO_THEMT.png" style="width:40px;height:40px;border-radius:8px"><div><div style="font-size:18px;font-weight:700;color:var(--pri)" id="emp-p-name"></div><div style="font-size:12px;color:var(--muted)" id="emp-p-sub"></div></div></div>
     <button class="btn btn-g btn-s" onclick="sessionStorage.removeItem('emp_data');page('emp-login')">🚪 ออกจากระบบ</button>
@@ -632,6 +635,7 @@
     <div class="cd-t"><span class="dot"></span> ประวัติเงินเดือน</div>
     <div id="emp-p-payroll"></div>
   </div>
+</div>
 </div>
 
 <div id="lbox" class="lbox hide" onclick="closeLB()"><button class="lbox-close" onclick="closeLB()">✕</button><img id="lbox-img" src=""></div>
@@ -3529,18 +3533,23 @@ function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinf
 
 /* ═══ EMPLOYEE PORTAL ═══ */
 function empLogin(){
-  var email=$('emp-l-email').value.trim().toLowerCase(),pass=$('emp-l-pass').value;
-  if(!email||email.indexOf('@')<0){$('emp-l-err').textContent='กรุณากรอกอีเมล';$('emp-l-err').classList.remove('hide');return}
-  if(pass!=='1234'){$('emp-l-err').textContent='รหัสผ่านไม่ถูกต้อง';$('emp-l-err').classList.remove('hide');return}
-  $('emp-l-err').classList.add('hide');
+  var email=document.getElementById('emp-l-email').value.trim().toLowerCase();
+  var pass=document.getElementById('emp-l-pass').value;
+  var errEl=document.getElementById('emp-l-err');
+  if(!email||email.indexOf('@')<0){errEl.textContent='กรุณากรอกอีเมล';errEl.style.display='block';return}
+  if(pass!=='1234'){errEl.textContent='รหัสผ่านไม่ถูกต้อง';errEl.style.display='block';return}
+  errEl.style.display='none';
   prog(20,'กำลังตรวจสอบ...');
   sb("applications","GET",null,"?email=eq."+encodeURIComponent(email)+"&select=*").then(function(r){
-    if(!Array.isArray(r)||!r.length){prog(-1);$('emp-l-err').textContent='ไม่พบอีเมลนี้ในระบบ — ติดต่อฝ่ายบุคคล';$('emp-l-err').classList.remove('hide');return}
+    if(!Array.isArray(r)||!r.length){prog(-1);errEl.textContent='ไม่พบอีเมลนี้ในระบบ — ติดต่อฝ่ายบุคคล';errEl.style.display='block';return}
     var emp=r[0];
     prog(100,'เข้าสู่ระบบ ✅ '+emp.name);
     sessionStorage.setItem('emp_data',JSON.stringify({id:emp.id,email:email}));
-    page('emp');
-  }).catch(function(e){prog(-1);$('emp-l-err').textContent='เชื่อมต่อไม่ได้: '+e;$('emp-l-err').classList.remove('hide')});
+    // Switch to portal
+    document.getElementById('P-emp-login').style.display='none';
+    document.getElementById('P-emp').style.display='block';
+    loadEmpPortal();
+  }).catch(function(e){prog(-1);errEl.textContent='เชื่อมต่อไม่ได้: '+e;errEl.style.display='block'});
 }
 
 function loadEmpPortal(){
@@ -3633,17 +3642,15 @@ if(MODE==='admin'){
   if(sessionStorage.getItem('mt_acc_logged')==='1'){page('acc')}
   else{page('acc-login')}
 }else if(MODE==='emp'){
-  // Hide all other pages first
-  ['P-form','P-success','P-login','P-admin','P-acc-login','P-acc'].forEach(function(x){
-    var el=$(x);if(el){el.style.display='none';el.classList.add('hide')}
-  });
+  // Hide form page
+  document.getElementById('P-form').style.display='none';
   if(sessionStorage.getItem('emp_data')){
-    $('P-emp-login').style.display='none';
-    $('P-emp').classList.remove('hide');$('P-emp').style.display='block';
+    document.getElementById('P-emp-login').style.display='none';
+    document.getElementById('P-emp').style.display='block';
     loadEmpPortal();
   }else{
-    $('P-emp').style.display='none';
-    $('P-emp-login').classList.remove('hide');$('P-emp-login').style.display='block';
+    document.getElementById('P-emp').style.display='none';
+    document.getElementById('P-emp-login').style.display='block';
   }
 }else{
   page('form');

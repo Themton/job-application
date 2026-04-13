@@ -128,6 +128,7 @@
   <div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><div><h1>ระบบข้อมูลพนักงาน</h1><small>บริษัทเดอะเอ็มที</small></div></div>
   <div id="nav-btns" style="display:flex;gap:5px;flex-wrap:wrap">
     <a href="." class="nbtn" style="text-decoration:none">📝 กรอกข้อมูลพนักงาน</a>
+    <a href="?emp" class="nbtn" style="text-decoration:none">🔑 พนักงานเข้าสู่ระบบ</a>
     <a href="?admin" class="nbtn" style="text-decoration:none">👤 สำหรับเจ้าหน้าที่</a>
     <a href="?acc" class="nbtn" style="text-decoration:none">📊 บัญชี</a>
   </div>
@@ -597,6 +598,42 @@
   </div>
 </div>
 
+<!-- PAGE: EMPLOYEE LOGIN -->
+<div id="P-emp-login" class="wrap hide"><div class="lw"><div class="lb">
+<div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>พนักงานเข้าสู่ระบบ</h2><p class="s">ดูข้อมูลส่วนตัว / ตรวจสอบวันลา</p>
+<div class="fld"><label>เบอร์โทร</label><input id="emp-l-phone" placeholder="08XXXXXXXX" maxlength="10" inputmode="tel"></div>
+<div class="fld"><label>ชื่อเล่น</label><input id="emp-l-nick" placeholder="ชื่อเล่น"></div>
+<div id="emp-l-err" class="err hide"></div>
+<button class="btn btn-a" onclick="empLogin()" style="width:100%;margin-top:8px">🔑 เข้าสู่ระบบ</button>
+</div></div></div>
+
+<!-- PAGE: EMPLOYEE PORTAL -->
+<div id="P-emp" class="wrap hide">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;align-items:center;gap:12px"><img src="LOGO_THEMT.png" style="width:40px;height:40px;border-radius:8px"><div><div style="font-size:18px;font-weight:700;color:var(--pri)" id="emp-p-name"></div><div style="font-size:12px;color:var(--muted)" id="emp-p-sub"></div></div></div>
+    <button class="btn btn-g btn-s" onclick="sessionStorage.removeItem('emp_data');page('emp-login')">🚪 ออกจากระบบ</button>
+  </div>
+
+  <!-- Info Card -->
+  <div class="cd" style="margin-bottom:16px">
+    <div class="cd-t"><span class="dot"></span> ข้อมูลส่วนตัว</div>
+    <div id="emp-p-info"></div>
+  </div>
+
+  <!-- Leave Balance -->
+  <div class="cd" style="margin-bottom:16px">
+    <div class="cd-t"><span class="dot"></span> วันลาคงเหลือ</div>
+    <div id="emp-p-leave-stats" class="sts" style="margin-bottom:12px"></div>
+    <div id="emp-p-leave-table"></div>
+  </div>
+
+  <!-- Payroll History -->
+  <div class="cd">
+    <div class="cd-t"><span class="dot"></span> ประวัติเงินเดือน</div>
+    <div id="emp-p-payroll"></div>
+  </div>
+</div>
+
 <div id="lbox" class="lbox hide" onclick="closeLB()"><button class="lbox-close" onclick="closeLB()">✕</button><img id="lbox-img" src=""></div>
 <div id="toast" class="toast hide"></div>
 <div id="g-prog" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999">
@@ -612,7 +649,7 @@ var SB="https://fnkohtdpwdwedjrtklre.supabase.co";
 var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZua29odGRwd2R3ZWRqcnRrbHJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTA3MjIsImV4cCI6MjA4ODkyNjcyMn0.AuotNxQWgKiSYpS7kLBMm3jOCFhJWsXy31yaqG6dwic";
 var DA="https://script.google.com/macros/s/AKfycbzVjRs-R4Fs_hBPK3sQhFvSsYTHZ-1pV-t5kjBac86AbDBMGzYi96HPzL-QOqigEWCw/exec";
 var EM="https://script.google.com/macros/s/AKfycbyDrEQweHxOpdKdZ3TA0niJ7YG02rqFFcyccECtS6LgcRkRZMZnt7Z1xwTfFTXat0GI/exec";
-var MODE=location.search.indexOf('admin')>-1?'admin':location.search.indexOf('acc')>-1?'acc':'public';
+var MODE=location.search.indexOf('admin')>-1?'admin':location.search.indexOf('acc')>-1?'acc':location.search.indexOf('emp')>-1?'emp':'public';
 
 /* ═══ Supabase ═══ */
 function sb(t,m,b,q){var u=SB+"/rest/v1/"+t+(q||"");var o={method:m||"GET",headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Prefer":"return=representation"}};if(b)o.body=JSON.stringify(b);return fetch(u,o).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(r.status+': '+t)});return r.json()})}
@@ -631,15 +668,15 @@ function pf(id){return $(id)}
 
 /* ═══ PAGE NAV ═══ */
 function page(p){
-  ['P-form','P-success','P-login','P-admin','P-acc-login','P-acc'].forEach(function(x){
+  ['P-form','P-success','P-login','P-admin','P-acc-login','P-acc','P-emp-login','P-emp'].forEach(function(x){
     $(x).classList.add('hide');$(x).style.display='none';
   });
   $('P-'+p).classList.remove('hide');$('P-'+p).style.display=p==='admin'?'block':'';
-  // Hide header in admin mode (sidebar replaces it)
   document.querySelector('.hdr').style.display=(p==='admin')?'none':'';
   if(p==='admin')loadAdmin();
   if(p==='acc')loadAcc();
   if(p==='form')loadPos();
+  if(p==='emp')loadEmpPortal();
   window.scrollTo(0,0);
 }
 
@@ -3489,6 +3526,105 @@ function prog(pct,txt){
 
 function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinfo'?'📤 ':'❌ ')+t;el.className='toast '+(c||'terr');el.classList.remove('hide');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.add('hide')},3500)}
 
+/* ═══ EMPLOYEE PORTAL ═══ */
+function empLogin(){
+  var ph=$('emp-l-phone').value.trim(),nick=$('emp-l-nick').value.trim().toLowerCase();
+  if(!ph||ph.length<10){$('emp-l-err').textContent='กรุณากรอกเบอร์โทร 10 หลัก';$('emp-l-err').classList.remove('hide');return}
+  if(!nick){$('emp-l-err').textContent='กรุณากรอกชื่อเล่น';$('emp-l-err').classList.remove('hide');return}
+  $('emp-l-err').classList.add('hide');
+  prog(20,'กำลังตรวจสอบ...');
+  sb("applications","GET",null,"?phone=eq."+encodeURIComponent(ph)+"&select=*").then(function(r){
+    if(!Array.isArray(r)||!r.length){prog(-1);$('emp-l-err').textContent='ไม่พบข้อมูล — ตรวจสอบเบอร์โทรและชื่อเล่น';$('emp-l-err').classList.remove('hide');return}
+    var emp=null;r.forEach(function(a){if((a.nickname||'').toLowerCase()===nick)emp=a});
+    if(!emp){prog(-1);$('emp-l-err').textContent='ชื่อเล่นไม่ตรง — ตรวจสอบอีกครั้ง';$('emp-l-err').classList.remove('hide');return}
+    prog(100,'เข้าสู่ระบบ ✅ '+emp.name);
+    sessionStorage.setItem('emp_data',JSON.stringify({id:emp.id,phone:ph,nick:nick}));
+    page('emp');
+  }).catch(function(e){prog(-1);$('emp-l-err').textContent='เชื่อมต่อไม่ได้: '+e;$('emp-l-err').classList.remove('hide')});
+}
+
+function loadEmpPortal(){
+  var raw=sessionStorage.getItem('emp_data');
+  if(!raw){page('emp-login');return}
+  var d;try{d=JSON.parse(raw)}catch(e){page('emp-login');return}
+  prog(10,'กำลังโหลดข้อมูล...');
+
+  Promise.all([
+    sb("applications","GET",null,"?id=eq."+encodeURIComponent(d.id)+"&select=*"),
+    sb("leaves","GET",null,"?emp_id=eq."+encodeURIComponent(d.id)+"&select=*&order=date.desc").catch(function(){return[]}),
+    sb("payroll","GET",null,"?emp_name=eq."+encodeURIComponent(d.id)+"&select=*&order=month.desc&limit=6").catch(function(){return[]})
+  ]).then(function(res){
+    var emps=Array.isArray(res[0])?res[0]:[];
+    if(!emps.length){prog(-1);toast('ไม่พบข้อมูล','terr');page('emp-login');return}
+    var a=emps[0];
+    var leaves=Array.isArray(res[1])?res[1]:[];
+
+    // Also try payroll by name
+    sb("payroll","GET",null,"?emp_name=eq."+encodeURIComponent(a.name)+"&select=*&order=month.desc&limit=6").catch(function(){return[]}).then(function(pay){
+      pay=Array.isArray(pay)?pay:[];
+      prog(100,'โหลดข้อมูล ✅');
+
+      // Header
+      $('emp-p-name').textContent=a.name+(a.nickname?' ('+a.nickname+')':'');
+      $('emp-p-sub').textContent=(a.position||'-')+(a.department?' • '+a.department:'');
+
+      // Info card
+      var stLabel=a.status==='daily'?'รายวัน':a.status==='monthly'?'ประจำ':a.status==='terminated'?'พ้นสภาพ':'ใหม่';
+      var info='<div class="g2" style="font-size:14px">';
+      info+='<div><span style="color:var(--muted)">ชื่อ:</span> <b>'+esc(a.name)+'</b></div>';
+      if(a.nickname)info+='<div><span style="color:var(--muted)">ชื่อเล่น:</span> '+esc(a.nickname)+'</div>';
+      info+='<div><span style="color:var(--muted)">โทร:</span> '+esc(a.phone||'-')+'</div>';
+      info+='<div><span style="color:var(--muted)">อีเมล:</span> '+esc(a.email||'-')+'</div>';
+      info+='<div><span style="color:var(--muted)">ตำแหน่ง:</span> '+esc(a.position||'-')+'</div>';
+      info+='<div><span style="color:var(--muted)">แผนก:</span> '+esc(a.department||'-')+'</div>';
+      info+='<div><span style="color:var(--muted)">ประเภท:</span> <b>'+stLabel+'</b></div>';
+      info+='<div><span style="color:var(--muted)">ธนาคาร:</span> '+esc(a.bank||'-')+' '+esc(a.bank_account||'')+'</div>';
+      info+='<div><span style="color:var(--muted)">วันที่เข้าทำงาน:</span> '+String(a.created_at||'').substring(0,10)+'</div>';
+      info+='</div>';
+      $('emp-p-info').innerHTML=info;
+
+      // Leave balance
+      var usedP=0,usedS=0,usedA=0;
+      leaves.forEach(function(l){
+        var days=l.days||1;
+        if(l.type==='personal')usedP+=days;
+        else if(l.type==='sick')usedS+=days;
+        else if(l.type==='absent')usedA+=days;
+      });
+      var leftP=Math.max(0,6-usedP),leftS=Math.max(0,30-usedS);
+      $('emp-p-leave-stats').innerHTML=[
+        {l:'ลากิจ',v:leftP+'/6',u:'วัน',c:leftP<=0?'var(--err)':leftP<=2?'#f59e0b':'var(--ok)',ic:'📋'},
+        {l:'ลาป่วย',v:leftS+'/30',u:'วัน',c:leftS<=0?'var(--err)':leftS<=5?'#f59e0b':'var(--ok)',ic:'🏥'},
+        {l:'ขาดงาน',v:usedA,u:'วัน',c:usedA>0?'var(--err)':'var(--muted)',ic:'✗'},
+        {l:'ลาใช้ไป',v:usedP+usedS,u:'วัน',c:'var(--muted)',ic:'📊'}
+      ].map(function(s){return'<div class="st"><div class="ic">'+s.ic+'</div><div class="l">'+s.l+'</div><div class="v" style="color:'+s.c+'">'+s.v+'</div><div class="u">'+s.u+'</div></div>'}).join('');
+
+      if(leaves.length){
+        var lh='<div class="tw"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>วัน</th><th>หมายเหตุ</th></tr></thead><tbody>';
+        var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',absent:'ขาดงาน'};
+        var lvColors={personal:'#007bff',sick:'#f59e0b',absent:'var(--err)'};
+        leaves.forEach(function(l){
+          lh+='<tr><td>'+esc(l.date)+'</td><td><span style="color:'+(lvColors[l.type]||'#888')+';font-weight:600">'+(lvLabels[l.type]||l.type)+'</span></td><td style="text-align:center">'+(l.days||1)+'</td><td style="font-size:12px;color:var(--muted)">'+esc(l.note||'-')+'</td></tr>';
+        });
+        $('emp-p-leave-table').innerHTML=lh+'</tbody></table></div>';
+      }else{
+        $('emp-p-leave-table').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติการลา</div>';
+      }
+
+      // Payroll history
+      if(pay.length){
+        var ph='<div class="tw"><table><thead><tr><th>เดือน</th><th style="text-align:right">เงินเดือน</th><th style="text-align:right">เบี้ยขยัน</th><th style="text-align:right">รวมหัก</th><th style="text-align:right;color:var(--ok)">สุทธิ</th></tr></thead><tbody>';
+        pay.forEach(function(p){
+          ph+='<tr><td>'+esc(p.month)+'</td><td style="text-align:right">'+payFmt(p.salary)+'</td><td style="text-align:right">'+payFmt(p.diligence)+'</td><td style="text-align:right;color:var(--err)">'+payFmt(p.total_ded)+'</td><td style="text-align:right;font-weight:700;color:var(--ok)">'+payFmt(p.net)+'</td></tr>';
+        });
+        $('emp-p-payroll').innerHTML=ph+'</tbody></table></div>';
+      }else{
+        $('emp-p-payroll').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติเงินเดือน</div>';
+      }
+    });
+  }).catch(function(e){prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
+}
+
 /* ═══ INIT ═══ */
 if(MODE==='admin'){
   if(sessionStorage.getItem('mt_logged')==='1'){page('admin')}
@@ -3496,6 +3632,9 @@ if(MODE==='admin'){
 }else if(MODE==='acc'){
   if(sessionStorage.getItem('mt_acc_logged')==='1'){page('acc')}
   else{page('acc-login')}
+}else if(MODE==='emp'){
+  if(sessionStorage.getItem('emp_data')){page('emp')}
+  else{page('emp-login')}
 }else{
   page('form');
 }

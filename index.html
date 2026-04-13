@@ -3542,12 +3542,15 @@ function empLogin(){
   if(pass!=='1234'){errEl.textContent='รหัสผ่านไม่ถูกต้อง';errEl.style.display='block';return}
   errEl.style.display='none';
   prog(20,'กำลังตรวจสอบ...');
-  sb("applications","GET",null,"?email=ilike."+encodeURIComponent(email)+"&select=*").then(function(r){
-    if(!Array.isArray(r)||!r.length){prog(-1);errEl.textContent='ไม่พบอีเมลนี้ในระบบ — ติดต่อฝ่ายบุคคล';errEl.style.display='block';return}
-    var emp=r[0];
+  sb("applications","GET",null,"?select=*&status=neq.terminated").then(function(r){
+    if(!Array.isArray(r)){prog(-1);errEl.textContent='เชื่อมต่อไม่ได้';errEl.style.display='block';return}
+    var emp=null;
+    r.forEach(function(a){
+      if(a.email&&a.email.trim().toLowerCase()===email.toLowerCase())emp=a;
+    });
+    if(!emp){prog(-1);errEl.textContent='ไม่พบอีเมลนี้ในระบบ — ติดต่อฝ่ายบุคคล';errEl.style.display='block';return}
     prog(100,'เข้าสู่ระบบ ✅ '+emp.name);
     sessionStorage.setItem('emp_data',JSON.stringify({id:emp.id,email:email}));
-    // Switch to portal
     document.getElementById('P-emp-login').style.display='none';
     document.getElementById('P-emp').style.display='block';
     loadEmpPortal();

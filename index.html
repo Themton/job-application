@@ -238,7 +238,7 @@
     <!-- Content area -->
     <div class="sb-content">
     <div id="T-app"><div class="sts" id="A-sts"></div>
-      <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร..." oninput="doFilter()"></div>
+      <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร..." oninput="debounce(doFilter,'sf')"></div>
         <select class="fsel" id="f-dept" onchange="doFilter()"><option value="">ทุกแผนก</option></select>
         <select class="fsel" id="f-pos" onchange="doFilter()"><option value="">ทุกตำแหน่ง</option></select>
         <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
@@ -331,7 +331,7 @@
           <button class="btn btn-g btn-s" onclick="rptDownloadAll('cred_link','วุฒิการศึกษา')">📄 โหลดวุฒิ</button>
           <button class="btn btn-g btn-s" onclick="rptDownloadAll('house_link','ทะเบียนบ้าน')">🏠 โหลดทะเบียนบ้าน</button>
           <button class="btn btn-g btn-s" onclick="rptDownloadAll('bank_link','Book Bank')">🏦 โหลด Book Bank</button>
-          <div class="sb" style="min-width:180px"><input id="rpt-srch" placeholder="ค้นหาชื่อ เบอร์โทร..." oninput="renderReport()"></div>
+          <div class="sb" style="min-width:180px"><input id="rpt-srch" placeholder="ค้นหาชื่อ เบอร์โทร..." oninput="debounce(renderReport,'rr')"></div>
           <select class="fsel" id="rpt-st" onchange="renderReport()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option></select>
           <button class="btn btn-g btn-s" onclick="loadReport()">🔄</button>
         </div>
@@ -362,7 +362,7 @@
           </div>
           <div id="paydb2-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
           <div id="paydb2-filters" class="hide" style="display:none;gap:4px;margin-bottom:10px;flex-wrap:wrap"></div>
-          <div style="margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="paydb2-srch" placeholder="ค้นหาชื่อ..." oninput="payDBRender()"></div></div>
+          <div style="margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="paydb2-srch" placeholder="ค้นหาชื่อ..." oninput="debounce(payDBRender,'pdr')"></div></div>
           <div id="paydb2-table"></div>
           <div id="paydb2-actions" class="hide" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
             <button class="btn btn-a" onclick="payDBCalcAll()">📊 คำนวณทั้งหมด</button>
@@ -406,7 +406,7 @@
         </div>
         <div class="sts" id="pay-stats"></div>
         <div class="tb">
-          <div class="sb"><input id="pay-srch" placeholder="ค้นหาชื่อ..." oninput="payRenderTable()"></div>
+          <div class="sb"><input id="pay-srch" placeholder="ค้นหาชื่อ..." oninput="debounce(payRenderTable,'prt')"></div>
           <div id="pay-filters" style="display:flex;gap:3px;flex-wrap:wrap"></div>
           <label class="chk"><input type="checkbox" id="pay-comp" onchange="payRenderTable()"> เทียบเดิม</label>
         </div>
@@ -431,7 +431,7 @@
         </div>
         <div id="comm-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
         <div id="comm-filters" class="hide" style="display:none;gap:4px;margin-bottom:10px;flex-wrap:wrap"></div>
-        <div style="margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="comm-srch" placeholder="ค้นหาชื่อ..." oninput="commRender()"></div></div>
+        <div style="margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="comm-srch" placeholder="ค้นหาชื่อ..." oninput="debounce(commRender,'cr')"></div></div>
         <div id="comm-table"></div>
         <div id="comm-actions" class="hide" style="display:none;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-a" onclick="commSave()">💾 บันทึกคอมมิชชั่น</button>
@@ -454,7 +454,7 @@
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
         <select class="fsel" id="paydb-month" onchange="loadPayDB()"><option value="">กำลังโหลด...</option></select>
-        <div class="sb" style="min-width:160px"><input id="paydb-srch" placeholder="ค้นหาชื่อ..." oninput="paydbRender()"></div>
+        <div class="sb" style="min-width:160px"><input id="paydb-srch" placeholder="ค้นหาชื่อ..." oninput="debounce(paydbRender,'pbr')"></div>
         <button class="btn btn-a btn-s" onclick="paydbExport()">📥 Export Excel</button>
         <button class="btn btn-a btn-s" onclick="paydbSendAll()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">📧 ส่งสลิปทั้งหมด</button>
         <button class="btn btn-d btn-s" onclick="paydbDelete()">🗑️ ลบ</button>
@@ -569,7 +569,7 @@
   </div>
   <div id="acc-stats" class="sts" style="margin-bottom:14px"></div>
   <div class="tb">
-    <div class="sb"><input id="acc-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร ตำแหน่ง..." oninput="accRender()"></div>
+    <div class="sb"><input id="acc-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร ตำแหน่ง..." oninput="debounce(accRender,'ar')"></div>
     <select class="fsel" id="acc-st" onchange="accRender()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
   </div>
   <div id="acc-cnt" class="rcnt"></div>
@@ -671,6 +671,7 @@ function emailSyncFromAll(){ALL.forEach(function(a){if(a.email)emailSet(a.name,a
 var ST={new:{l:"ใหม่",c:"b-new"},daily:{l:"พนักงานรายวัน",c:"b-daily"},monthly:{l:"พนักงานประจำ",c:"b-monthly"},terminated:{l:"พ้นสภาพ",c:"b-terminated"}};
 function $(id){return document.getElementById(id)}
 function pf(id){return $(id)}
+var _dbT={};function debounce(fn,key,ms){clearTimeout(_dbT[key]);_dbT[key]=setTimeout(fn,ms||200)}
 
 /* ═══ PAGE NAV ═══ */
 function page(p){
@@ -2671,8 +2672,8 @@ function commSendAll(){
     fetch(EM,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({action:'send_email',to:e.email,subject:'แจ้งค่าคอมมิชชั่น - บริษัท เดอะ เอ็มที จำกัด',htmlBody:commBuildSlipHTML(e)})
     }).then(function(r){return r.json()}).then(function(d){
-      e._sending=false;if(d&&d.ok){e._sent=true;ok++}else{fail++}commRender();idx++;setTimeout(next,1500);
-    }).catch(function(){e._sending=false;fail++;commRender();idx++;setTimeout(next,1500)});
+      e._sending=false;if(d&&d.ok){e._sent=true;ok++}else{fail++}commRender();idx++;setTimeout(next,800);
+    }).catch(function(){e._sending=false;fail++;commRender();idx++;setTimeout(next,800)});
   }
   next();
 }
@@ -3037,8 +3038,8 @@ function paydbSendAll(){
     fetch(EM,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({action:'send_email',to:r.email,subject:'สลิปเงินเดือน - บริษัท เดอะ เอ็มที จำกัด',htmlBody:html})
     }).then(function(res){return res.json()}).then(function(d){
-      r._sending=false;if(d&&d.ok){r._sent=true;ok++}else{fail++}paydbRender();idx++;setTimeout(next,1500);
-    }).catch(function(){r._sending=false;fail++;paydbRender();idx++;setTimeout(next,1500)});
+      r._sending=false;if(d&&d.ok){r._sent=true;ok++}else{fail++}paydbRender();idx++;setTimeout(next,800);
+    }).catch(function(){r._sending=false;fail++;paydbRender();idx++;setTimeout(next,800)});
   }
   next();
 }
@@ -3214,10 +3215,10 @@ function slipSendAll(){
     }).then(function(r){return r.json()}).then(function(data){
       if(data&&data.ok){SLIP_STATUS[ii]={s:'ok',m:'ส่งแล้ว ✅'};ok++}
       else{SLIP_STATUS[ii]={s:'error',m:data.error||'ไม่สำเร็จ'};fail++}
-      slipRender();idx++;setTimeout(next,1500);
+      slipRender();idx++;setTimeout(next,800);
     }).catch(function(){
       SLIP_STATUS[ii]={s:'error',m:'เชื่อมต่อไม่ได้'};fail++;
-      slipRender();idx++;setTimeout(next,1500);
+      slipRender();idx++;setTimeout(next,800);
     });
   }
   next();
@@ -3559,23 +3560,23 @@ function empLogin(){
 
 function loadEmpPortal(){
   var raw=sessionStorage.getItem('emp_data');
-  if(!raw){page('emp-login');return}
-  var d;try{d=JSON.parse(raw)}catch(e){page('emp-login');return}
+  if(!raw){document.getElementById('P-emp').style.display='none';document.getElementById('P-emp-login').style.display='block';return}
+  var d;try{d=JSON.parse(raw)}catch(e){document.getElementById('P-emp').style.display='none';document.getElementById('P-emp-login').style.display='block';return}
   prog(10,'กำลังโหลดข้อมูล...');
 
-  Promise.all([
-    sb("applications","GET",null,"?id=eq."+encodeURIComponent(d.id)+"&select=*"),
-    sb("leaves","GET",null,"?emp_id=eq."+encodeURIComponent(d.id)+"&select=*&order=date.desc").catch(function(){return[]}),
-    sb("payroll","GET",null,"?emp_name=eq."+encodeURIComponent(d.id)+"&select=*&order=month.desc&limit=6").catch(function(){return[]})
-  ]).then(function(res){
-    var emps=Array.isArray(res[0])?res[0]:[];
-    if(!emps.length){prog(-1);toast('ไม่พบข้อมูล','terr');page('emp-login');return}
+  sb("applications","GET",null,"?id=eq."+encodeURIComponent(d.id)+"&select=*").then(function(res){
+    var emps=Array.isArray(res)?res:[];
+    if(!emps.length){prog(-1);toast('ไม่พบข้อมูล','terr');return}
     var a=emps[0];
-    var leaves=Array.isArray(res[1])?res[1]:[];
+    prog(40,'ดึงข้อมูลลา+เงินเดือน...');
 
-    // Also try payroll by name
-    sb("payroll","GET",null,"?emp_name=eq."+encodeURIComponent(a.name)+"&select=*&order=month.desc&limit=6").catch(function(){return[]}).then(function(pay){
-      pay=Array.isArray(pay)?pay:[];
+    // Fetch leaves + payroll in parallel
+    Promise.all([
+      sb("leaves","GET",null,"?emp_id=eq."+encodeURIComponent(d.id)+"&select=*&order=date.desc").catch(function(){return[]}),
+      sb("payroll","GET",null,"?emp_name=eq."+encodeURIComponent(a.name)+"&select=*&order=month.desc&limit=6").catch(function(){return[]})
+    ]).then(function(r2){
+      var leaves=Array.isArray(r2[0])?r2[0]:[];
+      var pay=Array.isArray(r2[1])?r2[1]:[];
       prog(100,'โหลดข้อมูล ✅');
 
       // Header
@@ -3599,12 +3600,7 @@ function loadEmpPortal(){
 
       // Leave balance
       var usedP=0,usedS=0,usedA=0;
-      leaves.forEach(function(l){
-        var days=l.days||1;
-        if(l.type==='personal')usedP+=days;
-        else if(l.type==='sick')usedS+=days;
-        else if(l.type==='absent')usedA+=days;
-      });
+      leaves.forEach(function(l){var days=l.days||1;if(l.type==='personal')usedP+=days;else if(l.type==='sick')usedS+=days;else if(l.type==='absent')usedA+=days});
       var leftP=Math.max(0,6-usedP),leftS=Math.max(0,30-usedS);
       $('emp-p-leave-stats').innerHTML=[
         {l:'ลากิจ',v:leftP+'/6',u:'วัน',c:leftP<=0?'var(--err)':leftP<=2?'#f59e0b':'var(--ok)',ic:'📋'},
@@ -3617,24 +3613,16 @@ function loadEmpPortal(){
         var lh='<div class="tw"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>วัน</th><th>หมายเหตุ</th></tr></thead><tbody>';
         var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',absent:'ขาดงาน'};
         var lvColors={personal:'#007bff',sick:'#f59e0b',absent:'var(--err)'};
-        leaves.forEach(function(l){
-          lh+='<tr><td>'+esc(l.date)+'</td><td><span style="color:'+(lvColors[l.type]||'#888')+';font-weight:600">'+(lvLabels[l.type]||l.type)+'</span></td><td style="text-align:center">'+(l.days||1)+'</td><td style="font-size:12px;color:var(--muted)">'+esc(l.note||'-')+'</td></tr>';
-        });
+        leaves.forEach(function(l){lh+='<tr><td>'+esc(l.date)+'</td><td><span style="color:'+(lvColors[l.type]||'#888')+';font-weight:600">'+(lvLabels[l.type]||l.type)+'</span></td><td style="text-align:center">'+(l.days||1)+'</td><td style="font-size:12px;color:var(--muted)">'+esc(l.note||'-')+'</td></tr>'});
         $('emp-p-leave-table').innerHTML=lh+'</tbody></table></div>';
-      }else{
-        $('emp-p-leave-table').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติการลา</div>';
-      }
+      }else{$('emp-p-leave-table').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติการลา</div>'}
 
       // Payroll history
       if(pay.length){
-        var ph='<div class="tw"><table><thead><tr><th>เดือน</th><th style="text-align:right">เงินเดือน</th><th style="text-align:right">เบี้ยขยัน</th><th style="text-align:right">รวมหัก</th><th style="text-align:right;color:var(--ok)">สุทธิ</th></tr></thead><tbody>';
-        pay.forEach(function(p){
-          ph+='<tr><td>'+esc(p.month)+'</td><td style="text-align:right">'+payFmt(p.salary)+'</td><td style="text-align:right">'+payFmt(p.diligence)+'</td><td style="text-align:right;color:var(--err)">'+payFmt(p.total_ded)+'</td><td style="text-align:right;font-weight:700;color:var(--ok)">'+payFmt(p.net)+'</td></tr>';
-        });
-        $('emp-p-payroll').innerHTML=ph+'</tbody></table></div>';
-      }else{
-        $('emp-p-payroll').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติเงินเดือน</div>';
-      }
+        var ph2='<div class="tw"><table><thead><tr><th>เดือน</th><th style="text-align:right">เงินเดือน</th><th style="text-align:right">เบี้ยขยัน</th><th style="text-align:right">รวมหัก</th><th style="text-align:right;color:var(--ok)">สุทธิ</th></tr></thead><tbody>';
+        pay.forEach(function(p){ph2+='<tr><td>'+esc(p.month)+'</td><td style="text-align:right">'+payFmt(p.salary)+'</td><td style="text-align:right">'+payFmt(p.diligence)+'</td><td style="text-align:right;color:var(--err)">'+payFmt(p.total_ded)+'</td><td style="text-align:right;font-weight:700;color:var(--ok)">'+payFmt(p.net)+'</td></tr>'});
+        $('emp-p-payroll').innerHTML=ph2+'</tbody></table></div>';
+      }else{$('emp-p-payroll').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติเงินเดือน</div>'}
     });
   }).catch(function(e){prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
 }

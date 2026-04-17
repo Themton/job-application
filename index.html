@@ -216,6 +216,7 @@
         <button class="sb-item" id="tab-pos" onclick="showTab('pos')"><span class="sb-ic">💼</span><span class="sb-tx">ตำแหน่ง</span></button>
         <button class="sb-item" id="tab-usr" onclick="showTab('usr')"><span class="sb-ic">👤</span><span class="sb-tx">ผู้ใช้ / สิทธิ์</span></button>
         <button class="sb-item" id="tab-rpt" onclick="showTab('rpt')"><span class="sb-ic">📊</span><span class="sb-tx">รายงาน / ตรวจสอบ</span></button>
+        <button class="sb-item" id="tab-lv" onclick="showTab('lv')"><span class="sb-ic">🗓️</span><span class="sb-tx">อนุมัติการลา <span id="lv-pending-dot" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;margin-left:4px"></span></span></button>
         <button class="sb-item" onclick="viewAuditLog()"><span class="sb-ic">🔐</span><span class="sb-tx">Audit Log</span></button>
         <div class="sb-sep">เงินเดือน</div>
         <button class="sb-item" id="tab-pay" onclick="showTab('pay')"><span class="sb-ic">💰</span><span class="sb-tx">คิดเงินเดือน</span></button>
@@ -340,6 +341,24 @@
       <div id="rpt-summary" style="margin-bottom:14px"></div>
       <div id="rpt-loading" style="text-align:center;padding:30px;color:var(--muted)">กำลังโหลดข้อมูล...</div>
       <div id="rpt-table"></div>
+    </div>
+
+    <!-- TAB: Leave Approval -->
+    <div id="T-lv" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span class="ttl" style="font-size:18px">🗓️ อนุมัติการลา</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="lv-filter-status" onchange="loadLeaveRequests()" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;background:var(--inp);font-family:inherit">
+            <option value="pending">รออนุมัติ</option>
+            <option value="approved">อนุมัติแล้ว</option>
+            <option value="rejected">ปฏิเสธ</option>
+            <option value="cancelled">ยกเลิก</option>
+            <option value="">ทั้งหมด</option>
+          </select>
+          <button class="btn btn-g btn-s" onclick="loadLeaveRequests()">🔄</button>
+        </div>
+      </div>
+      <div id="lv-admin-list"><div style="text-align:center;padding:30px;color:var(--muted)">กำลังโหลด...</div></div>
     </div>
 
     <!-- TAB: Payroll -->
@@ -633,6 +652,45 @@
     <div id="emp-p-leave-table"></div>
   </div>
 
+  <!-- Submit Leave Request -->
+  <div class="cd" style="margin-bottom:16px">
+    <div class="cd-t" style="display:flex;justify-content:space-between;align-items:center">
+      <span><span class="dot"></span> ยื่นใบลา</span>
+      <span id="emp-notif-badge" style="display:none;background:var(--err);color:#fff;border-radius:12px;font-size:11px;padding:2px 8px">0</span>
+    </div>
+    <div id="emp-notif-area" style="margin-bottom:10px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fld"><label>ประเภทการลา</label>
+        <select id="lr-type">
+          <option value="personal">ลากิจ</option>
+          <option value="sick">ลาป่วย</option>
+          <option value="vacation">ลาพักร้อน</option>
+          <option value="other">อื่น ๆ</option>
+        </select>
+      </div>
+      <div class="fld"><label>ครึ่งวัน?</label>
+        <select id="lr-half" onchange="lrCalcDays()">
+          <option value="false">เต็มวัน</option>
+          <option value="true">ครึ่งวัน</option>
+        </select>
+      </div>
+      <div class="fld"><label>วันเริ่มลา <span class="rq">*</span></label><input type="date" id="lr-start" onchange="lrCalcDays()"></div>
+      <div class="fld"><label>วันสิ้นสุด <span class="rq">*</span></label><input type="date" id="lr-end" onchange="lrCalcDays()"></div>
+      <div class="fld" style="grid-column:1/-1"><label>เหตุผล <span class="rq">*</span></label><textarea id="lr-reason" rows="2" style="resize:vertical" placeholder="ระบุเหตุผลการลา"></textarea></div>
+      <div class="fld" style="grid-column:1/-1"><label>ลิงก์หลักฐาน (ถ้ามี เช่น ใบรับรองแพทย์)</label><input id="lr-evidence" placeholder="https://..."></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:10px;background:var(--inp);border-radius:8px">
+      <div style="font-size:13px;color:var(--txt2)">จำนวน: <strong id="lr-days-display" style="color:var(--acc);font-size:16px">-</strong></div>
+      <button class="btn btn-a" onclick="submitLeaveRequest()">📝 ส่งคำขอลา</button>
+    </div>
+  </div>
+
+  <!-- My Leave Requests -->
+  <div class="cd" style="margin-bottom:16px">
+    <div class="cd-t"><span class="dot"></span> ประวัติการลา</div>
+    <div id="emp-lr-list"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">กำลังโหลด...</div></div>
+  </div>
+
   <!-- Payroll History -->
   <div class="cd">
     <div class="cd-t"><span class="dot"></span> ประวัติเงินเดือน</div>
@@ -717,11 +775,13 @@ function forceLogout(){
 function adminLogout(){
   var t=TOK();if(t){sbRpc('auth_logout',{p_token:t}).catch(function(){});}
   if(_secPoll)clearInterval(_secPoll);
+  if(window._admPendingPoll)clearInterval(window._admPendingPoll);
   clearTOK();location.reload();
 }
 function empLogout(){
   var t=TOK();if(t){sbRpc('auth_logout',{p_token:t}).catch(function(){});}
   if(_secPoll)clearInterval(_secPoll);
+  if(window._notifPoll)clearInterval(window._notifPoll);
   clearTOK();page('emp-login');
 }
 
@@ -753,11 +813,12 @@ function page(p){
   window.scrollTo(0,0);
 }
 
-var TAB_LABELS={app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',paydb:'🗂️ รายงานรวม + ส่งสลิป',cert:'📜 หนังสือรับรอง'};
+var TAB_LABELS={app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',paydb:'🗂️ รายงานรวม + ส่งสลิป',cert:'📜 หนังสือรับรอง'};
 
 function showTab(t){
-  ['app','dept','pos','usr','rpt','pay','comm','paydb','cert'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
+  ['app','dept','pos','usr','rpt','lv','pay','comm','paydb','cert'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
+  if(t==='lv')loadLeaveRequests();
   if(t==='pay'&&!$('paydb2-month').value){var now=new Date();$('paydb2-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='comm'&&!$('comm-month').value){var now=new Date();$('comm-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='cert')certInit();
@@ -887,7 +948,20 @@ function loadAdmin(){
     DEPT=Array.isArray(r[3])?r[3]:[];
     $('A-ld').classList.add('hide');$('A-main').classList.remove('hide');emailSyncFromAll();stats();doFilter();renderPos();renderUsr();renderDept();
     prog(100,'โหลดเสร็จ ✅ '+ALL.length+' คน');
+    updateLeavePendingBadge();
+    if(window._admPendingPoll)clearInterval(window._admPendingPoll);
+    window._admPendingPoll=setInterval(updateLeavePendingBadge,30000);
   }).catch(function(e){$('A-ld').classList.add('hide');$('A-main').classList.remove('hide');prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
+}
+
+/* Update pending-leave badge (admin) */
+function updateLeavePendingBadge(){
+  sbRpc('leave_list',{p_token:TOK(),p_status:'pending',p_limit:200}).then(function(r){
+    var n=(r&&r.ok&&Array.isArray(r.rows))?r.rows.length:0;
+    var dot=$('lv-pending-dot');if(!dot)return;
+    if(n>0){dot.textContent=n;dot.style.display='inline-block'}
+    else{dot.style.display='none'}
+  }).catch(function(){});
 }
 
 /* ═══ STATS ═══ */
@@ -1325,7 +1399,225 @@ function viewAuditLog(){
     var d=document.createElement('div');d.innerHTML=h;document.body.appendChild(d.firstChild);
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
-function setF(id,f,v){var u={};u[f]=v;sb("applications","PATCH",u,"?id=eq."+id).then(function(){toast('บันทึกแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a[f]=v});doFilter()}).catch(function(e){toast('Error: '+e,'terr')})}
+
+/* ═══ LEAVE REQUEST SYSTEM ═══ */
+var LR_TYPE_LABEL={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน',other:'อื่นๆ'};
+var LR_TYPE_COLOR={personal:'#3b82f6',sick:'#f59e0b',vacation:'#10b981',other:'#6b7280'};
+var LR_STATUS_LABEL={pending:'⏳ รออนุมัติ',approved:'✅ อนุมัติ',rejected:'❌ ปฏิเสธ',cancelled:'🚫 ยกเลิก'};
+var LR_STATUS_COLOR={pending:'#f59e0b',approved:'var(--ok)',rejected:'var(--err)',cancelled:'#6b7280'};
+
+/* === ADMIN: list + approve/reject === */
+function loadLeaveRequests(){
+  var st=$('lv-filter-status').value;
+  $('lv-admin-list').innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">กำลังโหลด...</div>';
+  sbRpc('leave_list',{p_token:TOK(),p_status:st||null,p_limit:200}).then(function(r){
+    if(!r||!r.ok){$('lv-admin-list').innerHTML='<div class="emp"><div class="ei">⚠️</div><p>โหลดไม่สำเร็จ</p></div>';return}
+    renderLeaveRequestsAdmin(r.rows||[]);
+    // อัปเดต badge
+    sbRpc('leave_list',{p_token:TOK(),p_status:'pending',p_limit:1}).then(function(r2){
+      var n=(r2&&r2.rows)?r2.rows.length:0;
+      var dot=$('lv-pending-dot');
+      if(n>0){dot.textContent=n;dot.style.display='inline-block'}
+      else{dot.style.display='none'}
+    }).catch(function(){});
+  }).catch(function(e){
+    $('lv-admin-list').innerHTML='<div class="emp"><div class="ei">⚠️</div><p>Error: '+esc(String(e))+'</p></div>';
+  });
+}
+
+function renderLeaveRequestsAdmin(rows){
+  if(!rows.length){
+    $('lv-admin-list').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่มีข้อมูล</p></div>';
+    return;
+  }
+  var h='<div class="tw"><table><thead><tr><th>วันที่ส่ง</th><th>พนักงาน</th><th>ประเภท</th><th>ช่วงลา</th><th>จำนวน</th><th>เหตุผล</th><th>สถานะ</th><th style="text-align:right">จัดการ</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var color=LR_TYPE_COLOR[r.leave_type]||'#6b7280';
+    var status=LR_STATUS_LABEL[r.status]||r.status;
+    var sColor=LR_STATUS_COLOR[r.status]||'#6b7280';
+    var submitted=String(r.submitted_at||'').substring(0,16).replace('T',' ');
+    var range=r.start_date===r.end_date?esc(r.start_date):esc(r.start_date)+' → '+esc(r.end_date);
+    var evidence=r.evidence_link?' 📎':'';
+
+    h+='<tr>'
+      +'<td style="font-size:11px;color:var(--muted);white-space:nowrap">'+esc(submitted)+'</td>'
+      +'<td class="nm">'+esc(r.emp_name)+'</td>'
+      +'<td><span class="bg" style="background:'+color+'22;color:'+color+';font-weight:600">'+esc(LR_TYPE_LABEL[r.leave_type]||r.leave_type)+'</span></td>'
+      +'<td style="font-size:12px;white-space:nowrap">'+range+(r.half_day?' <span style="color:#f59e0b">½</span>':'')+'</td>'
+      +'<td style="font-weight:700">'+r.days+'</td>'
+      +'<td style="max-width:260px;font-size:12px">'+esc(r.reason||'')+evidence+'</td>'
+      +'<td><span style="color:'+sColor+';font-weight:600;font-size:12px;white-space:nowrap">'+status+'</span>'
+      +(r.review_note?'<div style="font-size:10px;color:var(--muted);margin-top:2px">หมายเหตุ: '+esc(r.review_note)+'</div>':'')
+      +(r.reviewed_by_name?'<div style="font-size:10px;color:var(--muted)">โดย '+esc(r.reviewed_by_name)+'</div>':'')
+      +'</td>'
+      +'<td style="text-align:right;white-space:nowrap">';
+
+    if(r.status==='pending'){
+      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">✅ อนุมัติ</button> '
+        +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">❌ ปฏิเสธ</button>';
+    }else if(r.evidence_link){
+      h+='<a href="'+esc(r.evidence_link)+'" target="_blank" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 หลักฐาน</a>';
+    }else{
+      h+='<span style="color:var(--muted);font-size:11px">-</span>';
+    }
+    h+='</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  $('lv-admin-list').innerHTML=h;
+}
+
+function approveLeaveReq(id){
+  var note=prompt('หมายเหตุ (ไม่บังคับ):','');
+  if(note===null)return; // user cancelled
+  sbRpc('leave_approve',{p_token:TOK(),p_id:id,p_note:note||null}).then(function(r){
+    if(!r||!r.ok){
+      var msg=r&&r.message?r.message:(r&&r.error==='already_reviewed'?'ใบลานี้ถูกตรวจแล้ว':'อนุมัติไม่สำเร็จ');
+      toast(msg,'terr');return;
+    }
+    toast('✅ อนุมัติแล้ว','tok');
+    loadLeaveRequests();
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function rejectLeaveReq(id){
+  var note=prompt('เหตุผลที่ปฏิเสธ:','');
+  if(note===null)return;
+  if(!note||!note.trim()){toast('กรุณาระบุเหตุผล','terr');return}
+  sbRpc('leave_reject',{p_token:TOK(),p_id:id,p_note:note}).then(function(r){
+    if(!r||!r.ok){toast(r&&r.message?r.message:'ปฏิเสธไม่สำเร็จ','terr');return}
+    toast('ปฏิเสธแล้ว','tok');
+    loadLeaveRequests();
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+/* === EMP: submit leave + view own === */
+function lrCalcDays(){
+  var s=$('lr-start').value,e=$('lr-end').value,half=$('lr-half').value==='true';
+  if(!s||!e){$('lr-days-display').textContent='-';return}
+  var sd=new Date(s+'T00:00:00'),ed=new Date(e+'T00:00:00');
+  if(ed<sd){$('lr-days-display').textContent='⚠️ วันสิ้นสุดก่อนวันเริ่ม';$('lr-days-display').style.color='var(--err)';return}
+  var diff=Math.floor((ed-sd)/86400000)+1;
+  var days=half?(diff===1?0.5:diff-0.5):diff;
+  $('lr-days-display').textContent=days+' วัน';
+  $('lr-days-display').style.color='var(--acc)';
+  return days;
+}
+
+function submitLeaveRequest(){
+  var type=$('lr-type').value,start=$('lr-start').value,end=$('lr-end').value;
+  var half=$('lr-half').value==='true';
+  var reason=$('lr-reason').value.trim(),evidence=$('lr-evidence').value.trim();
+  if(!start||!end){toast('กรุณาเลือกวันที่','terr');return}
+  if(end<start){toast('วันสิ้นสุดต้องไม่ก่อนวันเริ่ม','terr');return}
+  if(!reason||reason.length<3){toast('กรุณาระบุเหตุผล (อย่างน้อย 3 ตัวอักษร)','terr');return}
+  var days=lrCalcDays();
+  if(!days||days<=0){toast('จำนวนวันไม่ถูกต้อง','terr');return}
+
+  sbRpc('leave_submit',{
+    p_token:TOK(),
+    p_leave_type:type,
+    p_start_date:start,
+    p_end_date:end,
+    p_days:days,
+    p_half_day:half,
+    p_reason:reason,
+    p_evidence_link:evidence||null
+  }).then(function(r){
+    if(!r||!r.ok){
+      var m=r&&r.message?r.message:
+        (r&&r.error==='overlapping'?'มีใบลาที่กำลังรออนุมัติในช่วงเวลานี้อยู่แล้ว':
+         r&&r.error==='reason_required'?'กรุณาระบุเหตุผล':'ส่งไม่สำเร็จ');
+      toast(m,'terr');return;
+    }
+    toast('📝 ส่งคำขอลาแล้ว','tok');
+    $('lr-reason').value='';$('lr-evidence').value='';
+    $('lr-start').value='';$('lr-end').value='';
+    $('lr-days-display').textContent='-';
+    loadMyLeaveRequests();
+    loadEmpNotifs();
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function loadMyLeaveRequests(){
+  sbRpc('leave_list',{p_token:TOK(),p_limit:50}).then(function(r){
+    if(!r||!r.ok){$('emp-lr-list').innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">โหลดไม่สำเร็จ</div>';return}
+    renderMyLeaveRequests(r.rows||[]);
+  }).catch(function(){});
+}
+
+function renderMyLeaveRequests(rows){
+  if(!rows.length){
+    $('emp-lr-list').innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">ยังไม่มีประวัติการลา</div>';
+    return;
+  }
+  var h='<div class="tw"><table><thead><tr><th>วันที่ส่ง</th><th>ประเภท</th><th>ช่วง</th><th>วัน</th><th>สถานะ</th><th></th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var color=LR_TYPE_COLOR[r.leave_type]||'#6b7280';
+    var status=LR_STATUS_LABEL[r.status]||r.status;
+    var sColor=LR_STATUS_COLOR[r.status]||'#6b7280';
+    var submitted=String(r.submitted_at||'').substring(0,10);
+    var range=r.start_date===r.end_date?esc(r.start_date):esc(r.start_date)+' → '+esc(r.end_date);
+    h+='<tr>'
+      +'<td style="font-size:11px;color:var(--muted)">'+esc(submitted)+'</td>'
+      +'<td><span class="bg" style="background:'+color+'22;color:'+color+';font-weight:600;font-size:11px">'+esc(LR_TYPE_LABEL[r.leave_type]||r.leave_type)+'</span></td>'
+      +'<td style="font-size:11px">'+range+'</td>'
+      +'<td style="font-weight:700">'+r.days+'</td>'
+      +'<td><span style="color:'+sColor+';font-weight:600;font-size:11px">'+status+'</span>'
+      +(r.review_note?'<div style="font-size:10px;color:var(--muted);margin-top:2px">'+esc(r.review_note)+'</div>':'')
+      +'</td>'
+      +'<td style="text-align:right">'
+      +(r.status==='pending'?'<button class="btn btn-d btn-s" style="padding:3px 8px;font-size:10px" onclick="cancelLeaveReq(\''+r.id+'\')">ยกเลิก</button>':'')
+      +'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  $('emp-lr-list').innerHTML=h;
+}
+
+function cancelLeaveReq(id){
+  if(!confirm('ยกเลิกคำขอลานี้?'))return;
+  sbRpc('leave_cancel',{p_token:TOK(),p_id:id}).then(function(r){
+    if(!r||!r.ok){toast(r&&r.message?r.message:'ยกเลิกไม่สำเร็จ','terr');return}
+    toast('ยกเลิกแล้ว','tok');
+    loadMyLeaveRequests();
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+/* === NOTIFICATIONS (emp + admin) === */
+function loadEmpNotifs(){
+  sbRpc('notif_list',{p_token:TOK(),p_unread_only:false,p_limit:20}).then(function(r){
+    if(!r||!r.ok)return;
+    var rows=r.rows||[];
+    var unread=r.unread_count||0;
+    var badge=$('emp-notif-badge');
+    if(badge){
+      if(unread>0){badge.textContent=unread;badge.style.display='inline-block'}
+      else{badge.style.display='none'}
+    }
+    var area=$('emp-notif-area');
+    if(!area)return;
+    if(!rows.length){area.innerHTML='';return}
+    var h='';
+    rows.slice(0,3).forEach(function(n){
+      var isUnread=!n.read_at;
+      var icon=n.type==='leave_approved'?'✅':n.type==='leave_rejected'?'❌':'🔔';
+      h+='<div style="background:'+(isUnread?'linear-gradient(135deg,#fef3c7,#fde68a)':'var(--inp)')+';border:1px solid '+(isUnread?'#fbbf24':'var(--bdr)')+';border-radius:8px;padding:8px 12px;margin-bottom:6px;display:flex;gap:10px;align-items:flex-start;cursor:pointer" onclick="markNotifRead(\''+n.id+'\')">'
+        +'<span style="font-size:18px">'+icon+'</span>'
+        +'<div style="flex:1"><div style="font-weight:600;font-size:13px;color:var(--pri)">'+esc(n.title)+'</div>'
+        +(n.body?'<div style="font-size:11px;color:var(--txt2);white-space:pre-line;margin-top:2px">'+esc(n.body)+'</div>':'')
+        +'</div>'+(isUnread?'<span style="background:var(--err);color:#fff;border-radius:10px;font-size:9px;padding:2px 6px">ใหม่</span>':'')+'</div>';
+    });
+    if(rows.length>3){
+      h+='<div style="text-align:center;font-size:11px;color:var(--muted);margin-top:4px">+ '+(rows.length-3)+' รายการเก่ากว่า</div>';
+    }
+    area.innerHTML=h;
+  }).catch(function(){});
+}
+
+function markNotifRead(id){
+  sbRpc('notif_mark_read',{p_token:TOK(),p_id:id}).then(function(){loadEmpNotifs()}).catch(function(){});
+}
+
+
 function chgSt(id,st){sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){toast('อัปเดตแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a.status=st});stats();doFilter();syncSheet({id:id,status:st})}).catch(function(e){toast('Error: '+e,'terr')})}
 function terminate(id){if(!confirm('ยืนยันพ้นสภาพพนักงาน?'))return;var now=new Date().toISOString();sb("applications","PATCH",{status:"terminated",terminated_at:now},"?id=eq."+id).then(function(){toast('พ้นสภาพแล้ว','tok');ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_at=now}});stats();doFilter();detail(id)}).catch(function(e){toast('Error: '+e,'terr')})}
 function quickTerminate(id,name){if(!confirm('⛔ ยืนยันให้ "'+name+'" ลาออก/พ้นสภาพ?\n\nพนักงานนี้จะถูกตัดออกจากไฟล์ Payroll'))return;var now=new Date().toISOString();sb("applications","PATCH",{status:"terminated",terminated_at:now},"?id=eq."+id).then(function(){toast('⛔ '+name+' พ้นสภาพแล้ว','tok');ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_at=now}});stats();doFilter()}).catch(function(e){toast('Error: '+e,'terr')})}
@@ -3811,6 +4103,18 @@ function loadEmpPortal(){
         pay.forEach(function(p){ph2+='<tr><td>'+esc(p.month)+'</td><td style="text-align:right">'+payFmt(p.salary)+'</td><td style="text-align:right">'+payFmt(p.diligence)+'</td><td style="text-align:right;color:var(--err)">'+payFmt(p.total_ded)+'</td><td style="text-align:right;font-weight:700;color:var(--ok)">'+payFmt(p.net)+'</td></tr>'});
         $('emp-p-payroll').innerHTML=ph2+'</tbody></table></div>';
       }else{$('emp-p-payroll').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติเงินเดือน</div>'}
+
+      // Load leave requests + notifications + set default start date
+      loadMyLeaveRequests();
+      loadEmpNotifs();
+      var today=new Date().toISOString().substring(0,10);
+      if($('lr-start')&&!$('lr-start').value)$('lr-start').value=today;
+      if($('lr-end')&&!$('lr-end').value)$('lr-end').value=today;
+      lrCalcDays();
+
+      // Auto-poll notifications every 30 seconds
+      if(window._notifPoll)clearInterval(window._notifPoll);
+      window._notifPoll=setInterval(loadEmpNotifs,30000);
     });
   }).catch(function(e){prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
 }

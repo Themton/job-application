@@ -3073,20 +3073,35 @@ function payDBLateDetect(inp){
           if(emp)return;
           var n1=e.name.replace(/\s+/g,''),n2=r.name.replace(/\s+/g,'');
           if(n1===n2){emp=e;return}
-          // Split original names (before removing spaces) for partial matching
           var parts1=e.name.split(/\s+/).filter(function(p){return p.length>1});
           var parts2=r.name.split(/\s+/).filter(function(p){return p.length>1});
-          // Check how many parts of attendance name exist in DB name
           var mc=0;parts2.forEach(function(p){if(e.name.indexOf(p)>=0)mc++});
           if(mc>=2)emp=e;
           else{
-            // Also try reverse: DB name parts in attendance name
             var mc2=0;parts1.forEach(function(p){if(r.name.indexOf(p)>=0)mc2++});
             if(mc2>=2)emp=e;
-            // Try nickname match
             else if(e.nickname&&r.name.indexOf(e.nickname)>=0&&mc>=1)emp=e;
           }
         });
+        // Check if terminated (search in ALL which includes terminated)
+        var termEmp=null;
+        if(!emp){
+          ALL.forEach(function(a){
+            if(termEmp)return;
+            if(a.status!=='terminated')return;
+            var parts2=r.name.split(/\s+/).filter(function(p){return p.length>1});
+            var mc=0;parts2.forEach(function(p){if(a.name.indexOf(p)>=0)mc++});
+            if(mc>=2)termEmp=a;
+            else{
+              var parts1=a.name.split(/\s+/).filter(function(p){return p.length>1});
+              var mc2=0;parts1.forEach(function(p){if(r.name.indexOf(p)>=0)mc2++});
+              if(mc2>=2)termEmp=a;
+              else if(a.nickname&&r.name.indexOf(a.nickname)>=0&&mc>=1)termEmp=a;
+            }
+          });
+        }
+        r.isTerminated=!!termEmp;
+        r.termName=termEmp?termEmp.name:'';
         var halfDayAmt=emp&&emp.salary>0?Math.round(emp.salary/26/2):200;
         r.halfDayAmt=halfDayAmt;
         r.halfDayTotal=r.halfDayCount*halfDayAmt;
@@ -3095,13 +3110,15 @@ function payDBLateDetect(inp){
       });
 
       // Render result
-      var h='<div style="font-size:12px;margin-bottom:6px;color:#92400e">พบพนักงานมาสาย <b>'+results.length+'</b> คน</div>';
+      var termCount=results.filter(function(r){return r.isTerminated}).length;
+      var h='<div style="font-size:12px;margin-bottom:6px;color:#92400e">พบพนักงานมาสาย <b>'+results.length+'</b> คน'+(termCount?' <span style="color:var(--err);font-weight:700">⛔ พ้นสภาพ '+termCount+' คน</span>':'')+'</div>';
       if(results.length){
         h+='<div class="tw"><table><thead><tr><th>ชื่อ</th><th style="text-align:center">จำนวนวัน</th><th style="text-align:center">สาย≤30น.</th><th style="text-align:center">สาย>30น.(½วัน)</th><th style="text-align:right">หักนาที(×'+LATE_RATE+'฿)</th><th style="text-align:right">หัก½วัน</th><th style="text-align:right;color:var(--err)">รวมหัก</th><th>รายละเอียด</th></tr></thead><tbody>';
         results.forEach(function(r){
           var details=r.lateDays.map(function(d){return'วันที่'+d.day+' เข้า'+d.time+' (สาย'+d.mins+'น.'+(d.ded==='halfday'?'→½วัน':'→'+d.ded+'฿')+')'}).join(', ');
-          h+='<tr>';
-          h+='<td><b>'+esc(r.name)+'</b>'+(r.matchedEmp?'':'<br><span style="color:var(--err);font-size:10px">⚠ จับคู่ไม่ได้</span>')+'</td>';
+          var isTerm=r.isTerminated;
+          h+='<tr style="'+(isTerm?'background:#ffe0e0':'')+'">';
+          h+='<td>'+(isTerm?'<span style="color:#c00;font-weight:700">⛔ '+esc(r.name)+'</span><br><span style="font-size:10px;color:#c00;font-weight:600">พ้นสภาพแล้ว</span>':'<b>'+esc(r.name)+'</b>'+(r.matchedEmp?'':'<br><span style="color:var(--err);font-size:10px">⚠ จับคู่ไม่ได้</span>'))+'</td>';
           h+='<td style="text-align:center">'+r.lateDays.length+'</td>';
           h+='<td style="text-align:center">'+(r.lateDays.length-r.halfDayCount)+'</td>';
           h+='<td style="text-align:center;color:var(--err)">'+(r.halfDayCount||'-')+'</td>';

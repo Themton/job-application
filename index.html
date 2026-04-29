@@ -656,7 +656,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
 <div class="wrap"><div class="lw"><div class="lb">
 <div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>พนักงานเข้าสู่ระบบ</h2><p class="s">ดูข้อมูลส่วนตัว / ตรวจสอบวันลา</p>
 <div class="fld"><label>อีเมล</label><input id="emp-l-email" placeholder="email@gmail.com" type="email" inputmode="email" onkeydown="if(event.key==='Enter')document.getElementById('emp-l-pass').focus()"></div>
-<div class="fld"><label>รหัสผ่าน</label><input id="emp-l-pass" placeholder="รหัสผ่าน" type="password" onkeydown="if(event.key==='Enter')empLogin()"></div>
+<div class="fld"><label>รหัสผ่าน (เบอร์โทร 4 ตัวท้าย)</label><input id="emp-l-pass" placeholder="เช่น 1234" type="password" maxlength="4" inputmode="numeric" pattern="[0-9]*" onkeydown="if(event.key==='Enter')empLogin()"></div>
 <div id="emp-l-err" style="display:none;color:#dc3545;background:rgba(220,53,69,.08);border:1px solid #dc3545;border-radius:6px;padding:8px 12px;font-size:12px;margin-top:8px"></div>
 <button class="btn btn-a" onclick="empLogin()" style="width:100%;margin-top:8px">🔑 เข้าสู่ระบบ</button>
 </div></div></div>
@@ -1418,21 +1418,19 @@ function backList(){$('A-det').classList.add('hide');$('A-main').classList.remov
 
 /* ═══ SECURITY ACTIONS (admin) ═══ */
 function resetEmpPass(id,name){
-  if(!confirm('รีเซ็ตรหัสผ่านให้ "'+name+'" ?\n\nระบบจะสร้างรหัสใหม่ 6 หลักและแสดงให้ครั้งเดียว — กรุณาจดและส่งให้พนักงานด้วยตนเอง'))return;
+  if(!confirm('รีเซ็ตรหัสผ่านให้ "'+name+'" ?\n\nระบบจะตั้งรหัสเป็น เบอร์โทร 4 ตัวท้าย ของพนักงาน'))return;
   sbRpc('admin_reset_emp_password',{p_token:TOK(),p_emp_id:id}).then(function(r){
     if(!r||!r.ok){toast('รีเซ็ตไม่สำเร็จ: '+((r&&r.error)||'error'),'terr');return}
-    // แสดง modal ชั่วคราว
     var html='<div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.remove()">'
       +'<div style="background:#fff;border-radius:14px;padding:28px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
       +'<div style="font-size:48px;margin-bottom:8px">🔑</div>'
-      +'<h3 style="margin:0 0 6px;color:var(--pri);font-size:17px">รหัสผ่านใหม่ของ '+esc(r.emp_name)+'</h3>'
-      +'<p style="color:var(--muted);font-size:12px;margin:0 0 18px">จดรหัสนี้ไว้ — จะไม่แสดงอีก</p>'
+      +'<h3 style="margin:0 0 6px;color:var(--pri);font-size:17px">รีเซ็ตรหัสผ่านสำเร็จ — '+esc(r.emp_name)+'</h3>'
+      +'<p style="color:var(--muted);font-size:12px;margin:0 0 18px">รหัสผ่านใหม่ = เบอร์โทร 4 ตัวท้าย</p>'
       +'<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px dashed #d97706;border-radius:12px;padding:20px;margin-bottom:18px">'
-      +'<div style="font-family:monospace;font-size:36px;font-weight:800;letter-spacing:6px;color:#92400e">'+r.new_password+'</div></div>'
-      +'<div style="display:flex;gap:8px">'
-      +'<button class="btn btn-g" style="flex:1" onclick="navigator.clipboard.writeText(\''+r.new_password+'\');this.textContent=\'✅ คัดลอกแล้ว\'">📋 คัดลอก</button>'
-      +'<button class="btn btn-a" style="flex:1" onclick="this.closest(\'div[style*=fixed]\').remove()">✓ จดแล้ว</button>'
-      +'</div></div></div>';
+      +'<div style="font-family:monospace;font-size:36px;font-weight:800;letter-spacing:6px;color:#92400e">'+r.new_password+'</div>'
+      +'<div style="font-size:11px;color:#92400e;margin-top:6px">เบอร์โทร 4 ตัวท้าย</div></div>'
+      +'<button class="btn btn-a" style="width:100%" onclick="this.closest(\'div[style*=fixed]\').remove()">✓ ตกลง</button>'
+      +'</div></div>';
     var d=document.createElement('div');d.innerHTML=html;document.body.appendChild(d.firstChild);
   }).catch(function(e){toast('Error: '+e,'terr')});
 }

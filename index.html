@@ -1527,23 +1527,47 @@ function renderLeaveRequestsAdmin(rows){
 }
 
 function showEvidence(url){
+  // Convert Google Drive URLs to direct viewable format
+  var viewUrl=url,imgUrl=url;
+  var driveMatch=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(driveMatch){
+    var fid=driveMatch[1];
+    imgUrl='https://drive.google.com/uc?export=view&id='+fid;
+    viewUrl='https://drive.google.com/file/d/'+fid+'/preview';
+  }else if(url.indexOf('id=')>-1){
+    var idMatch=url.match(/id=([a-zA-Z0-9_-]+)/);
+    if(idMatch){
+      imgUrl='https://drive.google.com/uc?export=view&id='+idMatch[1];
+      viewUrl='https://drive.google.com/file/d/'+idMatch[1]+'/preview';
+    }
+  }
+
   var overlay=document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out';
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove()};
-  overlay.onkeydown=function(e){if(e.key==='Escape')overlay.remove()};
+  document.onkeydown=function(e){if(e.key==='Escape'){overlay.remove();document.onkeydown=null}};
 
   var wrap=document.createElement('div');
   wrap.style.cssText='position:relative;max-width:95vw;max-height:95vh;display:flex;flex-direction:column;align-items:center';
 
+  // Try image first
   var img=document.createElement('img');
-  img.src=url;
+  img.src=imgUrl;
   img.style.cssText='max-width:95vw;max-height:85vh;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5);background:#fff';
-  img.onerror=function(){wrap.innerHTML='<div style="background:#fff;border-radius:12px;padding:30px;text-align:center"><p style="margin:0 0 12px;font-size:14px">ไม่สามารถแสดงรูปภาพได้</p><a href="'+url+'" target="_blank" class="btn btn-a" style="text-decoration:none">🔗 เปิดในแท็บใหม่</a></div>'};
+  img.onerror=function(){
+    // Fallback: use iframe for Google Drive preview
+    wrap.removeChild(img);
+    var iframe=document.createElement('iframe');
+    iframe.src=viewUrl;
+    iframe.style.cssText='width:90vw;height:85vh;border:none;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5);background:#fff';
+    iframe.allow='autoplay';
+    wrap.insertBefore(iframe,wrap.firstChild);
+  };
 
   var btns=document.createElement('div');
   btns.style.cssText='display:flex;gap:8px;margin-top:12px';
   btns.innerHTML='<a href="'+url+'" target="_blank" style="padding:6px 16px;background:#fff;border-radius:8px;font-size:12px;color:var(--pri);text-decoration:none;font-weight:600">🔗 เปิดแท็บใหม่</a>'
-    +'<a href="'+url+'" download style="padding:6px 16px;background:#fff;border-radius:8px;font-size:12px;color:var(--pri);text-decoration:none;font-weight:600">💾 ดาวน์โหลด</a>'
+    +'<a href="'+imgUrl+'" download style="padding:6px 16px;background:#fff;border-radius:8px;font-size:12px;color:var(--pri);text-decoration:none;font-weight:600">💾 ดาวน์โหลด</a>'
     +'<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="padding:6px 16px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);border-radius:8px;font-size:12px;color:#fff;cursor:pointer">✕ ปิด</button>';
 
   wrap.appendChild(img);

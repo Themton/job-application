@@ -334,8 +334,14 @@
           <button class="btn btn-g btn-s" onclick="rptDownloadAll('house_link','ทะเบียนบ้าน')">🏠 โหลดทะเบียนบ้าน</button>
           <button class="btn btn-g btn-s" onclick="rptDownloadAll('bank_link','Book Bank')">🏦 โหลด Book Bank</button>
           <div class="sb" style="min-width:180px"><input id="rpt-srch" placeholder="ค้นหาชื่อ เบอร์โทร..." oninput="debounce(renderReport,'rr')"></div>
-          <select class="fsel" id="rpt-st" onchange="renderReport()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option></select>
+          <select class="fsel" id="rpt-st" onchange="renderReport()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
           <button class="btn btn-g btn-s" onclick="loadReport()">🔄</button>
+        </div>
+        <!-- Export ขาด/ลา/มา/สาย -->
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:10px 14px;background:rgba(92,74,30,.04);border:1px solid var(--bdr);border-radius:10px">
+          <span style="font-size:12px;font-weight:600;color:var(--pri)">📥 Export รายงาน</span>
+          <input type="month" id="rpt-exp-month" class="fsel" style="min-width:140px">
+          <button class="btn btn-a btn-s" onclick="rptExportAttendance()">📥 Export ขาด/ลา/มา/สาย</button>
         </div>
       </div>
       <div id="rpt-summary" style="margin-bottom:14px"></div>
@@ -839,6 +845,7 @@ function showTab(t){
   if(t==='lv')loadLeaveRequests();
   if(t==='pay'&&!$('paydb2-month').value){var now=new Date();$('paydb2-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='comm'&&!$('comm-month').value){var now=new Date();$('comm-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
+  if(t==='rpt'&&!$('rpt-exp-month').value){var now=new Date();$('rpt-exp-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='cert')certInit();
   // Update mobile topbar label
   if($('sb-active-label'))$('sb-active-label').textContent=TAB_LABELS[t]||t;
@@ -1361,7 +1368,7 @@ function detail(id){
   $('A-det').innerHTML=
     '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;align-items:center"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button><button class="btn btn-a btn-s" onclick="editEmp(\''+a.id+'\')">✏️ แก้ไขข้อมูล</button><button class="btn btn-g btn-s" onclick="resetEmpPass(\''+a.id+'\',\''+esc(a.name)+'\')" style="background:#fef3c7;border-color:#fbbf24;color:#92400e">🔑 รีเซ็ตรหัสผ่าน</button>'+(isTerm?'<span class="bg b-terminated" style="padding:6px 14px;font-size:12px">⛔ พ้นสภาพแล้ว'+(a.terminated_at?' — '+String(a.terminated_at).substring(0,10):'')+'</span>':'<button class="tmbtn tmbtn-warn" onclick="terminate(\''+a.id+'\')">⛔ พ้นสภาพพนักงาน</button>')+'<button class="btn btn-d btn-s" style="margin-left:auto" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
     '<div class="dt"><div class="av">'+esc(a.name).charAt(0)+'</div><div style="flex:1"><div class="dn-nm">'+esc(a.name)+(a.nickname?' <span style="font-size:14px;color:var(--acc)">('+esc(a.nickname)+')</span>':'')+'</div></div><div><select class="ssel" onchange="chgSt(\''+a.id+'\',this.value)">'+opts+'</select></div></div>'+
-    '<div class="emp-grid"><div class="dc"><h4>💼 ตำแหน่ง</h4><div style="font-size:14px;font-weight:600;color:var(--pri);margin-top:6px">'+esc(a.position||'-')+'</div></div><div class="dc"><h4>📅 วันที่เริ่มทำงาน</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.start_date||'')+'" onchange="setF(\''+a.id+'\',\'start_date\',this.value)"></div><div class="dc"><h4>👷 สถานะ</h4><div style="margin-top:6px"><span class="bg '+(ST[a.status]||ST.new).c+'" style="padding:4px 12px;font-size:12px">'+(ST[a.status]||ST.new).l+'</span></div></div></div>'+
+    '<div class="emp-grid"><div class="dc"><h4>💼 ตำแหน่ง</h4><div style="font-size:14px;font-weight:600;color:var(--pri);margin-top:6px">'+esc(a.position||'-')+'</div></div><div class="dc"><h4>📅 วันที่เริ่มทำงาน</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.start_date||'')+'" onchange="setF(\''+a.id+'\',\'start_date\',this.value)"></div><div class="dc"><h4>👷 สถานะ</h4><div style="margin-top:6px"><span class="bg '+(ST[a.status]||ST.new).c+'" style="padding:4px 12px;font-size:12px">'+(ST[a.status]||ST.new).l+'</span></div></div><div class="dc" style="border:2px solid var(--acc)"><h4>💰 ฐานเงินเดือน (ประจำ)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:var(--pri)" value="'+(a.salary||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'salary\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.salary?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ล็อคแล้ว — ใช้ในระบบคิดเงินเดือนอัตโนมัติ</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกเงินเดือนเพื่อล็อค ไม่ต้องกรอกซ้ำทุกเดือน</div>')+'</div></div>'+
     '<div class="dg"><div class="dc"><h4>📋 ข้อมูลส่วนตัว</h4><div class="dr"><span class="i">👤</span> ชื่อ-สกุล: '+esc(a.name)+'</div>'+(a.nickname?'<div class="dr"><span class="i">😊</span> ชื่อเล่น: '+esc(a.nickname)+'</div>':'')+'<div class="dr"><span class="i">📱</span> โทรศัพท์: '+esc(a.phone)+'</div>'+(a.email?'<div class="dr"><span class="i">📧</span> อีเมล: '+esc(a.email)+'</div>':'')+'<div class="dr"><span class="i">💼</span> ตำแหน่ง: '+esc(a.position||'-')+'</div></div>'+
     '<div class="dc"><h4>📅 ข้อมูลการทำงาน</h4><div class="dr"><span class="i">📅</span> วันที่สมัคร: '+esc(dt)+'</div>'+(a.start_date?'<div class="dr"><span class="i">🗓️</span> เริ่มงาน: '+esc(a.start_date)+'</div>':'')+'<div class="dr"><span class="i">👷</span> สถานะ: '+(ST[a.status]||ST.new).l+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>🎓 คุณสมบัติ</h4><div class="dr"><span class="i">📜</span> วุฒิการศึกษา: '+esc(a.education||'-')+'</div></div>'+
@@ -1729,6 +1736,7 @@ function chgSt(id,st){sb("applications","PATCH",{status:st},"?id=eq."+id).then(f
 function terminate(id){if(!confirm('ยืนยันพ้นสภาพพนักงาน?'))return;var now=new Date().toISOString();sb("applications","PATCH",{status:"terminated",terminated_at:now},"?id=eq."+id).then(function(){toast('พ้นสภาพแล้ว','tok');ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_at=now}});stats();doFilter();detail(id)}).catch(function(e){toast('Error: '+e,'terr')})}
 function quickTerminate(id,name){if(!confirm('⛔ ยืนยันให้ "'+name+'" ลาออก/พ้นสภาพ?\n\nพนักงานนี้จะถูกตัดออกจากไฟล์ Payroll'))return;var now=new Date().toISOString();sb("applications","PATCH",{status:"terminated",terminated_at:now},"?id=eq."+id).then(function(){toast('⛔ '+name+' พ้นสภาพแล้ว','tok');ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_at=now}});stats();doFilter()}).catch(function(e){toast('Error: '+e,'terr')})}
 function delA(id){if(!confirm('ลบข้อมูลพนักงานนี้?'))return;sb("applications","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}).catch(function(e){toast('Error: '+e,'terr')})}
+function setF(id,field,val){var patch={};patch[field]=val;sb("applications","PATCH",patch,"?id=eq."+id).then(function(){toast('บันทึกแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a[field]=val})}).catch(function(e){toast('Error: '+e,'terr')})}
 
 /* ═══ EDIT EMPLOYEE ═══ */
 function editEmp(id){
@@ -2718,12 +2726,13 @@ function payDBLoad(){
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         bank:a.bank||'',account:a.bank_account||'',
-        salary:0,diligence:0,tax3:0,ss5:0,loan:0,advance:0,commission:0,
+        salary:a.salary||0,diligence:0,tax3:0,ss5:0,loan:0,advance:0,commission:0,
         totalIncome:0,totalDed:0,net:0,
         isTerminated:false
       };
     });
-    $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — กรอกเงินเดือนแล้วกด คำนวณ';
+    var prefilled=PAYDB2.filter(function(e){return e.salary>0}).length;
+    $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน'+(prefilled?' — ฐานเงินเดือน <b style="color:var(--ok)">'+prefilled+'</b> คน':'');
     prog(100,'ดึงข้อมูล ✅ '+PAYDB2.length+' คน');
     PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
     $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';
@@ -2758,7 +2767,7 @@ function payDBLoadPrev(){
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         bank:a.bank||'',account:a.bank_account||'',
-        salary:p.salary||0,diligence:p.diligence||0,
+        salary:p.salary||a.salary||0,diligence:p.diligence||0,
         tax3:p.tax3||0,ss5:p.ss5||0,loan:p.loan||0,advance:p.advance||0,commission:p.commission||0,
         totalIncome:p.total_income||0,totalDed:p.total_ded||0,net:p.net||0,
         isTerminated:false
@@ -3792,8 +3801,8 @@ var RPT_DATA=[];
 
 function loadReport(){
   $('rpt-loading').style.display='block';$('rpt-table').innerHTML='';$('rpt-summary').innerHTML='';
-  // Load all non-terminated employees + their leaves
-  var emps=ALL.filter(function(a){return a.status!=='terminated'});
+  // Load ALL employees including terminated (leave data must persist)
+  var emps=ALL.slice();
   var ids=emps.map(function(a){return a.id});
   if(!ids.length){$('rpt-loading').textContent='ไม่พบพนักงาน';return}
 
@@ -3864,6 +3873,7 @@ function renderReport(){
 
   list.forEach(function(r){
     var pBg,pClr,pLabel,sBg2,sClr,sLabel;
+    var isTerm=r.status==='terminated';
     // ลากิจ
     if(r.personal_left<=0){pBg='rgba(220,38,38,.1)';pClr='var(--err)';pLabel='<div style="font-size:9px;color:var(--err);font-weight:700">หมดแล้ว</div>'}
     else if(r.personal_left<=2){pBg='rgba(245,158,11,.1)';pClr='#f59e0b';pLabel='<div style="font-size:9px;color:#f59e0b">ใกล้หมด</div>'}
@@ -3873,8 +3883,8 @@ function renderReport(){
     else if(r.sick_left<=5){sBg2='rgba(245,158,11,.1)';sClr='#f59e0b';sLabel='<div style="font-size:9px;color:#f59e0b">ใกล้หมด</div>'}
     else{sBg2='rgba(106,140,42,.06)';sClr='var(--ok)';sLabel=''}
 
-    h+='<tr onclick="detail(\''+r.id+'\')">';
-    h+='<td><div class="nm">'+esc(r.name)+'</div>'+(r.nickname?'<div class="em">('+esc(r.nickname)+')</div>':'')+'</td>';
+    h+='<tr onclick="detail(\''+r.id+'\')" style="'+(isTerm?'opacity:.6;background:rgba(107,114,128,.06)':'')+'">';
+    h+='<td><div class="nm">'+esc(r.name)+'</div>'+(r.nickname?'<div class="em">('+esc(r.nickname)+')</div>':'')+(isTerm?'<div style="font-size:9px;color:var(--err);font-weight:600">⛔ พ้นสภาพ</div>':'')+'</td>';
     h+='<td><a href="tel:'+esc(r.phone)+'" style="color:var(--pri2);text-decoration:none">'+esc(r.phone)+'</a></td>';
     h+='<td>'+esc(r.position)+'</td>';
     h+='<td style="text-align:center;white-space:nowrap" onclick="event.stopPropagation()">'
@@ -3913,6 +3923,123 @@ function rptDownloadAll(field,label){
       opened++;
       if(opened===links.length)toast('เปิด '+label+' '+opened+' ไฟล์แล้ว','tok');
     },i*500);
+  });
+}
+
+function rptExportAttendance(){
+  var month=$('rpt-exp-month').value;
+  if(!month){toast('กรุณาเลือกเดือน','terr');return}
+
+  // Count working days in the month (exclude Sat/Sun)
+  var y=parseInt(month.split('-')[0]),m=parseInt(month.split('-')[1])-1;
+  var daysInMonth=new Date(y,m+1,0).getDate();
+  var workDays=0;
+  for(var d=1;d<=daysInMonth;d++){var dow=new Date(y,m,d).getDay();if(dow!==0&&dow!==6)workDays++}
+
+  var emps=ALL.slice();
+  var ids=emps.map(function(a){return a.id});
+  if(!ids.length){toast('ไม่พบพนักงาน','terr');return}
+
+  prog(10,'กำลังดึงข้อมูลขาด/ลา...');
+
+  // Fetch leaves + commissions for the selected month
+  var startDate=month+'-01';
+  var endDate=month+'-'+String(daysInMonth).padStart(2,'0');
+
+  Promise.all([
+    sb("leaves","GET",null,"?emp_id=in.("+ids.join(',')+")" +
+      "&date=gte."+startDate+"&date=lte."+endDate+"&select=emp_id,type,days").catch(function(){return[]}),
+    sb("commissions","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=emp_name,late").catch(function(){return[]})
+  ]).then(function(res){
+    var leaves=Array.isArray(res[0])?res[0]:[];
+    var comms=Array.isArray(res[1])?res[1]:[];
+    prog(60,'กำลังสร้างไฟล์...');
+
+    // Group leaves by emp_id
+    var lmap={};
+    leaves.forEach(function(l){
+      if(!lmap[l.emp_id])lmap[l.emp_id]={leave:0,absent:0};
+      var d=l.days||1;
+      if(l.type==='absent')lmap[l.emp_id].absent+=d;
+      else lmap[l.emp_id].leave+=d; // personal + sick + vacation = ลา
+    });
+
+    // Map commissions by name
+    var cmap={};
+    comms.forEach(function(c){cmap[c.emp_name.trim()]=c.late||0});
+
+    // Build XLS
+    var thStyle='background:#5c4a1e;color:#fff;font-weight:bold;text-align:center;padding:6px 10px;font-size:12px';
+    var h='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:spreadsheet">'
+      +'<head><meta charset="utf-8"><style>'
+      +'table{border-collapse:collapse}'
+      +'td,th{border:1px solid #bbb;padding:5px 10px;font-size:12px;font-family:sans-serif}'
+      +'.hdr{background:#5c4a1e;color:#fff;font-weight:bold;text-align:center}'
+      +'.absent{background:#ffe0e0;color:#c00;font-weight:bold;text-align:center}'
+      +'.leave{background:#fff8e0;color:#b45309;font-weight:bold;text-align:center}'
+      +'.present{background:#d4ecc0;color:#166534;font-weight:bold;text-align:center}'
+      +'.late{background:#fef3c7;color:#92400e;font-weight:bold;text-align:center}'
+      +'.term{background:#f3f4f6;color:#6b7280}'
+      +'.c{text-align:center}.r{text-align:right}'
+      +'</style></head><body>';
+
+    h+='<table><tr><td colspan="9" style="font-size:16px;font-weight:bold;padding:10px;border:none;color:#5c4a1e">'
+      +'📊 รายงาน ขาด/ลา/มา/สาย — '+month+' (วันทำงาน '+workDays+' วัน)</td></tr>';
+
+    h+='<tr><th class="hdr">ลำดับ</th><th class="hdr" style="text-align:left;min-width:160px">ชื่อ-สกุล</th>'
+      +'<th class="hdr" style="text-align:left;min-width:80px">ชื่อเล่น</th>'
+      +'<th class="hdr" style="text-align:left;min-width:100px">ตำแหน่ง</th>'
+      +'<th class="hdr">สถานะ</th>'
+      +'<th class="hdr" style="min-width:50px">ขาด</th>'
+      +'<th class="hdr" style="min-width:50px">ลา</th>'
+      +'<th class="hdr" style="min-width:50px">มา</th>'
+      +'<th class="hdr" style="min-width:60px">สาย</th></tr>';
+
+    var totAbsent=0,totLeave=0,totPresent=0,totLate=0,num=0;
+
+    emps.forEach(function(a){
+      var lv=lmap[a.id]||{leave:0,absent:0};
+      var late=cmap[a.name.trim()]||0;
+      var present=Math.max(0,workDays-lv.absent-lv.leave);
+      var isTerm=a.status==='terminated';
+      var stLabel=isTerm?'⛔ พ้นสภาพ':a.status==='daily'?'รายวัน':a.status==='monthly'?'ประจำ':'ใหม่';
+
+      totAbsent+=lv.absent;totLeave+=lv.leave;totPresent+=present;totLate+=late;
+      num++;
+
+      h+='<tr'+(isTerm?' class="term"':'')+'>';
+      h+='<td class="c">'+num+'</td>';
+      h+='<td>'+esc(a.name)+'</td>';
+      h+='<td>'+esc(a.nickname||'')+'</td>';
+      h+='<td>'+esc(a.position||'')+'</td>';
+      h+='<td class="c'+(isTerm?' term':'')+'">'+stLabel+'</td>';
+      h+='<td class="'+(lv.absent>0?'absent':'c')+'">'+(lv.absent||'-')+'</td>';
+      h+='<td class="'+(lv.leave>0?'leave':'c')+'">'+(lv.leave||'-')+'</td>';
+      h+='<td class="present">'+present+'</td>';
+      h+='<td class="'+(late>0?'late':'c')+'">'+(late||'-')+'</td>';
+      h+='</tr>';
+    });
+
+    // Summary row
+    h+='<tr style="font-weight:bold;background:#f0ead6">';
+    h+='<td colspan="5" style="text-align:right;font-size:13px;padding-right:12px">รวมทั้งหมด ('+num+' คน)</td>';
+    h+='<td class="absent">'+totAbsent+'</td>';
+    h+='<td class="leave">'+totLeave+'</td>';
+    h+='<td class="present">'+totPresent+'</td>';
+    h+='<td class="late">'+totLate+'</td>';
+    h+='</tr>';
+
+    h+='</table></body></html>';
+
+    var blob=new Blob(['\uFEFF'+h],{type:'application/vnd.ms-excel;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;a.download='รายงาน_ขาดลามาสาย_'+month+'.xls';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+
+    prog(100,'Export สำเร็จ ✅');
+    toast('Export '+num+' คน — เดือน '+month,'tok');
+  }).catch(function(e){
+    prog(-1);toast('Export ไม่สำเร็จ: '+e,'terr');
   });
 }
 

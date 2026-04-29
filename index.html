@@ -343,6 +343,17 @@
           <input type="month" id="rpt-exp-month" class="fsel" style="min-width:140px">
           <button class="btn btn-a btn-s" onclick="rptExportAttendance()">📥 Export ขาด/ลา/มา/สาย</button>
         </div>
+        <!-- Holidays Management -->
+        <div class="cd" style="margin-bottom:14px">
+          <div class="cd-t"><span class="dot"></span> 🎌 วันหยุดประจำปี <span id="hol-count" style="font-size:11px;color:var(--muted)"></span></div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+            <input type="date" id="hol-date" class="fsel" style="min-width:140px">
+            <input id="hol-name" placeholder="ชื่อวันหยุด เช่น วันสงกรานต์" style="flex:1;min-width:160px;padding:7px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)">
+            <button class="btn btn-a btn-s" onclick="addHoliday()">➕ เพิ่มวันหยุด</button>
+            <button class="btn btn-g btn-s" onclick="loadHolidays()">🔄</button>
+          </div>
+          <div id="hol-list" style="font-size:12px;color:var(--muted)">กำลังโหลด...</div>
+        </div>
       </div>
       <div id="rpt-summary" style="margin-bottom:14px"></div>
       <div id="rpt-loading" style="text-align:center;padding:30px;color:var(--muted)">กำลังโหลดข้อมูล...</div>
@@ -846,6 +857,7 @@ function showTab(t){
   if(t==='pay'&&!$('paydb2-month').value){var now=new Date();$('paydb2-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='comm'&&!$('comm-month').value){var now=new Date();$('comm-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='rpt'&&!$('rpt-exp-month').value){var now=new Date();$('rpt-exp-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
+  if(t==='rpt')loadHolidays();
   if(t==='cert')certInit();
   // Update mobile topbar label
   if($('sb-active-label'))$('sb-active-label').textContent=TAB_LABELS[t]||t;
@@ -3926,15 +3938,67 @@ function rptDownloadAll(field,label){
   });
 }
 
+/* ═══ HOLIDAYS ═══ */
+var HOLIDAYS=[];
+
+function loadHolidays(){
+  sb("holidays","GET",null,"?select=*&order=date.asc").then(function(r){
+    HOLIDAYS=Array.isArray(r)?r:[];
+    renderHolidays();
+  }).catch(function(){HOLIDAYS=[];renderHolidays()});
+}
+
+function renderHolidays(){
+  var yr=new Date().getFullYear();
+  var thisYear=HOLIDAYS.filter(function(h){return h.date&&h.date.substring(0,4)==String(yr)});
+  $('hol-count').textContent='('+thisYear.length+'/13 วัน ปี '+yr+')';
+  if(!HOLIDAYS.length){$('hol-list').innerHTML='<span style="color:var(--muted)">ยังไม่มีวันหยุด — กดเพิ่มได้เลย</span>';return}
+  var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>วัน</th><th>ชื่อวันหยุด</th><th></th></tr></thead><tbody>';
+  var dayNames=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+  HOLIDAYS.forEach(function(d){
+    var dt=new Date(d.date+'T00:00:00');
+    var dn=dayNames[dt.getDay()]||'';
+    var isSun=dt.getDay()===0;
+    h+='<tr><td>'+esc(d.date)+'</td><td style="color:'+(isSun?'var(--err)':'var(--muted)')+'">'+dn+(isSun?' (หยุดอยู่แล้ว)':'')+'</td><td>'+esc(d.name||'-')+'</td><td><button class="lv-del" onclick="delHoliday(\''+d.id+'\')">✕</button></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  $('hol-list').innerHTML=h;
+}
+
+function addHoliday(){
+  var date=$('hol-date').value,name=$('hol-name').value.trim();
+  if(!date){toast('กรุณาเลือกวันที่','terr');return}
+  if(!name){toast('กรุณาตั้งชื่อวันหยุด','terr');return}
+  var id='HOL-'+Date.now();
+  sb("holidays","POST",{id:id,date:date,name:name}).then(function(r){
+    if(Array.isArray(r)&&r.length){toast('เพิ่มวันหยุด "'+name+'" แล้ว','tok');$('hol-date').value='';$('hol-name').value='';loadHolidays()}
+    else{toast('เพิ่มไม่สำเร็จ','terr')}
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function delHoliday(id){
+  if(!confirm('ลบวันหยุดนี้?'))return;
+  sb("holidays","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');loadHolidays()}).catch(function(e){toast('Error: '+e,'terr')});
+}
+
 function rptExportAttendance(){
   var month=$('rpt-exp-month').value;
   if(!month){toast('กรุณาเลือกเดือน','terr');return}
 
-  // Count working days in the month (exclude Sunday only)
+  // Count working days in the month (exclude Sunday + holidays)
   var y=parseInt(month.split('-')[0]),m=parseInt(month.split('-')[1])-1;
   var daysInMonth=new Date(y,m+1,0).getDate();
-  var workDays=0;
-  for(var d=1;d<=daysInMonth;d++){var dow=new Date(y,m,d).getDay();if(dow!==0)workDays++}
+  var holSet={};
+  HOLIDAYS.forEach(function(h){holSet[h.date]=h.name});
+  var workDays=0,holInMonth=[];
+  for(var d=1;d<=daysInMonth;d++){
+    var dt=new Date(y,m,d);
+    var dow=dt.getDay();
+    var ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    if(dow===0)continue; // Sunday
+    if(holSet[ds]){holInMonth.push(holSet[ds]);continue} // Holiday
+    workDays++;
+  }
 
   var emps=ALL.slice();
   var ids=emps.map(function(a){return a.id});
@@ -3984,7 +4048,7 @@ function rptExportAttendance(){
       +'</style></head><body>';
 
     h+='<table><tr><td colspan="9" style="font-size:16px;font-weight:bold;padding:10px;border:none;color:#5c4a1e">'
-      +'📊 รายงาน ขาด/ลา/มา/สาย — '+month+' (วันทำงาน '+workDays+' วัน)</td></tr>';
+      +'📊 รายงาน ขาด/ลา/มา/สาย — '+month+' (วันทำงาน '+workDays+' วัน'+(holInMonth.length?' หยุด '+holInMonth.length+' วัน: '+holInMonth.join(', '):'')+')'+''+'</td></tr>';
 
     h+='<tr><th class="hdr">ลำดับ</th><th class="hdr" style="text-align:left;min-width:160px">ชื่อ-สกุล</th>'
       +'<th class="hdr" style="text-align:left;min-width:80px">ชื่อเล่น</th>'

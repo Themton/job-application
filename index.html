@@ -2748,7 +2748,7 @@ function payDBLoad(){
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         bank:a.bank||'',account:a.bank_account||'',
-        salary:a.salary||0,diligence:0,tax3:0,ss5:0,loan:0,advance:0,commission:0,
+        salary:a.salary||0,diligence:0,late:0,tax3:0,ss5:0,loan:0,advance:0,commission:0,
         totalIncome:0,totalDed:0,net:0,
         isTerminated:false
       };
@@ -2789,7 +2789,7 @@ function payDBLoadPrev(){
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         bank:a.bank||'',account:a.bank_account||'',
-        salary:p.salary||a.salary||0,diligence:p.diligence||0,
+        salary:p.salary||a.salary||0,diligence:p.diligence||0,late:p.late||0,
         tax3:p.tax3||0,ss5:p.ss5||0,loan:p.loan||0,advance:p.advance||0,commission:p.commission||0,
         totalIncome:p.total_income||0,totalDed:p.total_ded||0,net:p.net||0,
         isTerminated:false
@@ -2818,19 +2818,20 @@ function payDBRender(){
     filtered.push({e:e,idx:i});
   });
 
-  var tSal=0,tDil=0,tI=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0;
-  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net});
+  var tSal=0,tDil=0,tI=0,tLa=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0;
+  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net});
 
   var cols=[
     {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
     {k:'diligence',l:'เบี้ยขยัน',w:75,type:'inc'},
+    {k:'late',l:'หักมาสาย',w:80,type:'ded'},
     {k:'tax3',l:'ภาษี 3% ⚡',w:80,type:'ded'},
     {k:'ss5',l:'ปกส. 5% ⚡',w:80,type:'ded'},
     {k:'loan',l:'กยศ.',w:70,type:'ded'},
     {k:'advance',l:'เบิกล่วงหน้า',w:85,type:'ded'}
   ];
   var totalCols=4+cols.length+3;
-  var sums=[tSal,tDil,tT3,tS5,tLo,tAd];
+  var sums=[tSal,tDil,tLa,tT3,tS5,tLo,tAd];
 
   var h='<div class="xls-wrap"><table class="xls"><thead><tr>';
   h+='<th class="xr" style="min-width:28px"></th>';
@@ -2906,7 +2907,7 @@ function payDBCalcRow(e){
     e.tax3=0;
     e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,750);
   }
-  e.totalDed=e.tax3+e.ss5+e.loan+e.advance;
+  e.totalDed=e.late+e.tax3+e.ss5+e.loan+e.advance;
   e.net=Math.max(0,e.totalIncome-e.totalDed);
 }
 
@@ -2918,7 +2919,7 @@ function payDBCell(i,field,val){
     payDBCalcRow(e);
   }else{
     e.totalIncome=e.salary+e.diligence;
-    e.totalDed=e.tax3+e.ss5+e.loan+e.advance;
+    e.totalDed=e.late+e.tax3+e.ss5+e.loan+e.advance;
     e.net=Math.max(0,e.totalIncome-e.totalDed);
   }
 
@@ -2939,15 +2940,15 @@ function payDBCell(i,field,val){
 }
 
 function payDBUpdateFooter(){
-  var tSal=0,tDil=0,tT3=0,tS5=0,tLo=0,tAd=0,tI=0,tD=0,tN=0;
-  PAYDB2.forEach(function(e){tSal+=e.salary;tDil+=e.diligence;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tI+=e.totalIncome;tD+=e.totalDed;tN+=e.net});
+  var tSal=0,tDil=0,tLa=0,tT3=0,tS5=0,tLo=0,tAd=0,tI=0,tD=0,tN=0;
+  PAYDB2.forEach(function(e){tSal+=e.salary;tDil+=e.diligence;tLa+=e.late;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tI+=e.totalIncome;tD+=e.totalDed;tN+=e.net});
   var foot=$('paydb2-table').querySelectorAll('tfoot td.xsum');
-  var vals=[tSal,tDil,tT3,tS5,tLo,tAd,tI,tD,tN];
+  var vals=[tSal,tDil,tLa,tT3,tS5,tLo,tAd,tI,tD,tN];
   foot.forEach(function(td,j){if(j>0&&vals[j-1]!==undefined)td.textContent=payFmt(vals[j-1])});
 }
 
 function payDBNav(e,dispRow,col){
-  var cols=['salary','diligence','tax3','ss5','loan','advance'];
+  var cols=['salary','diligence','late','tax3','ss5','loan','advance'];
   var ci=cols.indexOf(col);
   var nr=dispRow,nc=ci;
   if(e.key==='Tab'){
@@ -2975,7 +2976,7 @@ function payDBCalcAll(){
 function payDBSave(){
   var month=$('paydb2-month').value;
   if(!month){toast('เลือกเดือน/ปี','terr');return}
-  var valid=PAYDB2.filter(function(e){return e.salary>0||e.diligence>0||e.tax3>0||e.ss5>0||e.loan>0||e.advance>0||e.net>0});
+  var valid=PAYDB2.filter(function(e){return e.salary>0||e.diligence>0||e.late>0||e.tax3>0||e.ss5>0||e.loan>0||e.advance>0||e.net>0});
   if(!valid.length){toast('ไม่มีข้อมูล — กรอกตัวเลขอย่างน้อย 1 ช่องก่อน','terr');return}
   if(!confirm('บันทึกเงินเดือน '+valid.length+' คน เดือน '+month+'?'))return;
 
@@ -2985,7 +2986,7 @@ function payDBSave(){
   sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
     prog(40,'กำลังบันทึก '+valid.length+' คน...');
     var records=valid.map(function(e){
-      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,salary:e.salary,diligence:e.diligence,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
+      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,salary:e.salary,diligence:e.diligence,late:e.late,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
     });
     sb("payroll","POST",records).then(function(){
       prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');
@@ -3028,12 +3029,12 @@ function payDBExportSCB(){
 }
 
 function payDBExportCSV(){
-  var valid=PAYDB2.filter(function(e){return e.salary>0||e.diligence>0||e.tax3>0||e.ss5>0||e.loan>0||e.advance>0||e.net>0});
+  var valid=PAYDB2.filter(function(e){return e.salary>0||e.diligence>0||e.late>0||e.tax3>0||e.ss5>0||e.loan>0||e.advance>0||e.net>0});
   if(!valid.length){toast('ไม่มีข้อมูล','terr');return}
   var csv='\uFEFF';
-  csv+='ชื่อ,ชื่อเล่น,ตำแหน่ง,ธนาคาร,เลขบัญชี,เงินเดือน,เบี้ยขยัน,รวมรายรับ,ภาษี3%,ประกันสังคม5%,กยศ.,เบิกล่วงหน้า,รวมหัก,สุทธิ\n';
+  csv+='ชื่อ,ชื่อเล่น,ตำแหน่ง,ธนาคาร,เลขบัญชี,เงินเดือน,เบี้ยขยัน,รวมรายรับ,หักมาสาย,ภาษี3%,ประกันสังคม5%,กยศ.,เบิกล่วงหน้า,รวมหัก,สุทธิ\n';
   valid.forEach(function(e){
-    csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.position)+'","'+esc(e.bank)+'","'+esc(e.account)+'",'+e.salary+','+e.diligence+','+e.totalIncome+','+e.tax3+','+e.ss5+','+e.loan+','+e.advance+','+e.totalDed+','+e.net+'\n';
+    csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.position)+'","'+esc(e.bank)+'","'+esc(e.account)+'",'+e.salary+','+e.diligence+','+e.totalIncome+','+e.late+','+e.tax3+','+e.ss5+','+e.loan+','+e.advance+','+e.totalDed+','+e.net+'\n';
   });
   accDownload(csv,'เงินเดือน_'+($('paydb2-month').value||'export')+'.csv','text/csv;charset=utf-8');
   toast('Export '+valid.length+' คน','tok');

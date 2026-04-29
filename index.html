@@ -3930,11 +3930,11 @@ function rptExportAttendance(){
   var month=$('rpt-exp-month').value;
   if(!month){toast('กรุณาเลือกเดือน','terr');return}
 
-  // Count working days in the month (exclude Sat/Sun)
+  // Count working days in the month (exclude Sunday only)
   var y=parseInt(month.split('-')[0]),m=parseInt(month.split('-')[1])-1;
   var daysInMonth=new Date(y,m+1,0).getDate();
   var workDays=0;
-  for(var d=1;d<=daysInMonth;d++){var dow=new Date(y,m,d).getDay();if(dow!==0&&dow!==6)workDays++}
+  for(var d=1;d<=daysInMonth;d++){var dow=new Date(y,m,d).getDay();if(dow!==0)workDays++}
 
   var emps=ALL.slice();
   var ids=emps.map(function(a){return a.id});

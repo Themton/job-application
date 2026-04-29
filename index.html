@@ -117,6 +117,8 @@
 .emp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
 @media(max-width:700px){.g2,.dg{grid-template-columns:1fr}.sts{grid-template-columns:1fr 1fr}.hdr-in{flex-direction:column;gap:8px}.tb{flex-direction:column}.tw{overflow-x:auto}.tw table{min-width:500px}.wrap{padding:16px 14px 40px}.cd{padding:18px 16px}.ttl{font-size:19px}.brand h1{font-size:13px}.dt{flex-direction:column;text-align:center}.fld input,.fld select{font-size:16px;padding:11px 12px}.btn{padding:12px 20px;font-size:14px;width:100%;justify-content:center}.brow{flex-direction:column}.btn-s{width:auto}.lb{padding:28px 20px}.lb .logo{width:56px;height:56px}.lb h2{font-size:17px}.atabs{overflow-x:auto;scroll-snap-type:x mandatory}.sb-item{padding:8px 14px;font-size:12px}.st{padding:12px}.st .v{font-size:20px}.toast{left:14px;right:14px;bottom:14px}.tw th,.tw td{padding:9px 10px;font-size:11px}.uz{padding:16px 10px;min-height:80px}.emp-grid{grid-template-columns:1fr}.doc-box img{max-height:260px}}
 @media(max-width:400px){.sts{grid-template-columns:1fr 1fr}.st{padding:10px}.st .v{font-size:18px}.cd{padding:14px 12px}.hdr-in{padding:10px 14px}.wrap{padding:12px 10px 36px}}
+body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!important}
+.hr-badge{background:#7c3aed;color:#fff;font-size:10px;padding:2px 8px;border-radius:8px;margin-left:6px;font-weight:600}
 </style>
 </head>
 <body>
@@ -208,16 +210,16 @@
       <div class="sb-head">
         <img src="LOGO_THEMT.png" alt="MT" class="sb-logo">
         <div class="sb-title">เดอะ เอ็มที</div>
-        <div class="sb-sub">ระบบข้อมูลพนักงาน</div>
+        <div class="sb-sub">ระบบข้อมูลพนักงาน <span id="sb-role-badge"></span></div>
       </div>
       <div class="sb-menu">
         <button class="sb-item on" id="tab-app" onclick="showTab('app')"><span class="sb-ic">📋</span><span class="sb-tx">พนักงาน</span></button>
         <button class="sb-item" id="tab-dept" onclick="showTab('dept')"><span class="sb-ic">🏢</span><span class="sb-tx">แผนก</span></button>
         <button class="sb-item" id="tab-pos" onclick="showTab('pos')"><span class="sb-ic">💼</span><span class="sb-tx">ตำแหน่ง</span></button>
-        <button class="sb-item" id="tab-usr" onclick="showTab('usr')"><span class="sb-ic">👤</span><span class="sb-tx">ผู้ใช้ / สิทธิ์</span></button>
+        <button class="sb-item hr-hide" id="tab-usr" onclick="showTab('usr')"><span class="sb-ic">👤</span><span class="sb-tx">ผู้ใช้ / สิทธิ์</span></button>
         <button class="sb-item" id="tab-rpt" onclick="showTab('rpt')"><span class="sb-ic">📊</span><span class="sb-tx">รายงาน / ตรวจสอบ</span></button>
         <button class="sb-item" id="tab-lv" onclick="showTab('lv')"><span class="sb-ic">🗓️</span><span class="sb-tx">อนุมัติการลา <span id="lv-pending-dot" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;margin-left:4px"></span></span></button>
-        <button class="sb-item" onclick="viewAuditLog()"><span class="sb-ic">🔐</span><span class="sb-tx">Audit Log</span></button>
+        <button class="sb-item hr-hide" onclick="viewAuditLog()"><span class="sb-ic">🔐</span><span class="sb-tx">Audit Log</span></button>
         <div class="sb-sep">เงินเดือน</div>
         <button class="sb-item" id="tab-pay" onclick="showTab('pay')"><span class="sb-ic">💰</span><span class="sb-tx">คิดเงินเดือน</span></button>
         <button class="sb-item" id="tab-comm" onclick="showTab('comm')"><span class="sb-ic">⭐</span><span class="sb-tx">คอมมิชชั่น</span></button>
@@ -311,7 +313,7 @@
     <!-- TAB: Users -->
     <div id="T-usr" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="ttl" style="font-size:18px">จัดการผู้ใช้</span><button class="btn btn-a btn-s" onclick="showUF()">➕ เพิ่ม</button></div>
-      <div id="uf-box" class="cd hide" style="margin-bottom:14px"><div class="g2"><div class="fld"><label>ชื่อผู้ใช้ <span class="rq">*</span></label><input id="uf-user"></div><div class="fld"><label>ชื่อแสดง</label><input id="uf-name"></div><div class="fld"><label id="uf-pw-label">รหัสผ่าน <span class="rq">*</span></label><input id="uf-pass" type="text"></div><div class="fld"><label>สิทธิ์การใช้งาน</label><select id="uf-role"><option value="admin">แอดมิน (เต็มระบบ)</option><option value="accounting">บัญชี (ดูข้อมูล+Export)</option></select></div></div><div class="brow" style="margin-top:8px"><button class="btn btn-g btn-s" onclick="pf('uf-box').classList.add('hide')">ยกเลิก</button><button class="btn btn-a btn-s" id="uf-btn" onclick="saveU()">เพิ่ม</button></div></div>
+      <div id="uf-box" class="cd hide" style="margin-bottom:14px"><div class="g2"><div class="fld"><label>ชื่อผู้ใช้ <span class="rq">*</span></label><input id="uf-user"></div><div class="fld"><label>ชื่อแสดง</label><input id="uf-name"></div><div class="fld"><label id="uf-pw-label">รหัสผ่าน <span class="rq">*</span></label><input id="uf-pass" type="text"></div><div class="fld"><label>สิทธิ์การใช้งาน</label><select id="uf-role"><option value="admin">แอดมิน (เต็มระบบ)</option><option value="hr">HR (ดู/สร้าง/แก้ไข ห้ามลบ)</option><option value="accounting">บัญชี (ดูข้อมูล+Export)</option></select></div></div><div class="brow" style="margin-top:8px"><button class="btn btn-g btn-s" onclick="pf('uf-box').classList.add('hide')">ยกเลิก</button><button class="btn btn-a btn-s" id="uf-btn" onclick="saveU()">เพิ่ม</button></div></div>
       <div id="usr-list"></div>
     </div>
 
@@ -752,7 +754,9 @@ var EM="https://script.google.com/macros/s/AKfycbyDrEQweHxOpdKdZ3TA0niJ7YG02rqFF
 var MODE=location.search.indexOf('admin')>-1?'admin':location.search.indexOf('acc')>-1?'acc':location.search.indexOf('emp')>-1?'emp':'public';
 
 /* ═══ Supabase ═══ */
+function isHR(){var s=getSES();return s&&s.role==='hr'}
 function sb(t,m,b,q){
+  if(m==='DELETE'&&isHR()){toast('⛔ HR ไม่มีสิทธิ์ลบข้อมูล','terr');return Promise.reject('HR cannot delete')}
   var u=SB+"/rest/v1/"+t+(q||"");
   var h={"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Prefer":"return=representation"};
   var tk=sessionStorage.getItem('mt_tok');
@@ -841,7 +845,7 @@ function page(p){
   var target=$('P-'+p);
   if(target){target.classList.remove('hide');target.style.display='block'}
   var hdr=document.querySelector('.hdr');if(hdr)hdr.style.display=(p==='admin')?'none':'';
-  if(p==='admin')loadAdmin();
+  if(p==='admin'){if(isHR())document.body.classList.add('hr-mode');else document.body.classList.remove('hr-mode');loadAdmin()}
   if(p==='acc')loadAcc();
   if(p==='form')loadPos();
   if(p==='emp')loadEmpPortal();
@@ -961,6 +965,8 @@ function doLogin(){
     setTOK(r.token);
     setSES({username:r.username,role:r.role,display_name:r.display_name,
             login_type:'admin',expires_at:r.expires_at});
+    if(r.role==='hr')document.body.classList.add('hr-mode');
+    else document.body.classList.remove('hr-mode');
     startSecPoll('admin');
     page('admin');
   }).catch(function(e){
@@ -971,6 +977,10 @@ function doLogin(){
 /* ═══ ADMIN LOAD ═══ */
 function loadAdmin(){
   $('A-ld').classList.remove('hide');$('A-main').classList.add('hide');$('A-det').classList.add('hide');
+  // Show role badge
+  var ses=getSES();
+  if(ses&&ses.role==='hr')$('sb-role-badge').innerHTML='<span class="hr-badge">HR</span>';
+  else $('sb-role-badge').innerHTML='';
   prog(10,'กำลังโหลดข้อมูลพนักงาน...');
   Promise.all([
     sb("applications","GET",null,"?select=*&order=created_at.desc"),
@@ -2093,8 +2103,8 @@ function delP(id){if(!confirm('ลบ?'))return;sb("positions","DELETE",null,"?i
 /* ═══ USERS ═══ */
 function renderUsr(){
   if(!USR.length){$('usr-list').innerHTML='<div class="emp"><div class="ei">👤</div><p>ยังไม่มี</p></div>';return}
-  var rl={'admin':'แอดมิน','accounting':'บัญชี'};
-  var rc={'admin':'b-new','accounting':'b-daily'};
+  var rl={'admin':'แอดมิน','hr':'HR','accounting':'บัญชี'};
+  var rc={'admin':'b-new','hr':'b-monthly','accounting':'b-daily'};
   var h='<div class="tw" style="margin-top:10px"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>สิทธิ์</th><th>จัดการ</th></tr></thead><tbody>';
   USR.forEach(function(u){h+='<tr><td class="nm">'+esc(u.username)+'</td><td>'+esc(u.display_name||'')+'</td><td><span class="bg '+(rc[u.role]||'b-new')+'">'+(rl[u.role]||u.role||'แอดมิน')+'</span></td><td style="white-space:nowrap"><button class="btn btn-g btn-s" onclick="editU(\''+u.id+'\')">✏️</button> <button class="btn btn-d btn-s" onclick="delU(\''+u.id+'\')">🗑️</button></td></tr>'});
   $('usr-list').innerHTML=h+'</tbody></table></div>';

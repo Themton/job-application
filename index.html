@@ -3070,12 +3070,21 @@ function payDBLateDetect(inp){
         // Find matching employee to get salary
         var emp=null;
         PAYDB2.forEach(function(e){
+          if(emp)return;
           var n1=e.name.replace(/\s+/g,''),n2=r.name.replace(/\s+/g,'');
-          if(n1===n2)emp=e;
+          if(n1===n2){emp=e;return}
+          // Split original names (before removing spaces) for partial matching
+          var parts1=e.name.split(/\s+/).filter(function(p){return p.length>1});
+          var parts2=r.name.split(/\s+/).filter(function(p){return p.length>1});
+          // Check how many parts of attendance name exist in DB name
+          var mc=0;parts2.forEach(function(p){if(e.name.indexOf(p)>=0)mc++});
+          if(mc>=2)emp=e;
           else{
-            var parts=n2.split(/\s+/).filter(function(p){return p.length>1});
-            var mc=0;parts.forEach(function(p){if(n1.indexOf(p)>=0)mc++});
-            if(mc>=2||(parts.length<=2&&mc>=1))emp=e;
+            // Also try reverse: DB name parts in attendance name
+            var mc2=0;parts1.forEach(function(p){if(r.name.indexOf(p)>=0)mc2++});
+            if(mc2>=2)emp=e;
+            // Try nickname match
+            else if(e.nickname&&r.name.indexOf(e.nickname)>=0&&mc>=1)emp=e;
           }
         });
         var halfDayAmt=emp&&emp.salary>0?Math.round(emp.salary/26/2):200;

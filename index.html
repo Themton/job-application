@@ -1511,12 +1511,13 @@ function renderLeaveRequestsAdmin(rows){
 
     if(r.status==='pending'){
       h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">✅ อนุมัติ</button> '
-        +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">❌ ปฏิเสธ</button>';
-      if(r.evidence_link)h+=' <a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 ดูหลักฐาน</a>';
-    }else if(r.evidence_link){
-      h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 หลักฐาน</a>';
+        +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">❌ ปฏิเสธ</button> ';
+      if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 ดูหลักฐาน</a> ';
+      h+='<button class="btn btn-d btn-s hr-hide" onclick="deleteLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px;background:rgba(220,38,38,.08);color:var(--err)">🗑️ ลบ</button>';
     }else{
-      h+='<span style="color:var(--muted);font-size:11px">-</span>';
+      if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 หลักฐาน</a> ';
+      h+='<button class="btn btn-g btn-s" onclick="revertLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">↩️ คืนค่า</button> ';
+      h+='<button class="btn btn-d btn-s hr-hide" onclick="deleteLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px;background:rgba(220,38,38,.08);color:var(--err)">🗑️ ลบ</button>';
     }
     h+='</td></tr>';
   });
@@ -1594,6 +1595,23 @@ function rejectLeaveReq(id){
   sbRpc('leave_reject',{p_token:TOK(),p_id:id,p_note:note}).then(function(r){
     if(!r||!r.ok){toast(r&&r.message?r.message:'ปฏิเสธไม่สำเร็จ','terr');return}
     toast('ปฏิเสธแล้ว','tok');
+    loadLeaveRequests();
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function revertLeaveReq(id){
+  if(!confirm('คืนค่าใบลานี้กลับเป็น "รออนุมัติ" ?\n\n(ถ้าเคยอนุมัติแล้ว วันลาที่หักไปจะถูกคืนกลับ)'))return;
+  sbRpc('leave_revert',{p_token:TOK(),p_id:id}).then(function(r){
+    if(!r||!r.ok){toast(r&&r.message?r.message:'คืนค่าไม่สำเร็จ','terr');return}
+    toast('↩️ คืนค่าเป็นรออนุมัติแล้ว','tok');
+    loadLeaveRequests();
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function deleteLeaveReq(id){
+  if(!confirm('⚠️ ลบใบลานี้ออกจากระบบถาวร?\n\nข้อมูลจะหายไปและไม่สามารถกู้คืนได้'))return;
+  sb("leave_requests","DELETE",null,"?id=eq."+id).then(function(){
+    toast('🗑️ ลบใบลาแล้ว','tok');
     loadLeaveRequests();
   }).catch(function(e){toast('Error: '+e,'terr')});
 }

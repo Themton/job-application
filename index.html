@@ -2628,10 +2628,15 @@ function certFillEmp(){
   if(!id){$('cert-pos').value='';$('cert-salary').value='';return}
   var a;ALL.forEach(function(x){if(x.id===id)a=x});if(!a)return;
   $('cert-pos').value=a.position||'';
-  $('cert-start').value=a.created_at?a.created_at.substring(0,10):'';
-  sb("payroll","GET",null,"?emp_name=eq."+encodeURIComponent(a.name)+"&select=salary&order=month.desc&limit=1").then(function(r){
-    if(Array.isArray(r)&&r.length&&r[0].salary)$('cert-salary').value=r[0].salary;
-  }).catch(function(){});
+  $('cert-start').value=a.start_date||a.created_at?((a.start_date||a.created_at).substring(0,10)):'';
+  // ใช้ฐานเงินเดือนจาก applications ก่อน ถ้าไม่มีค่อยดึงจาก payroll
+  if(a.salary&&a.salary>0){
+    $('cert-salary').value=a.salary;
+  }else{
+    sb("payroll","GET",null,"?emp_name=eq."+encodeURIComponent(a.name)+"&select=salary&order=month.desc&limit=1").then(function(r){
+      if(Array.isArray(r)&&r.length&&r[0].salary)$('cert-salary').value=r[0].salary;
+    }).catch(function(){});
+  }
 }
 
 function certThaiDate(d){

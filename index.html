@@ -1496,7 +1496,7 @@ function renderLeaveRequestsAdmin(rows){
     var sColor=LR_STATUS_COLOR[r.status]||'#6b7280';
     var submitted=String(r.submitted_at||'').substring(0,16).replace('T',' ');
     var range=r.start_date===r.end_date?esc(r.start_date):esc(r.start_date)+' → '+esc(r.end_date);
-    var evidence=r.evidence_link?' <a href="'+esc(r.evidence_link)+'" target="_blank" style="text-decoration:none" title="ดูหลักฐาน">📎</a>':'';
+    var evidence=r.evidence_link?' <a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" style="text-decoration:none" title="ดูหลักฐาน">📎</a>':'';
 
     h+='<tr>'
       +'<td style="font-size:11px;color:var(--muted);white-space:nowrap">'+esc(submitted)+'</td>'
@@ -1514,9 +1514,9 @@ function renderLeaveRequestsAdmin(rows){
     if(r.status==='pending'){
       h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">✅ อนุมัติ</button> '
         +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">❌ ปฏิเสธ</button>';
-      if(r.evidence_link)h+=' <a href="'+esc(r.evidence_link)+'" target="_blank" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 ดูหลักฐาน</a>';
+      if(r.evidence_link)h+=' <a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 ดูหลักฐาน</a>';
     }else if(r.evidence_link){
-      h+='<a href="'+esc(r.evidence_link)+'" target="_blank" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 หลักฐาน</a>';
+      h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 หลักฐาน</a>';
     }else{
       h+='<span style="color:var(--muted);font-size:11px">-</span>';
     }
@@ -1524,6 +1524,32 @@ function renderLeaveRequestsAdmin(rows){
   });
   h+='</tbody></table></div>';
   $('lv-admin-list').innerHTML=h;
+}
+
+function showEvidence(url){
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove()};
+  overlay.onkeydown=function(e){if(e.key==='Escape')overlay.remove()};
+
+  var wrap=document.createElement('div');
+  wrap.style.cssText='position:relative;max-width:95vw;max-height:95vh;display:flex;flex-direction:column;align-items:center';
+
+  var img=document.createElement('img');
+  img.src=url;
+  img.style.cssText='max-width:95vw;max-height:85vh;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5);background:#fff';
+  img.onerror=function(){wrap.innerHTML='<div style="background:#fff;border-radius:12px;padding:30px;text-align:center"><p style="margin:0 0 12px;font-size:14px">ไม่สามารถแสดงรูปภาพได้</p><a href="'+url+'" target="_blank" class="btn btn-a" style="text-decoration:none">🔗 เปิดในแท็บใหม่</a></div>'};
+
+  var btns=document.createElement('div');
+  btns.style.cssText='display:flex;gap:8px;margin-top:12px';
+  btns.innerHTML='<a href="'+url+'" target="_blank" style="padding:6px 16px;background:#fff;border-radius:8px;font-size:12px;color:var(--pri);text-decoration:none;font-weight:600">🔗 เปิดแท็บใหม่</a>'
+    +'<a href="'+url+'" download style="padding:6px 16px;background:#fff;border-radius:8px;font-size:12px;color:var(--pri);text-decoration:none;font-weight:600">💾 ดาวน์โหลด</a>'
+    +'<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="padding:6px 16px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);border-radius:8px;font-size:12px;color:#fff;cursor:pointer">✕ ปิด</button>';
+
+  wrap.appendChild(img);
+  wrap.appendChild(btns);
+  overlay.appendChild(wrap);
+  document.body.appendChild(overlay);
 }
 
 function approveLeaveReq(id){

@@ -400,6 +400,18 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
             <button class="btn btn-g btn-s" onclick="payDBLoadPrev()">📋 ดึงเงินเดือนเดือนก่อน</button>
           </div>
           <div id="paydb2-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+          <!-- Late Detection -->
+          <div id="paydb2-late-area" class="hide" style="padding:10px 14px;background:rgba(245,158,11,.06);border:1px solid #fbbf24;border-radius:10px;margin-bottom:12px">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <span style="font-size:12px;font-weight:600;color:#92400e">⏰ ตรวจจับมาสาย</span>
+              <label style="cursor:pointer;padding:6px 14px;border:1px dashed #d97706;border-radius:7px;font-size:12px;color:#92400e;background:#fef3c7">
+                📂 เลือกไฟล์เวลาลงเวลา (.xlsx)
+                <input type="file" accept=".xlsx,.xls" onchange="payDBLateDetect(this)" style="display:none">
+              </label>
+              <span id="paydb2-late-status" style="font-size:11px;color:var(--muted)"></span>
+            </div>
+            <div id="paydb2-late-result" style="margin-top:8px"></div>
+          </div>
           <div id="paydb2-filters" class="hide" style="display:none;gap:4px;margin-bottom:10px;flex-wrap:wrap"></div>
           <div style="margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="paydb2-srch" placeholder="ค้นหาชื่อ..." oninput="debounce(payDBRender,'pdr')"></div></div>
           <div id="paydb2-table"></div>
@@ -2757,7 +2769,7 @@ function payDBLoad(){
     $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน'+(prefilled?' — ฐานเงินเดือน <b style="color:var(--ok)">'+prefilled+'</b> คน':'');
     prog(100,'ดึงข้อมูล ✅ '+PAYDB2.length+' คน');
     PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
-    $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';
+    $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';$('paydb2-late-area').classList.remove('hide');$('paydb2-late-area').style.display='block';
   }).catch(function(e){$('paydb2-status').textContent='❌ ดึงไม่สำเร็จ: '+e});
 }
 
@@ -2799,7 +2811,7 @@ function payDBLoadPrev(){
     var matched=PAYDB2.filter(function(e){return e.salary>0}).length;
     $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — ดึงเงินเดือนจาก '+prevMonth+' ได้ <b>'+matched+'</b> คน';
     PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
-    $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';
+    $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';$('paydb2-late-area').classList.remove('hide');$('paydb2-late-area').style.display='block';
   }).catch(function(e){$('paydb2-status').textContent='❌ '+e});
 }
 
@@ -2972,6 +2984,153 @@ function payDBCalcAll(){
   PAYDB2.forEach(function(e){payDBCalcRow(e)});
   payDBRender();
   toast('คำนวณ '+PAYDB2.length+' คน — รายวัน:หัก3% / ประจำ:หักปกส.5%','tok');
+}
+
+/* ═══ LATE DETECTION ═══ */
+var LATE_RATE=50; // บาท/นาที
+var LATE_HALF_THRESHOLD=30; // นาที
+
+function payDBLateDetect(inp){
+  var f=inp.files[0];if(!f)return;
+  if(!PAYDB2.length){toast('ดึงข้อมูลพนักงานก่อน','terr');inp.value='';return}
+  $('paydb2-late-status').textContent='⏳ กำลังวิเคราะห์...';
+
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var wb=XLSX.read(ev.target.result,{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+      // Find header row (has date columns like 4-1, 4-2, etc.)
+      var hdrIdx=-1;
+      for(var r=0;r<Math.min(5,data.length);r++){
+        if(data[r]&&String(data[r][0]).indexOf('รหัส')>=0){hdrIdx=r;break}
+      }
+      if(hdrIdx<0){toast('ไม่พบหัวตาราง','terr');return}
+
+      var hdr=data[hdrIdx];
+      // Parse date columns (format: "M-D")
+      var dateCols=[];
+      for(var c=3;c<hdr.length;c++){
+        var m=String(hdr[c]).match(/(\d+)-(\d+)/);
+        if(m)dateCols.push({col:c,day:parseInt(m[2])});
+      }
+
+      // Parse each employee
+      var results=[];
+      for(var r=hdrIdx+1;r<data.length;r++){
+        var row=data[r];
+        if(!row||!row[1])continue;
+        var empName=String(row[1]).trim();
+
+        var lateDays=[],totalLateMins=0,totalDed=0,halfDayCount=0;
+
+        dateCols.forEach(function(dc){
+          var cell=String(row[dc.col]||'').trim();
+          if(!cell)return;
+
+          // Parse timestamps — get first one (check-in)
+          var stamps=cell.replace(/\r/g,'').split('\n').map(function(s){return s.trim()}).filter(function(s){return s.match(/^\d{1,2}:\d{2}$/)});
+          if(!stamps.length){
+            // Try datetime.time format from Excel
+            if(typeof row[dc.col]==='object'&&row[dc.col]){return}
+            return;
+          }
+
+          var checkIn=stamps[0];
+          var parts=checkIn.split(':');
+          var h=parseInt(parts[0]),m=parseInt(parts[1]);
+          var totalMin=h*60+m;
+          var startMin=9*60; // 09:00
+
+          if(totalMin>startMin){
+            var late=totalMin-startMin;
+            var ded;
+            if(late>LATE_HALF_THRESHOLD){
+              // หักครึ่งวัน
+              ded='halfday';
+              halfDayCount++;
+            }else{
+              ded=late*LATE_RATE;
+              totalDed+=ded;
+            }
+            totalLateMins+=late;
+            lateDays.push({day:dc.day,time:checkIn,mins:late,ded:ded});
+          }
+        });
+
+        if(lateDays.length>0){
+          results.push({name:empName,lateDays:lateDays,totalMins:totalLateMins,totalDed:totalDed,halfDayCount:halfDayCount});
+        }
+      }
+
+      // Calculate half-day deduction amounts per employee
+      results.forEach(function(r){
+        // Find matching employee to get salary
+        var emp=null;
+        PAYDB2.forEach(function(e){
+          var n1=e.name.replace(/\s+/g,''),n2=r.name.replace(/\s+/g,'');
+          if(n1===n2)emp=e;
+          else{
+            var parts=n2.split(/\s+/).filter(function(p){return p.length>1});
+            var mc=0;parts.forEach(function(p){if(n1.indexOf(p)>=0)mc++});
+            if(mc>=2||(parts.length<=2&&mc>=1))emp=e;
+          }
+        });
+        var halfDayAmt=emp&&emp.salary>0?Math.round(emp.salary/26/2):200;
+        r.halfDayAmt=halfDayAmt;
+        r.halfDayTotal=r.halfDayCount*halfDayAmt;
+        r.grandTotal=r.totalDed+r.halfDayTotal;
+        r.matchedEmp=emp;
+      });
+
+      // Render result
+      var h='<div style="font-size:12px;margin-bottom:6px;color:#92400e">พบพนักงานมาสาย <b>'+results.length+'</b> คน</div>';
+      if(results.length){
+        h+='<div class="tw"><table><thead><tr><th>ชื่อ</th><th style="text-align:center">จำนวนวัน</th><th style="text-align:center">สาย≤30น.</th><th style="text-align:center">สาย>30น.(½วัน)</th><th style="text-align:right">หักนาที(×'+LATE_RATE+'฿)</th><th style="text-align:right">หัก½วัน</th><th style="text-align:right;color:var(--err)">รวมหัก</th><th>รายละเอียด</th></tr></thead><tbody>';
+        results.forEach(function(r){
+          var details=r.lateDays.map(function(d){return'วันที่'+d.day+' เข้า'+d.time+' (สาย'+d.mins+'น.'+(d.ded==='halfday'?'→½วัน':'→'+d.ded+'฿')+')'}).join(', ');
+          h+='<tr>';
+          h+='<td><b>'+esc(r.name)+'</b>'+(r.matchedEmp?'':'<br><span style="color:var(--err);font-size:10px">⚠ จับคู่ไม่ได้</span>')+'</td>';
+          h+='<td style="text-align:center">'+r.lateDays.length+'</td>';
+          h+='<td style="text-align:center">'+(r.lateDays.length-r.halfDayCount)+'</td>';
+          h+='<td style="text-align:center;color:var(--err)">'+(r.halfDayCount||'-')+'</td>';
+          h+='<td style="text-align:right">'+payFmt(r.totalDed)+'</td>';
+          h+='<td style="text-align:right;color:var(--err)">'+(r.halfDayTotal?payFmt(r.halfDayTotal):'-')+'</td>';
+          h+='<td style="text-align:right;font-weight:700;color:var(--err)">'+payFmt(r.grandTotal)+'</td>';
+          h+='<td style="font-size:10px;color:var(--muted);max-width:300px">'+esc(details)+'</td>';
+          h+='</tr>';
+        });
+        h+='</tbody></table></div>';
+        h+='<button class="btn btn-a btn-s" style="margin-top:8px" onclick="payDBApplyLate()">✅ นำยอดหักมาสายไปใส่ในตาราง</button>';
+        window._lateResults=results;
+      }
+      $('paydb2-late-result').innerHTML=h;
+      $('paydb2-late-status').innerHTML='<span style="color:var(--ok)">✅ วิเคราะห์เสร็จ</span>';
+    }catch(e){
+      toast('อ่านไฟล์ไม่สำเร็จ: '+e,'terr');
+      $('paydb2-late-status').textContent='❌ Error';
+    }
+  };
+  reader.readAsArrayBuffer(f);
+  inp.value='';
+}
+
+function payDBApplyLate(){
+  if(!window._lateResults)return;
+  var applied=0;
+  window._lateResults.forEach(function(r){
+    if(!r.matchedEmp)return;
+    var idx=-1;
+    PAYDB2.forEach(function(e,i){if(e===r.matchedEmp)idx=i});
+    if(idx<0)return;
+    PAYDB2[idx].late=r.grandTotal;
+    payDBCalcRow(PAYDB2[idx]);
+    applied++;
+  });
+  payDBRender();
+  toast('ใส่ยอดหักมาสาย '+applied+' คน แล้ว — ตรวจสอบในคอลัมน์ "หักมาสาย"','tok');
 }
 
 function payDBSave(){

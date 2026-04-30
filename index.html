@@ -1413,28 +1413,25 @@ function detail(id){
   var opts='';Object.keys(ST).forEach(function(k){opts+='<option value="'+k+'"'+(k===a.status?' selected':'')+'>'+ST[k].l+'</option>'});
   var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
   var isTerm=a.status==='terminated';
+  // Contract expiry calculation
+  var contractInfo='';
+  if(a.contract_period&&a.start_date){
+    var sd=new Date(a.start_date+'T00:00:00');
+    var cmonths={'1m':1,'3m':3,'6m':6,'1y':12};
+    var addM=cmonths[a.contract_period]||0;
+    if(addM){
+      var ced=new Date(sd);ced.setMonth(ced.getMonth()+addM);
+      var ctoday=new Date();
+      var daysLeft=Math.ceil((ced-ctoday)/(1000*60*60*24));
+      var edStr=ced.getFullYear()+'-'+String(ced.getMonth()+1).padStart(2,'0')+'-'+String(ced.getDate()).padStart(2,'0');
+      if(daysLeft<0)contractInfo='<div style="font-size:10px;color:var(--err);font-weight:700;margin-top:4px">⚠️ หมดสัญญาแล้ว ('+edStr+')</div>';
+      else if(daysLeft<=30)contractInfo='<div style="font-size:10px;color:#f59e0b;font-weight:700;margin-top:4px">⏳ เหลือ '+daysLeft+' วัน ('+edStr+')</div>';
+      else contractInfo='<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ถึง '+edStr+' (เหลือ '+daysLeft+' วัน)</div>';
+    }
+  }
   $('A-det').innerHTML=
     '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;align-items:center"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button><button class="btn btn-a btn-s" onclick="editEmp(\''+a.id+'\')">✏️ แก้ไขข้อมูล</button><button class="btn btn-g btn-s" onclick="resetEmpPass(\''+a.id+'\',\''+esc(a.name)+'\')" style="background:#fef3c7;border-color:#fbbf24;color:#92400e">🔑 รีเซ็ตรหัสผ่าน</button>'+(isTerm?'<span class="bg b-terminated" style="padding:6px 14px;font-size:12px">⛔ พ้นสภาพแล้ว'+(a.terminated_at?' — '+String(a.terminated_at).substring(0,10):'')+'</span>':'<button class="tmbtn tmbtn-warn" onclick="terminate(\''+a.id+'\')">⛔ พ้นสภาพพนักงาน</button>')+'<button class="btn btn-d btn-s" style="margin-left:auto" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
     '<div class="dt"><div class="av">'+esc(a.name).charAt(0)+'</div><div style="flex:1"><div class="dn-nm">'+esc(a.name)+(a.nickname?' <span style="font-size:14px;color:var(--acc)">('+esc(a.nickname)+')</span>':'')+'</div></div><div><select class="ssel" onchange="chgSt(\''+a.id+'\',this.value)">'+opts+'</select></div></div>'+
-    // Contract expiry calculation
-    var contractInfo='';
-    if(a.contract_period&&a.start_date){
-      var sd=new Date(a.start_date+'T00:00:00');
-      var months={'1m':1,'3m':3,'6m':6,'1y':12};
-      var addM=months[a.contract_period]||0;
-      if(addM){
-        var ed=new Date(sd);ed.setMonth(ed.getMonth()+addM);
-        var today=new Date();
-        var daysLeft=Math.ceil((ed-today)/(1000*60*60*24));
-        var edStr=ed.getFullYear()+'-'+String(ed.getMonth()+1).padStart(2,'0')+'-'+String(ed.getDate()).padStart(2,'0');
-        if(daysLeft<0)contractInfo='<div style="font-size:10px;color:var(--err);font-weight:700;margin-top:4px">⚠️ หมดสัญญาแล้ว ('+edStr+')</div>';
-        else if(daysLeft<=30)contractInfo='<div style="font-size:10px;color:#f59e0b;font-weight:700;margin-top:4px">⏳ เหลือ '+daysLeft+' วัน ('+edStr+')</div>';
-        else contractInfo='<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ถึง '+edStr+' (เหลือ '+daysLeft+' วัน)</div>';
-      }
-    }
-    var contractLabels={'1m':'1 เดือน','3m':'3 เดือน','6m':'6 เดือน','1y':'1 ปี'};
-
-    var detH=
     '<div class="emp-grid"><div class="dc"><h4>💼 ตำแหน่ง</h4><div style="font-size:14px;font-weight:600;color:var(--pri);margin-top:6px">'+esc(a.position||'-')+'</div></div><div class="dc"><h4>📅 วันที่เริ่มทำงาน</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.start_date||'')+'" onchange="setF(\''+a.id+'\',\'start_date\',this.value)"></div><div class="dc"><h4>👷 สถานะ</h4><div style="margin-top:6px"><span class="bg '+(ST[a.status]||ST.new).c+'" style="padding:4px 12px;font-size:12px">'+(ST[a.status]||ST.new).l+'</span></div></div><div class="dc"><h4>📝 สัญญาจ้าง</h4><select class="ssel" style="width:100%;margin-top:4px;font-size:14px;font-weight:600" onchange="setF(\''+a.id+'\',\'contract_period\',this.value)"><option value="">-- เลือก --</option><option value="1m"'+(a.contract_period==='1m'?' selected':'')+'>1 เดือน</option><option value="3m"'+(a.contract_period==='3m'?' selected':'')+'>3 เดือน</option><option value="6m"'+(a.contract_period==='6m'?' selected':'')+'>6 เดือน</option><option value="1y"'+(a.contract_period==='1y'?' selected':'')+'>1 ปี</option></select>'+contractInfo+'</div><div class="dc" style="border:2px solid var(--acc)"><h4>💰 ฐานเงินเดือน (ประจำ)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:var(--pri)" value="'+(a.salary||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'salary\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.salary?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ล็อคแล้ว — ใช้ในระบบคิดเงินเดือนอัตโนมัติ</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกเงินเดือนเพื่อล็อค ไม่ต้องกรอกซ้ำทุกเดือน</div>')+'</div><div class="dc"><h4>🎓 หัก กยศ. (บาท/เดือน)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:#92400e" value="'+(a.loan||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'loan\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.loan?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ หัก '+payFmt(a.loan)+' ทุกเดือน</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกยอด กยศ. ระบบหักให้อัตโนมัติ</div>')+'</div></div>'+
     '<div class="dg"><div class="dc"><h4>📋 ข้อมูลส่วนตัว</h4><div class="dr"><span class="i">👤</span> ชื่อ-สกุล: '+esc(a.name)+'</div>'+(a.nickname?'<div class="dr"><span class="i">😊</span> ชื่อเล่น: '+esc(a.nickname)+'</div>':'')+'<div class="dr"><span class="i">📱</span> โทรศัพท์: '+esc(a.phone)+'</div>'+(a.email?'<div class="dr"><span class="i">📧</span> อีเมล: '+esc(a.email)+'</div>':'')+'<div class="dr"><span class="i">💼</span> ตำแหน่ง: '+esc(a.position||'-')+'</div></div>'+
     '<div class="dc"><h4>📅 ข้อมูลการทำงาน</h4><div class="dr"><span class="i">📅</span> วันที่สมัคร: '+esc(dt)+'</div>'+(a.start_date?'<div class="dr"><span class="i">🗓️</span> เริ่มงาน: '+esc(a.start_date)+'</div>':'')+'<div class="dr"><span class="i">👷</span> สถานะ: '+(ST[a.status]||ST.new).l+'</div></div></div>'+

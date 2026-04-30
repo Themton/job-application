@@ -47,7 +47,7 @@
 .tw td{padding:11px 13px;font-size:12px;border-bottom:1px solid var(--bdr2)}.tw tr:last-child td{border-bottom:none}.tw tbody tr{cursor:pointer;transition:.1s}.tw tbody tr:hover{background:rgba(194,122,44,.03)}
 .nm{font-weight:600;color:var(--pri);font-size:13px}.em{font-size:10px;color:var(--muted)}
 .bg{display:inline-flex;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600}
-.b-new{background:rgba(59,130,246,.1);color:#3b82f6}.b-daily{background:rgba(198,149,43,.15);color:#b8860b}.b-monthly{background:rgba(139,115,20,.1);color:#6a5c10}.b-terminated{background:rgba(107,114,128,.1);color:#6b7280}
+.b-new{background:rgba(59,130,246,.1);color:#3b82f6}.b-daily{background:rgba(198,149,43,.15);color:#b8860b}.b-monthly{background:rgba(139,115,20,.1);color:#6a5c10}.b-resigned{background:rgba(245,158,11,.15);color:#d97706}.b-terminated{background:rgba(107,114,128,.1);color:#6b7280}
 .dy{background:rgba(22,163,74,.08);color:var(--ok);padding:1px 7px;border-radius:8px;font-size:10px}.dn2{background:rgba(220,38,38,.06);color:var(--err);padding:1px 7px;border-radius:8px;font-size:10px}
 .dt{display:flex;align-items:center;gap:14px;margin-bottom:22px}.av{width:52px;height:52px;background:linear-gradient(135deg,#8b6914,#c6952b);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0}
 .dn-nm{font-size:20px;font-weight:700;color:var(--pri)}
@@ -245,7 +245,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร..." oninput="debounce(doFilter,'sf')"></div>
         <select class="fsel" id="f-dept" onchange="doFilter()"><option value="">ทุกแผนก</option></select>
         <select class="fsel" id="f-pos" onchange="doFilter()"><option value="">ทุกตำแหน่ง</option></select>
-        <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
+        <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="resigned_pending">ลาออก-รอจ่าย</option><option value="terminated">พ้นสภาพ</option></select>
         <select class="fsel" id="f-bank" onchange="doFilter()"><option value="">ทุกธนาคาร</option><option value="scb">ไทยพาณิชย์ (SCB)</option><option value="other">ธนาคารอื่น</option></select>
         <select class="fsel" id="f-email" onchange="doFilter()"><option value="">ทุกอีเมล</option><option value="has">มีอีเมล</option><option value="no">ไม่มีอีเมล</option></select>
         <button class="btn btn-a btn-s" onclick="showAdminAddEmp()">➕ เพิ่มพนักงาน</button>
@@ -849,7 +849,7 @@ function emailCache(){try{return JSON.parse(localStorage.getItem('mt_emails')||'
 function emailSet(name,email){if(!email)return;var c=emailCache();c[name.trim()]=email.trim();try{localStorage.setItem('mt_emails',JSON.stringify(c))}catch(e){}}
 function emailGet(name){var c=emailCache();return c[name.trim()]||''}
 function emailSyncFromAll(){ALL.forEach(function(a){if(a.email)emailSet(a.name,a.email)})}
-var ST={new:{l:"ใหม่",c:"b-new"},daily:{l:"พนักงานรายวัน",c:"b-daily"},monthly:{l:"พนักงานประจำ",c:"b-monthly"},terminated:{l:"พ้นสภาพ",c:"b-terminated"}};
+var ST={new:{l:"ใหม่",c:"b-new"},daily:{l:"พนักงานรายวัน",c:"b-daily"},monthly:{l:"พนักงานประจำ",c:"b-monthly"},resigned_pending:{l:"ลาออก-รอจ่าย",c:"b-resigned"},terminated:{l:"พ้นสภาพ",c:"b-terminated"}};
 function $(id){return document.getElementById(id)}
 function pf(id){return $(id)}
 var _dbT={};function debounce(fn,key,ms){clearTimeout(_dbT[key]);_dbT[key]=setTimeout(fn,ms||200)}
@@ -1222,6 +1222,7 @@ function doFilter(){
     var typeLabel,typeBg;
     if(a.status==='daily'){typeLabel='รายวัน';typeBg='background:#fff3cd;color:#856404;border:1px solid #ffc107'}
     else if(a.status==='monthly'){typeLabel='ประจำ';typeBg='background:#d4edda;color:#155724;border:1px solid #28a745'}
+    else if(a.status==='resigned_pending'){typeLabel='⏳ รอจ่าย';typeBg='background:#fef3c7;color:#d97706;border:1px solid #f59e0b'}
     else if(a.status==='terminated'){typeLabel='พ้นสภาพ';typeBg='background:#f8d7da;color:#721c24;border:1px solid #dc3545'}
     else{typeLabel='ใหม่';typeBg='background:#cce5ff;color:#004085;border:1px solid #007bff'}
     var sel=EMP_SEL[a.id];
@@ -1250,8 +1251,10 @@ function doFilter(){
     }
     h+='</td>';
     h+='<td style="text-align:center;white-space:nowrap">';
-    if(a.status!=='terminated'){
+    if(a.status!=='terminated'&&a.status!=='resigned_pending'){
       h+='<button class="btn btn-d btn-s" style="font-size:10px;padding:3px 8px" onclick="quickTerminate(window._empFiltered['+idx+'].id,window._empFiltered['+idx+'].name)">⛔ ลาออก</button>';
+    }else if(a.status==='resigned_pending'){
+      h+='<span style="color:#d97706;font-size:10px;font-weight:600">⏳ รอจ่ายเงินเดือน</span>';
     }else{
       h+='<span style="color:var(--err);font-size:10px;font-weight:600">⛔ ลาออกแล้ว</span>';
     }
@@ -1413,6 +1416,7 @@ function detail(id){
   var opts='';Object.keys(ST).forEach(function(k){opts+='<option value="'+k+'"'+(k===a.status?' selected':'')+'>'+ST[k].l+'</option>'});
   var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
   var isTerm=a.status==='terminated';
+  var isResigned=a.status==='resigned_pending';
   // Contract expiry calculation
   var contractInfo='';
   if(a.contract_period&&a.start_date){
@@ -1430,7 +1434,7 @@ function detail(id){
     }
   }
   $('A-det').innerHTML=
-    '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;align-items:center"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button><button class="btn btn-a btn-s" onclick="editEmp(\''+a.id+'\')">✏️ แก้ไขข้อมูล</button><button class="btn btn-g btn-s" onclick="resetEmpPass(\''+a.id+'\',\''+esc(a.name)+'\')" style="background:#fef3c7;border-color:#fbbf24;color:#92400e">🔑 รีเซ็ตรหัสผ่าน</button>'+(isTerm?'<span class="bg b-terminated" style="padding:6px 14px;font-size:12px">⛔ พ้นสภาพแล้ว'+(a.terminated_at?' — '+String(a.terminated_at).substring(0,10):'')+'</span>':'<button class="tmbtn tmbtn-warn" onclick="terminate(\''+a.id+'\')">⛔ พ้นสภาพพนักงาน</button>')+'<button class="btn btn-d btn-s" style="margin-left:auto" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
+    '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;align-items:center"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button><button class="btn btn-a btn-s" onclick="editEmp(\''+a.id+'\')">✏️ แก้ไขข้อมูล</button><button class="btn btn-g btn-s" onclick="resetEmpPass(\''+a.id+'\',\''+esc(a.name)+'\')" style="background:#fef3c7;border-color:#fbbf24;color:#92400e">🔑 รีเซ็ตรหัสผ่าน</button>'+(isTerm?'<span class="bg b-terminated" style="padding:6px 14px;font-size:12px">⛔ พ้นสภาพแล้ว'+(a.terminated_at?' — '+String(a.terminated_at).substring(0,10):'')+'</span>':isResigned?'<span class="bg b-resigned" style="padding:6px 14px;font-size:12px">⏳ ลาออก-รอจ่ายเงินเดือน</span> <button class="btn btn-a btn-s" onclick="confirmPaid(\''+a.id+'\')" style="background:#d4edda;border-color:#28a745;color:#155724">💰 จ่ายแล้ว → พ้นสภาพ</button>':'<button class="tmbtn tmbtn-warn" onclick="terminate(\''+a.id+'\')">⛔ พ้นสภาพพนักงาน</button>')+'<button class="btn btn-d btn-s" style="margin-left:auto" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
     '<div class="dt"><div class="av">'+esc(a.name).charAt(0)+'</div><div style="flex:1"><div class="dn-nm">'+esc(a.name)+(a.nickname?' <span style="font-size:14px;color:var(--acc)">('+esc(a.nickname)+')</span>':'')+'</div></div><div><select class="ssel" onchange="chgSt(\''+a.id+'\',this.value)">'+opts+'</select></div></div>'+
     '<div class="emp-grid"><div class="dc"><h4>💼 ตำแหน่ง</h4><div style="font-size:14px;font-weight:600;color:var(--pri);margin-top:6px">'+esc(a.position||'-')+'</div></div><div class="dc"><h4>📅 วันที่เริ่มทำงาน</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.start_date||'')+'" onchange="setF(\''+a.id+'\',\'start_date\',this.value)"></div><div class="dc"><h4>👷 สถานะ</h4><div style="margin-top:6px"><span class="bg '+(ST[a.status]||ST.new).c+'" style="padding:4px 12px;font-size:12px">'+(ST[a.status]||ST.new).l+'</span></div></div><div class="dc"><h4>📝 สัญญาจ้าง</h4><select class="ssel" style="width:100%;margin-top:4px;font-size:14px;font-weight:600" onchange="setF(\''+a.id+'\',\'contract_period\',this.value)"><option value="">-- เลือก --</option><option value="1m"'+(a.contract_period==='1m'?' selected':'')+'>1 เดือน</option><option value="3m"'+(a.contract_period==='3m'?' selected':'')+'>3 เดือน</option><option value="6m"'+(a.contract_period==='6m'?' selected':'')+'>6 เดือน</option><option value="1y"'+(a.contract_period==='1y'?' selected':'')+'>1 ปี</option></select>'+contractInfo+'</div><div class="dc" style="border:2px solid var(--acc)"><h4>💰 ฐานเงินเดือน (ประจำ)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:var(--pri)" value="'+(a.salary||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'salary\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.salary?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ล็อคแล้ว — ใช้ในระบบคิดเงินเดือนอัตโนมัติ</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกเงินเดือนเพื่อล็อค ไม่ต้องกรอกซ้ำทุกเดือน</div>')+'</div><div class="dc"><h4>🎓 หัก กยศ. (บาท/เดือน)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:#92400e" value="'+(a.loan||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'loan\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.loan?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ หัก '+payFmt(a.loan)+' ทุกเดือน</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกยอด กยศ. ระบบหักให้อัตโนมัติ</div>')+'</div></div>'+
     '<div class="dg"><div class="dc"><h4>📋 ข้อมูลส่วนตัว</h4><div class="dr"><span class="i">👤</span> ชื่อ-สกุล: '+esc(a.name)+'</div>'+(a.nickname?'<div class="dr"><span class="i">😊</span> ชื่อเล่น: '+esc(a.nickname)+'</div>':'')+'<div class="dr"><span class="i">📱</span> โทรศัพท์: '+esc(a.phone)+'</div>'+(a.email?'<div class="dr"><span class="i">📧</span> อีเมล: '+esc(a.email)+'</div>':'')+'<div class="dr"><span class="i">💼</span> ตำแหน่ง: '+esc(a.position||'-')+'</div></div>'+
@@ -1864,8 +1868,36 @@ function markNotifRead(id){
 
 
 function chgSt(id,st){sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){toast('อัปเดตแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a.status=st});stats();doFilter();syncSheet({id:id,status:st})}).catch(function(e){toast('Error: '+e,'terr')})}
-function terminate(id){if(!confirm('ยืนยันพ้นสภาพพนักงาน?'))return;var now=new Date().toISOString();sb("applications","PATCH",{status:"terminated",terminated_at:now},"?id=eq."+id).then(function(){toast('พ้นสภาพแล้ว','tok');ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_at=now}});stats();doFilter();detail(id)}).catch(function(e){toast('Error: '+e,'terr')})}
-function quickTerminate(id,name){if(!confirm('⛔ ยืนยันให้ "'+name+'" ลาออก/พ้นสภาพ?\n\nพนักงานนี้จะถูกตัดออกจากไฟล์ Payroll'))return;var now=new Date().toISOString();sb("applications","PATCH",{status:"terminated",terminated_at:now},"?id=eq."+id).then(function(){toast('⛔ '+name+' พ้นสภาพแล้ว','tok');ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_at=now}});stats();doFilter()}).catch(function(e){toast('Error: '+e,'terr')})}
+function terminate(id){
+  var choice=prompt('เลือกประเภท:\n1 = ลาออก รอจ่ายเงินเดือน\n2 = พ้นสภาพทันที\n\nพิมพ์ 1 หรือ 2:','1');
+  if(!choice)return;
+  var st=choice.trim()==='2'?'terminated':'resigned_pending';
+  var now=new Date().toISOString();
+  sb("applications","PATCH",{status:st,terminated_at:now},"?id=eq."+id).then(function(){
+    toast(st==='terminated'?'พ้นสภาพแล้ว':'ลาออก-รอจ่ายเงินเดือน','tok');
+    ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=now}});
+    stats();doFilter();detail(id);
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+function quickTerminate(id,name){
+  var choice=prompt('⛔ "'+name+'" ลาออก:\n1 = รอจ่ายเงินเดือนก่อน\n2 = พ้นสภาพทันที\n\nพิมพ์ 1 หรือ 2:','1');
+  if(!choice)return;
+  var st=choice.trim()==='2'?'terminated':'resigned_pending';
+  var now=new Date().toISOString();
+  sb("applications","PATCH",{status:st,terminated_at:now},"?id=eq."+id).then(function(){
+    toast('⛔ '+name+(st==='terminated'?' พ้นสภาพแล้ว':' ลาออก-รอจ่ายเงินเดือน'),'tok');
+    ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=now}});
+    stats();doFilter();
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+function confirmPaid(id){
+  if(!confirm('ยืนยันจ่ายเงินเดือนแล้ว?\n\nพนักงานจะถูกเปลี่ยนเป็น "พ้นสภาพ"'))return;
+  sb("applications","PATCH",{status:"terminated"},"?id=eq."+id).then(function(){
+    toast('✅ จ่ายเงินเดือนแล้ว → พ้นสภาพ','tok');
+    ALL.forEach(function(a){if(a.id===id)a.status='terminated'});
+    stats();doFilter();detail(id);
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
 function delA(id){if(!confirm('ลบข้อมูลพนักงานนี้?'))return;sb("applications","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}).catch(function(e){toast('Error: '+e,'terr')})}
 function setF(id,field,val){var patch={};patch[field]=val;sb("applications","PATCH",patch,"?id=eq."+id).then(function(){toast('บันทึกแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a[field]=val})}).catch(function(e){toast('Error: '+e,'terr')})}
 
@@ -2841,7 +2873,7 @@ var PAYDB2_FILTER='';
 
 function payDBBuildFilters(){
   var stMap={};
-  var stLabels={daily:'🟡 พนักงานรายวัน',monthly:'🟢 พนักงานประจำ',new:'🔵 พนักงานใหม่'};
+  var stLabels={daily:'🟡 พนักงานรายวัน',monthly:'🟢 พนักงานประจำ',new:'🔵 พนักงานใหม่',resigned_pending:'⏳ รอจ่าย'};
   PAYDB2.forEach(function(e){var s=e.status||'new';stMap[s]=(stMap[s]||0)+1});
   var h='<button class="btn btn-s '+(PAYDB2_FILTER===''?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">ทั้งหมด ('+PAYDB2.length+')</button>';
   ['daily','monthly','new'].forEach(function(s){
@@ -2953,11 +2985,12 @@ function payDBLoadPrev(){
 function payDBRender(){
   if(!PAYDB2.length){$('paydb2-table').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่มีข้อมูล</p></div>';return}
 
-  // Sort by status group: monthly → daily → new
-  var stOrder={monthly:0,daily:1,new:2};
+  // Sort by status group: monthly → daily → new → resigned_pending
+  var stOrder={monthly:0,daily:1,new:2,resigned_pending:3};
   PAYDB2.sort(function(a,b){var sa=stOrder[a.status]!==undefined?stOrder[a.status]:9;var sb=stOrder[b.status]!==undefined?stOrder[b.status]:9;if(sa!==sb)return sa-sb;return a.name.localeCompare(b.name,'th')});
 
-  var stLabels={daily:'พนักงานรายวัน',monthly:'พนักงานประจำ',new:'พนักงานใหม่'};
+  var stLabels={daily:'พนักงานรายวัน',monthly:'พนักงานประจำ',new:'พนักงานใหม่',resigned_pending:'⏳ ลาออก-รอจ่ายเงินเดือน'};
+  var stColors={daily:'#f59e0b',monthly:'#28a745',new:'#007bff',resigned_pending:'#d97706'};
   var stColors={daily:'#f59e0b',monthly:'#28a745',new:'#007bff'};
 
   // Build filtered list with original indices

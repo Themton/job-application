@@ -343,6 +343,11 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:10px 14px;background:rgba(92,74,30,.04);border:1px solid var(--bdr);border-radius:10px">
           <span style="font-size:12px;font-weight:600;color:var(--pri)">📥 Export รายงาน</span>
           <input type="month" id="rpt-exp-month" class="fsel" style="min-width:140px">
+          <select id="rpt-exp-type" class="fsel" style="min-width:100px">
+            <option value="">ทุกประเภท</option>
+            <option value="monthly">ประจำ</option>
+            <option value="daily">รายวัน</option>
+          </select>
           <button class="btn btn-a btn-s" onclick="rptExportAttendance()">📥 Export ขาด/ลา/มา/สาย</button>
         </div>
         <!-- Holidays Management -->
@@ -4274,8 +4279,11 @@ function rptExportAttendance(){
   }
 
   var emps=ALL.slice();
+  var expType=$('rpt-exp-type')?$('rpt-exp-type').value:'';
+  if(expType)emps=emps.filter(function(a){return a.status===expType});
+  var typeLabel=expType==='monthly'?'ประจำ':expType==='daily'?'รายวัน':'ทุกประเภท';
   var ids=emps.map(function(a){return a.id});
-  if(!ids.length){toast('ไม่พบพนักงาน','terr');return}
+  if(!ids.length){toast('ไม่พบพนักงาน'+(expType?' ประเภท '+typeLabel:''),'terr');return}
 
   prog(10,'กำลังดึงข้อมูลขาด/ลา...');
 
@@ -4321,7 +4329,7 @@ function rptExportAttendance(){
       +'</style></head><body>';
 
     h+='<table><tr><td colspan="9" style="font-size:16px;font-weight:bold;padding:10px;border:none;color:#5c4a1e">'
-      +'📊 รายงาน ขาด/ลา/มา/สาย — '+month+' (วันทำงาน '+workDays+' วัน'+(holInMonth.length?' หยุด '+holInMonth.length+' วัน: '+holInMonth.join(', '):'')+')'+''+'</td></tr>';
+      +'📊 รายงาน ขาด/ลา/มา/สาย — '+month+' ['+typeLabel+'] (วันทำงาน '+workDays+' วัน'+(holInMonth.length?' หยุด '+holInMonth.length+' วัน: '+holInMonth.join(', '):'')+')'+''+'</td></tr>';
 
     h+='<tr><th class="hdr">ลำดับ</th><th class="hdr" style="text-align:left;min-width:160px">ชื่อ-สกุล</th>'
       +'<th class="hdr" style="text-align:left;min-width:80px">ชื่อเล่น</th>'
@@ -4370,11 +4378,11 @@ function rptExportAttendance(){
 
     var blob=new Blob(['\uFEFF'+h],{type:'application/vnd.ms-excel;charset=utf-8'});
     var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');a.href=url;a.download='รายงาน_ขาดลามาสาย_'+month+'.xls';
+    var a=document.createElement('a');a.href=url;a.download='รายงาน_ขาดลามาสาย_'+month+'_'+typeLabel+'.xls';
     document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 
     prog(100,'Export สำเร็จ ✅');
-    toast('Export '+num+' คน — เดือน '+month,'tok');
+    toast('Export '+num+' คน ['+typeLabel+'] — เดือน '+month,'tok');
   }).catch(function(e){
     prog(-1);toast('Export ไม่สำเร็จ: '+e,'terr');
   });

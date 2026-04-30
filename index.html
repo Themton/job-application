@@ -2953,6 +2953,10 @@ function payDBLoadPrev(){
 function payDBRender(){
   if(!PAYDB2.length){$('paydb2-table').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่มีข้อมูล</p></div>';return}
 
+  // Sort by status group: monthly → daily → new
+  var stOrder={monthly:0,daily:1,new:2};
+  PAYDB2.sort(function(a,b){var sa=stOrder[a.status]!==undefined?stOrder[a.status]:9;var sb=stOrder[b.status]!==undefined?stOrder[b.status]:9;if(sa!==sb)return sa-sb;return a.name.localeCompare(b.name,'th')});
+
   var stLabels={daily:'พนักงานรายวัน',monthly:'พนักงานประจำ',new:'พนักงานใหม่'};
   var stColors={daily:'#f59e0b',monthly:'#28a745',new:'#007bff'};
 

@@ -213,12 +213,14 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <div class="sb-sub">ระบบข้อมูลพนักงาน <span id="sb-role-badge"></span></div>
       </div>
       <div class="sb-menu">
+        <button class="sb-item" id="tab-dash" onclick="showTab('dash')"><span class="sb-ic">🏠</span><span class="sb-tx">Dashboard</span></button>
         <button class="sb-item on" id="tab-app" onclick="showTab('app')"><span class="sb-ic">📋</span><span class="sb-tx">พนักงาน</span></button>
         <button class="sb-item" id="tab-dept" onclick="showTab('dept')"><span class="sb-ic">🏢</span><span class="sb-tx">แผนก</span></button>
         <button class="sb-item" id="tab-pos" onclick="showTab('pos')"><span class="sb-ic">💼</span><span class="sb-tx">ตำแหน่ง</span></button>
         <button class="sb-item hr-hide" id="tab-usr" onclick="showTab('usr')"><span class="sb-ic">👤</span><span class="sb-tx">ผู้ใช้ / สิทธิ์</span></button>
         <button class="sb-item" id="tab-rpt" onclick="showTab('rpt')"><span class="sb-ic">📊</span><span class="sb-tx">รายงาน / ตรวจสอบ</span></button>
         <button class="sb-item" id="tab-lv" onclick="showTab('lv')"><span class="sb-ic">🗓️</span><span class="sb-tx">อนุมัติการลา <span id="lv-pending-dot" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;margin-left:4px"></span></span></button>
+        <button class="sb-item" id="tab-warn" onclick="showTab('warn')"><span class="sb-ic">⚠️</span><span class="sb-tx">ใบเตือน / บันทึก</span></button>
         <button class="sb-item hr-hide" onclick="viewAuditLog()"><span class="sb-ic">🔐</span><span class="sb-tx">Audit Log</span></button>
         <div class="sb-sep">เงินเดือน</div>
         <button class="sb-item" id="tab-pay" onclick="showTab('pay')"><span class="sb-ic">💰</span><span class="sb-tx">คิดเงินเดือน</span></button>
@@ -241,6 +243,23 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
 
     <!-- Content area -->
     <div class="sb-content">
+    <!-- TAB: Dashboard -->
+    <div id="T-dash" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span class="ttl" style="font-size:18px">🏠 Dashboard</span>
+        <button class="btn btn-g btn-s" onclick="loadDashboard()">🔄</button>
+      </div>
+      <div id="dash-cards" class="sts" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px"></div>
+      <div class="dg" style="gap:14px">
+        <div class="cd"><div class="cd-t"><span class="dot"></span> ⏳ สัญญาใกล้หมด / หมดแล้ว</div><div id="dash-contract"></div></div>
+        <div class="cd"><div class="cd-t"><span class="dot"></span> 🗓️ ใบลารออนุมัติ</div><div id="dash-leave"></div></div>
+      </div>
+      <div class="dg" style="gap:14px;margin-top:14px">
+        <div class="cd"><div class="cd-t"><span class="dot"></span> ⏳ รอจ่ายเงินเดือน</div><div id="dash-pending-pay"></div></div>
+        <div class="cd"><div class="cd-t"><span class="dot"></span> 💰 สรุปเงินเดือนล่าสุด</div><div id="dash-payroll"></div></div>
+      </div>
+    </div>
+
     <div id="T-app"><div class="sts" id="A-sts"></div>
       <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร..." oninput="debounce(doFilter,'sf')"></div>
         <select class="fsel" id="f-dept" onchange="doFilter()"><option value="">ทุกแผนก</option></select>
@@ -383,6 +402,22 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         </div>
       </div>
       <div id="lv-admin-list"><div style="text-align:center;padding:30px;color:var(--muted)">กำลังโหลด...</div></div>
+    </div>
+
+    <!-- TAB: Warnings -->
+    <div id="T-warn" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span class="ttl" style="font-size:18px">⚠️ ใบเตือน / บันทึกพฤติกรรม</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-a btn-s" onclick="addWarning()">➕ เพิ่มใบเตือน</button>
+          <button class="btn btn-g btn-s" onclick="loadWarnings()">🔄</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <div class="sb" style="min-width:180px"><input id="warn-srch" placeholder="ค้นหาชื่อพนักงาน..." oninput="renderWarnings()"></div>
+        <select id="warn-filter" class="fsel" onchange="renderWarnings()"><option value="">ทุกประเภท</option><option value="verbal">ตักเตือนด้วยวาจา</option><option value="written_1">ใบเตือนครั้งที่ 1</option><option value="written_2">ใบเตือนครั้งที่ 2</option><option value="written_3">ใบเตือนครั้งที่ 3 (สุดท้าย)</option><option value="note">บันทึกพฤติกรรม</option></select>
+      </div>
+      <div id="warn-list">กำลังโหลด...</div>
     </div>
 
     <!-- TAB: Payroll -->
@@ -869,12 +904,14 @@ function page(p){
   window.scrollTo(0,0);
 }
 
-var TAB_LABELS={app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',paydb:'🗂️ รายงานรวม + ส่งสลิป',cert:'📜 หนังสือรับรอง'};
+var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',warn:'⚠️ ใบเตือน',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',paydb:'🗂️ รายงานรวม + ส่งสลิป',cert:'📜 หนังสือรับรอง'};
 
 function showTab(t){
-  ['app','dept','pos','usr','rpt','lv','pay','comm','paydb','cert'].forEach(function(x){$('tab-'+x).classList.toggle('on',t===x);$('T-'+x).classList.toggle('hide',t!==x)});
+  ['dash','app','dept','pos','usr','rpt','lv','warn','pay','comm','paydb','cert'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   if(t==='lv')loadLeaveRequests();
+  if(t==='dash')loadDashboard();
+  if(t==='warn')loadWarnings();
   if(t==='pay'&&!$('paydb2-month').value){var now=new Date();$('paydb2-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='comm'&&!$('comm-month').value){var now=new Date();$('comm-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='rpt'&&!$('rpt-exp-month').value){var now=new Date();$('rpt-exp-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
@@ -1444,9 +1481,22 @@ function detail(id){
     '<div class="dg"><div class="dc"><h4>📄 วุฒิการศึกษา</h4>'+docPrev(a.cred_link,'วุฒิ')+'</div><div class="dc"><h4>🪪 บัตรประชาชน</h4>'+docPrev(a.id_link,'บัตร')+'</div></div>'+
     '<div class="dg"><div class="dc"><h4>🏠 ทะเบียนบ้าน</h4>'+docPrev(a.house_link,'ทะเบียนบ้าน')+'</div><div class="dc"><h4>🏦 Book Bank</h4>'+docPrev(a.bank_link,'Book Bank')+'</div></div>'+
     '<div id="edit-section"></div>'+
-    '<div class="dc" style="margin-top:16px"><h4>📋 ระบบลา / ขาดงาน</h4><div id="lv-area">กำลังโหลด...</div></div>';
+    '<div class="dc" style="margin-top:16px"><h4>📋 ระบบลา / ขาดงาน</h4><div id="lv-area">กำลังโหลด...</div></div>'+
+    '<div class="cd" style="margin-top:14px"><div class="cd-t"><span class="dot"></span> 💰 ประวัติเงินเดือน</div><div id="salary-history-'+a.id+'">กำลังโหลด...</div></div>'+
+    '<div class="cd" style="margin-top:14px"><div class="cd-t"><span class="dot"></span> ⚠️ ใบเตือน / บันทึก</div><div id="warn-history-'+a.id+'">กำลังโหลด...</div></div>';
   $('A-main').classList.add('hide');$('A-det').classList.remove('hide');
   loadLeaves(id);
+  loadSalaryHistory(a.name,a.id);
+  // Load warnings for this employee
+  sb("warnings","GET",null,"?emp_name=eq."+encodeURIComponent(a.name)+"&select=*&order=created_at.desc").then(function(r){
+    var w=Array.isArray(r)?r:[];
+    if(!w.length){$('warn-history-'+a.id).innerHTML='<div style="color:var(--muted);font-size:12px">ไม่มีบันทึก</div>';return}
+    var h='';w.forEach(function(wr){
+      var color=WARN_TYPE_COLOR[wr.warn_type]||'#888';
+      h+='<div style="padding:8px 0;border-bottom:1px solid var(--bdr);font-size:12px"><span style="background:'+color+'18;color:'+color+';padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600">'+esc(WARN_TYPE_LABEL[wr.warn_type]||wr.warn_type)+'</span> <span style="color:var(--muted)">'+esc(String(wr.warn_date||wr.created_at||'').substring(0,10))+'</span><div style="margin-top:4px">'+esc(wr.detail||'')+'</div></div>';
+    });
+    $('warn-history-'+a.id).innerHTML=h;
+  }).catch(function(){});
 }
 function backList(){$('A-det').classList.add('hide');$('A-main').classList.remove('hide')}
 
@@ -4493,6 +4543,178 @@ function rptExportAttendance(){
   }).catch(function(e){
     prog(-1);toast('Export ไม่สำเร็จ: '+e,'terr');
   });
+}
+
+/* ═══ DASHBOARD ═══ */
+function loadDashboard(){
+  if(!ALL.length){$('dash-cards').innerHTML='<div style="color:var(--muted)">ไม่มีข้อมูล</div>';return}
+  var daily=0,monthly=0,newE=0,resigned=0,term=0,totalSalary=0;
+  var contractExpiring=[],contractExpired=[];
+  var today=new Date();
+  var cmonths={'1m':1,'3m':3,'6m':6,'1y':12};
+
+  ALL.forEach(function(a){
+    if(a.status==='daily')daily++;
+    else if(a.status==='monthly'){monthly++;totalSalary+=a.salary||0}
+    else if(a.status==='new')newE++;
+    else if(a.status==='resigned_pending')resigned++;
+    else if(a.status==='terminated')term++;
+
+    if(a.contract_period&&a.start_date&&a.status!=='terminated'){
+      var sd=new Date(a.start_date+'T00:00:00');
+      var addM=cmonths[a.contract_period]||0;
+      if(addM){
+        var ed=new Date(sd);ed.setMonth(ed.getMonth()+addM);
+        var dl=Math.ceil((ed-today)/(864e5));
+        if(dl<0)contractExpired.push({name:a.name,nickname:a.nickname,days:dl,id:a.id});
+        else if(dl<=30)contractExpiring.push({name:a.name,nickname:a.nickname,days:dl,id:a.id});
+      }
+    }
+  });
+
+  var active=daily+monthly+newE+resigned;
+  $('dash-cards').innerHTML=
+    '<div class="st" style="cursor:pointer" onclick="showTab(\'app\')"><div class="v" style="color:var(--pri)">'+active+'</div><div class="l">👥 พนักงานทั้งหมด</div></div>'+
+    '<div class="st"><div class="v" style="color:#28a745">'+monthly+'</div><div class="l">🟢 ประจำ</div></div>'+
+    '<div class="st"><div class="v" style="color:#f59e0b">'+daily+'</div><div class="l">🟡 รายวัน</div></div>'+
+    '<div class="st"><div class="v" style="color:#d97706">'+resigned+'</div><div class="l">⏳ รอจ่ายเงินเดือน</div></div>'+
+    '<div class="st"><div class="v" style="color:var(--pri)">'+payFmt(totalSalary)+'</div><div class="l">💰 ฐานเงินเดือนรวม</div></div>'+
+    '<div class="st"><div class="v" style="color:'+(contractExpired.length?'var(--err)':'var(--ok)')+'">'+contractExpired.length+'</div><div class="l">⚠️ สัญญาหมดแล้ว</div></div>';
+
+  // Contract warnings
+  var ch='';
+  if(contractExpired.length){
+    ch+='<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:700;color:var(--err);margin-bottom:6px">❌ หมดสัญญาแล้ว ('+contractExpired.length+' คน)</div>';
+    contractExpired.forEach(function(c){ch+='<div style="padding:4px 0;font-size:12px;cursor:pointer" onclick="showTab(\'app\');setTimeout(function(){detail(\''+c.id+'\')},300)"><span style="color:var(--err);font-weight:600">'+esc(c.name)+'</span>'+(c.nickname?' ('+esc(c.nickname)+')':'')+' — เกิน <b>'+Math.abs(c.days)+'</b> วัน</div>'});
+    ch+='</div>';
+  }
+  if(contractExpiring.length){
+    ch+='<div><div style="font-size:12px;font-weight:700;color:#f59e0b;margin-bottom:6px">⏳ ใกล้หมดสัญญา ('+contractExpiring.length+' คน)</div>';
+    contractExpiring.forEach(function(c){ch+='<div style="padding:4px 0;font-size:12px;cursor:pointer" onclick="showTab(\'app\');setTimeout(function(){detail(\''+c.id+'\')},300)"><span style="color:#d97706;font-weight:600">'+esc(c.name)+'</span>'+(c.nickname?' ('+esc(c.nickname)+')':'')+' — เหลือ <b>'+c.days+'</b> วัน</div>'});
+    ch+='</div>';
+  }
+  if(!ch)ch='<div style="color:var(--ok);font-size:12px">✅ ไม่มีสัญญาใกล้หมด</div>';
+  $('dash-contract').innerHTML=ch;
+
+  // Pending leave requests
+  sb("leave_requests","GET",null,"?status=eq.pending&select=id,emp_name,leave_type,start_date,days&order=created_at.desc&limit=10").then(function(r){
+    if(!Array.isArray(r)||!r.length){$('dash-leave').innerHTML='<div style="color:var(--ok);font-size:12px">✅ ไม่มีใบลารออนุมัติ</div>';return}
+    var lh='<div style="font-size:12px;color:var(--err);font-weight:700;margin-bottom:6px">📋 '+r.length+' ใบ</div>';
+    r.forEach(function(l){var lt={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน'};lh+='<div style="padding:3px 0;font-size:12px">'+esc(l.emp_name)+' — <span style="color:var(--acc)">'+esc(lt[l.leave_type]||l.leave_type)+'</span> '+esc(l.start_date)+' ('+l.days+' วัน)</div>'});
+    lh+='<button class="btn btn-a btn-s" style="margin-top:6px" onclick="showTab(\'lv\')">ไปอนุมัติ →</button>';
+    $('dash-leave').innerHTML=lh;
+  }).catch(function(){$('dash-leave').innerHTML='<span style="color:var(--muted);font-size:12px">โหลดไม่ได้</span>'});
+
+  // Resigned pending pay
+  var pendingPay=ALL.filter(function(a){return a.status==='resigned_pending'});
+  if(pendingPay.length){
+    var pp='';pendingPay.forEach(function(a){pp+='<div style="padding:3px 0;font-size:12px;cursor:pointer" onclick="showTab(\'app\');setTimeout(function(){detail(\''+a.id+'\')},300)"><span style="color:#d97706;font-weight:600">'+esc(a.name)+'</span>'+(a.nickname?' ('+esc(a.nickname)+')':'')+' — '+(a.terminated_at?String(a.terminated_at).substring(0,10):'')+'</div>'});
+    $('dash-pending-pay').innerHTML=pp;
+  }else{$('dash-pending-pay').innerHTML='<div style="color:var(--ok);font-size:12px">✅ ไม่มีพนักงานรอจ่ายเงินเดือน</div>'}
+
+  // Latest payroll summary
+  sb("payroll","GET",null,"?select=month,salary,total_income,total_ded,net&order=month.desc&limit=50").then(function(r){
+    if(!Array.isArray(r)||!r.length){$('dash-payroll').innerHTML='<span style="color:var(--muted);font-size:12px">ยังไม่มีข้อมูล</span>';return}
+    var latestMonth=r[0].month;
+    var latest=r.filter(function(p){return p.month===latestMonth});
+    var tInc=0,tDed=0,tNet=0;
+    latest.forEach(function(p){tInc+=p.total_income||0;tDed+=p.total_ded||0;tNet+=p.net||0});
+    $('dash-payroll').innerHTML='<div style="font-size:12px;color:var(--muted);margin-bottom:6px">เดือน '+latestMonth+' ('+latest.length+' คน)</div>'+
+      '<div style="display:flex;gap:16px;flex-wrap:wrap">'+
+      '<div><div style="font-size:10px;color:var(--muted)">รวมรายรับ</div><div style="font-size:16px;font-weight:700;color:var(--ok)">'+payFmt(tInc)+'</div></div>'+
+      '<div><div style="font-size:10px;color:var(--muted)">รวมหัก</div><div style="font-size:16px;font-weight:700;color:var(--err)">'+payFmt(tDed)+'</div></div>'+
+      '<div><div style="font-size:10px;color:var(--muted)">สุทธิ</div><div style="font-size:16px;font-weight:700;color:var(--pri)">'+payFmt(tNet)+'</div></div></div>';
+  }).catch(function(){$('dash-payroll').innerHTML='<span style="color:var(--muted);font-size:12px">โหลดไม่ได้</span>'});
+}
+
+/* ═══ SALARY HISTORY ═══ */
+function loadSalaryHistory(empName,empId){
+  sb("payroll","GET",null,"?emp_name=eq."+encodeURIComponent(empName)+"&select=*&order=month.desc&limit=12").then(function(r){
+    if(!Array.isArray(r)||!r.length){$('salary-history-'+empId).innerHTML='<div style="color:var(--muted);font-size:12px">ยังไม่มีประวัติเงินเดือน</div>';return}
+    var h='<div class="tw"><table><thead><tr><th>เดือน</th><th style="text-align:right">เงินเดือน</th><th style="text-align:right">เบี้ยขยัน</th><th style="text-align:right">รวมรับ</th><th style="text-align:right">รวมหัก</th><th style="text-align:right;color:var(--pri)">สุทธิ</th></tr></thead><tbody>';
+    r.forEach(function(p){
+      h+='<tr><td>'+esc(p.month)+'</td><td style="text-align:right">'+payFmt(p.salary||0)+'</td><td style="text-align:right">'+payFmt(p.diligence||0)+'</td><td style="text-align:right;color:var(--ok)">'+payFmt(p.total_income||0)+'</td><td style="text-align:right;color:var(--err)">'+payFmt(p.total_ded||0)+'</td><td style="text-align:right;font-weight:700;color:var(--pri)">'+payFmt(p.net||0)+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+    $('salary-history-'+empId).innerHTML=h;
+  }).catch(function(){$('salary-history-'+empId).innerHTML='<div style="color:var(--err);font-size:12px">โหลดไม่ได้</div>'});
+}
+
+/* ═══ WARNINGS ═══ */
+var WARNINGS=[];
+var WARN_TYPE_LABEL={verbal:'ตักเตือนด้วยวาจา',written_1:'ใบเตือนครั้งที่ 1',written_2:'ใบเตือนครั้งที่ 2',written_3:'ใบเตือนครั้งที่ 3 (สุดท้าย)',note:'บันทึกพฤติกรรม'};
+var WARN_TYPE_COLOR={verbal:'#3b82f6',written_1:'#f59e0b',written_2:'#f97316',written_3:'#dc2626',note:'#6b7280'};
+
+function loadWarnings(){
+  sb("warnings","GET",null,"?select=*&order=created_at.desc").then(function(r){
+    WARNINGS=Array.isArray(r)?r:[];
+    renderWarnings();
+  }).catch(function(){WARNINGS=[];renderWarnings()});
+}
+
+function renderWarnings(){
+  var srch=$('warn-srch')?$('warn-srch').value.toLowerCase():'';
+  var filt=$('warn-filter')?$('warn-filter').value:'';
+  var list=WARNINGS.filter(function(w){
+    if(srch&&(w.emp_name||'').toLowerCase().indexOf(srch)<0)return false;
+    if(filt&&w.warn_type!==filt)return false;
+    return true;
+  });
+
+  if(!list.length){$('warn-list').innerHTML='<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">📭 ไม่พบข้อมูล</div>';return}
+
+  var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>พนักงาน</th><th>ประเภท</th><th style="min-width:200px">รายละเอียด</th><th>ผู้บันทึก</th><th></th></tr></thead><tbody>';
+  list.forEach(function(w){
+    var color=WARN_TYPE_COLOR[w.warn_type]||'#888';
+    var label=WARN_TYPE_LABEL[w.warn_type]||w.warn_type;
+    h+='<tr>';
+    h+='<td style="font-size:11px;white-space:nowrap">'+esc(String(w.created_at||'').substring(0,10))+'</td>';
+    h+='<td><b>'+esc(w.emp_name||'')+'</b></td>';
+    h+='<td><span style="background:'+color+'18;color:'+color+';padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">'+label+'</span></td>';
+    h+='<td style="font-size:12px;max-width:300px">'+esc(w.detail||'')+'</td>';
+    h+='<td style="font-size:11px;color:var(--muted)">'+esc(w.created_by||'')+'</td>';
+    h+='<td><button class="lv-del hr-hide" onclick="delWarning(\''+w.id+'\')">✕</button></td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  $('warn-list').innerHTML=h;
+}
+
+function addWarning(){
+  // Build employee options
+  var emps=ALL.filter(function(a){return a.status!=='terminated'});
+  var opts='';emps.forEach(function(a){opts+='<option value="'+esc(a.name)+'">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</option>'});
+  var ses=getSES();
+  var html='<div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.remove()">'
+    +'<div style="background:var(--card);border-radius:14px;padding:28px;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
+    +'<h3 style="margin:0 0 16px;color:var(--pri);font-size:17px">⚠️ เพิ่มใบเตือน / บันทึก</h3>'
+    +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">พนักงาน *</label><select id="wf-emp" class="ssel" style="width:100%;margin-top:4px"><option value="">-- เลือก --</option>'+opts+'</select></div>'
+    +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">ประเภท *</label><select id="wf-type" class="ssel" style="width:100%;margin-top:4px"><option value="verbal">ตักเตือนด้วยวาจา</option><option value="written_1">ใบเตือนครั้งที่ 1</option><option value="written_2">ใบเตือนครั้งที่ 2</option><option value="written_3">ใบเตือนครั้งที่ 3 (สุดท้าย)</option><option value="note">บันทึกพฤติกรรม</option></select></div>'
+    +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">รายละเอียด *</label><textarea id="wf-detail" rows="3" style="width:100%;margin-top:4px;padding:8px 12px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:13px;background:var(--inp)" placeholder="ระบุพฤติกรรม เหตุผล รายละเอียด..."></textarea></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:600">วันที่</label><input type="date" id="wf-date" class="ssel" style="width:100%;margin-top:4px" value="'+new Date().toISOString().substring(0,10)+'"></div>'
+    +'<div style="display:flex;gap:8px"><button class="btn btn-a" style="flex:1" onclick="saveWarning()">💾 บันทึก</button><button class="btn btn-g" style="flex:1" onclick="this.closest(\'div[style*=fixed]\').remove()">ยกเลิก</button></div>'
+    +'</div></div>';
+  var d=document.createElement('div');d.innerHTML=html;document.body.appendChild(d.firstChild);
+}
+
+function saveWarning(){
+  var emp=$('wf-emp').value,type=$('wf-type').value,detail=$('wf-detail').value.trim(),date=$('wf-date').value;
+  if(!emp){toast('เลือกพนักงาน','terr');return}
+  if(!detail){toast('กรอกรายละเอียด','terr');return}
+  var ses=getSES();
+  var id='WRN-'+Date.now();
+  sb("warnings","POST",{id:id,emp_name:emp,warn_type:type,detail:detail,warn_date:date||null,created_by:ses?ses.username:'admin'}).then(function(r){
+    if(Array.isArray(r)&&r.length){
+      toast('บันทึกใบเตือนแล้ว','tok');
+      document.querySelector('div[style*="position:fixed"][style*="z-index:9999"]').remove();
+      loadWarnings();
+    }else{toast('บันทึกไม่สำเร็จ','terr')}
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function delWarning(id){
+  if(!confirm('ลบรายการนี้?'))return;
+  sb("warnings","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');loadWarnings()}).catch(function(e){toast('Error: '+e,'terr')});
 }
 
 /* ═══ ACCOUNTING ═══ */

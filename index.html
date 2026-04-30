@@ -1482,7 +1482,7 @@ function detail(id){
     '<div class="dg"><div class="dc"><h4>📄 วุฒิการศึกษา</h4>'+docPrev(a.cred_link,'วุฒิ')+'</div><div class="dc"><h4>🪪 บัตรประชาชน</h4>'+docPrev(a.id_link,'บัตร')+'</div></div>'+
     '<div class="dg"><div class="dc"><h4>🏠 ทะเบียนบ้าน</h4>'+docPrev(a.house_link,'ทะเบียนบ้าน')+'</div><div class="dc"><h4>🏦 Book Bank</h4>'+docPrev(a.bank_link,'Book Bank')+'</div></div>'+
     '<div id="edit-section"></div>'+
-    '<div class="dc" style="margin-top:16px"><h4 style="display:flex;align-items:center;gap:8px">📋 ระบบลา / ขาดงาน <button class="btn btn-g btn-s" onclick="exportEmpLeave(\''+a.id+'\',\''+esc(a.name)+'\')" style="font-size:10px;padding:3px 10px">📥 Export</button></h4><div id="lv-area">กำลังโหลด...</div></div>'+
+    '<div class="dc" style="margin-top:16px"><h4 style="display:flex;align-items:center;gap:8px">📋 ระบบลา / ขาดงาน <button class="btn btn-g btn-s" onclick="exportEmpLeave(\''+a.id+'\')" style="font-size:10px;padding:3px 10px">📥 Export</button></h4><div id="lv-area">กำลังโหลด...</div></div>'+
     '<div class="cd" style="margin-top:14px"><div class="cd-t"><span class="dot"></span> 💰 ประวัติเงินเดือน</div><div id="salary-history-'+a.id+'">กำลังโหลด...</div></div>'+
     '<div class="cd" style="margin-top:14px"><div class="cd-t"><span class="dot"></span> ⚠️ ใบเตือน / บันทึก</div><div id="warn-history-'+a.id+'">กำลังโหลด...</div></div>';
   $('A-main').classList.add('hide');$('A-det').classList.remove('hide');
@@ -2237,7 +2237,8 @@ function renderLeaves(empId,list){
   h+='<div class="fld"><label>จำนวน</label><select id="lv-days"><option value="1">เต็มวัน</option><option value="0.5">ครึ่งวัน</option></select></div>';
   h+='<div class="fld"><label>วันที่</label><input type="date" id="lv-date" value="'+new Date().toISOString().substring(0,10)+'"></div>';
   h+='<div class="fld"><label>หมายเหตุ</label><input id="lv-note" placeholder="ระบุเหตุผล (ไม่บังคับ)"></div>';
-  h+='<button class="btn btn-a btn-s" style="margin-bottom:4px" onclick="addLeave(\''+empId+'\')">+ บันทึก</button></div>';
+  h+='<button class="btn btn-a btn-s" style="margin-bottom:4px" onclick="addLeave(\''+empId+'\')">+ บันทึก</button>'
+    +'<button class="btn btn-g btn-s" style="margin-bottom:4px;margin-left:6px" onclick="exportEmpLeave(\''+empId+'\')">📥 Export ลา/ขาด</button></div>';
 
   // List
   if(list.length){

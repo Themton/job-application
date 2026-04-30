@@ -47,7 +47,7 @@
 .tw td{padding:11px 13px;font-size:12px;border-bottom:1px solid var(--bdr2)}.tw tr:last-child td{border-bottom:none}.tw tbody tr{cursor:pointer;transition:.1s}.tw tbody tr:hover{background:rgba(194,122,44,.03)}
 .nm{font-weight:600;color:var(--pri);font-size:13px}.em{font-size:10px;color:var(--muted)}
 .bg{display:inline-flex;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600}
-.b-new{background:rgba(59,130,246,.1);color:#3b82f6}.b-daily{background:rgba(198,149,43,.15);color:#b8860b}.b-monthly{background:rgba(139,115,20,.1);color:#6a5c10}.b-resigned{background:rgba(245,158,11,.15);color:#d97706}.b-terminated{background:rgba(107,114,128,.1);color:#6b7280}
+.b-new{background:rgba(59,130,246,.1);color:#3b82f6}.b-daily{background:rgba(198,149,43,.15);color:#b8860b}.b-monthly{background:rgba(139,115,20,.1);color:#6a5c10}.b-monthly-daily{background:rgba(147,51,234,.12);color:#7c3aed}.b-resigned{background:rgba(245,158,11,.15);color:#d97706}.b-terminated{background:rgba(107,114,128,.1);color:#6b7280}
 .dy{background:rgba(22,163,74,.08);color:var(--ok);padding:1px 7px;border-radius:8px;font-size:10px}.dn2{background:rgba(220,38,38,.06);color:var(--err);padding:1px 7px;border-radius:8px;font-size:10px}
 .dt{display:flex;align-items:center;gap:14px;margin-bottom:22px}.av{width:52px;height:52px;background:linear-gradient(135deg,#8b6914,#c6952b);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0}
 .dn-nm{font-size:20px;font-weight:700;color:var(--pri)}
@@ -264,7 +264,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร..." oninput="debounce(doFilter,'sf')"></div>
         <select class="fsel" id="f-dept" onchange="doFilter()"><option value="">ทุกแผนก</option></select>
         <select class="fsel" id="f-pos" onchange="doFilter()"><option value="">ทุกตำแหน่ง</option></select>
-        <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="resigned_pending">ลาออก-รอจ่าย</option><option value="terminated">พ้นสภาพ</option></select>
+        <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="monthly_daily">ประจำ(รายวัน)</option><option value="resigned_pending">ลาออก-รอจ่าย</option><option value="terminated">พ้นสภาพ</option></select>
         <select class="fsel" id="f-bank" onchange="doFilter()"><option value="">ทุกธนาคาร</option><option value="scb">ไทยพาณิชย์ (SCB)</option><option value="other">ธนาคารอื่น</option></select>
         <select class="fsel" id="f-email" onchange="doFilter()"><option value="">ทุกอีเมล</option><option value="has">มีอีเมล</option><option value="no">ไม่มีอีเมล</option></select>
         <button class="btn btn-a btn-s" onclick="showAdminAddEmp()">➕ เพิ่มพนักงาน</button>
@@ -284,7 +284,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
           <div class="fld"><label>อีเมล</label><input id="ae-email" placeholder="email@example.com" type="email"></div>
           <div class="fld"><label>แผนก</label><select id="ae-dept"><option value="">-- เลือก --</option></select></div>
           <div class="fld" id="ae-fld-pos"><label>ตำแหน่ง <span class="rq">*</span></label><select id="ae-pos" onfocus="aeClsErr(this)"><option value="">-- เลือก --</option></select></div>
-          <div class="fld"><label>ประเภท <span class="rq">*</span></label><select id="ae-status"><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="new">ใหม่</option></select></div>
+          <div class="fld"><label>ประเภท <span class="rq">*</span></label><select id="ae-status"><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="monthly_daily">ประจำ(รายวัน)+ปกส.</option><option value="new">ใหม่</option></select></div>
           <div class="fld"><label>วุฒิการศึกษา</label><select id="ae-edu"><option value="">-- เลือก --</option><option>ไม่มีวุฒิการศึกษา</option><option>ประถมศึกษา</option><option>มัธยมศึกษาตอนต้น (ม.3)</option><option>มัธยมศึกษาตอนปลาย (ม.6)</option><option>ปวช.</option><option>ปวส.</option><option>อนุปริญญา</option><option>ปริญญาตรี</option><option>ปริญญาโท</option><option>ปริญญาเอก</option></select></div>
           <div class="fld" id="ae-fld-bank"><label>ธนาคาร <span class="rq">*</span></label><select id="ae-bank" onfocus="aeClsErr(this)"><option value="">-- เลือก --</option><option>กสิกรไทย (KBANK)</option><option>กรุงเทพ (BBL)</option><option>กรุงไทย (KTB)</option><option>ไทยพาณิชย์ (SCB)</option><option>กรุงศรีอยุธยา (BAY)</option><option>ทหารไทยธนชาต (TTB)</option><option>ออมสิน (GSB)</option><option>ธ.ก.ส. (BAAC)</option></select></div>
           <div class="fld" id="ae-fld-account"><label>เลขบัญชี <span class="rq">*</span></label><input id="ae-account" placeholder="เลขบัญชี" maxlength="15" inputmode="numeric" onfocus="aeClsErr(this)"></div>
@@ -365,6 +365,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
           <select id="rpt-exp-type" class="fsel" style="min-width:100px">
             <option value="">ทุกประเภท</option>
             <option value="monthly">ประจำ</option>
+            <option value="monthly_daily">ประจำ(รายวัน)</option>
             <option value="daily">รายวัน</option>
           </select>
           <button class="btn btn-a btn-s" onclick="rptExportAttendance()">📥 Export ขาด/ลา/มา/สาย</button>
@@ -885,7 +886,7 @@ function emailCache(){try{return JSON.parse(localStorage.getItem('mt_emails')||'
 function emailSet(name,email){if(!email)return;var c=emailCache();c[name.trim()]=email.trim();try{localStorage.setItem('mt_emails',JSON.stringify(c))}catch(e){}}
 function emailGet(name){var c=emailCache();return c[name.trim()]||''}
 function emailSyncFromAll(){ALL.forEach(function(a){if(a.email)emailSet(a.name,a.email)})}
-var ST={new:{l:"ใหม่",c:"b-new"},daily:{l:"พนักงานรายวัน",c:"b-daily"},monthly:{l:"พนักงานประจำ",c:"b-monthly"},resigned_pending:{l:"ลาออก-รอจ่าย",c:"b-resigned"},terminated:{l:"พ้นสภาพ",c:"b-terminated"}};
+var ST={new:{l:"ใหม่",c:"b-new"},daily:{l:"พนักงานรายวัน",c:"b-daily"},monthly:{l:"พนักงานประจำ",c:"b-monthly"},monthly_daily:{l:"ประจำ(รายวัน)",c:"b-monthly-daily"},resigned_pending:{l:"ลาออก-รอจ่าย",c:"b-resigned"},terminated:{l:"พ้นสภาพ",c:"b-terminated"}};
 function $(id){return document.getElementById(id)}
 function pf(id){return $(id)}
 var _dbT={};function debounce(fn,key,ms){clearTimeout(_dbT[key]);_dbT[key]=setTimeout(fn,ms||200)}
@@ -1069,7 +1070,7 @@ function updateLeavePendingBadge(){
 /* ═══ STATS ═══ */
 function stats(){
   var t=ALL.length,dy=0,mt=0,tm=0,posMap={},scbCnt=0,otherCnt=0,hasEmail=0;
-  ALL.forEach(function(a){if(a.status==='daily')dy++;if(a.status==='monthly')mt++;if(a.status==='terminated')tm++;if(a.position)posMap[a.position]=(posMap[a.position]||0)+1;
+  ALL.forEach(function(a){if(a.status==='daily')dy++;if(a.status==='monthly'||a.status==='monthly_daily')mt++;if(a.status==='terminated')tm++;if(a.position)posMap[a.position]=(posMap[a.position]||0)+1;
     if(a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))scbCnt++;else if(a.bank)otherCnt++;
     if(a.email&&a.email.indexOf('@')>=0)hasEmail++});
   $('A-sts').innerHTML='<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div><div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div><div class="st"><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+mt+'</div></div><div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div><div class="st"><div class="l">SCB</div><div class="v" style="color:#4b0082">'+scbCnt+'</div></div><div class="st"><div class="l">ธ.อื่น</div><div class="v" style="color:#006400">'+otherCnt+'</div></div><div class="st"><div class="l">มีอีเมล</div><div class="v" style="color:#2d5080">'+hasEmail+'</div></div>';
@@ -1171,8 +1172,8 @@ function empExport(){
   var h='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"><style>td,th{border:1px solid #ccc;padding:4px 8px;font-size:12px;font-family:sans-serif}th{background:#5c4a1e;color:#fff}.term{background:#ffe0e0;color:#c00;font-weight:bold}.daily{background:#fff8e0}.monthly{background:#e8f5e9}.scb{background:#f0e8ff}</style></head><body><table>';
   h+='<tr><th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>แผนก</th><th>ตำแหน่ง</th><th>ประเภท</th><th>ธนาคาร</th><th>เลขบัญชี</th><th>เบอร์โทร</th><th>อีเมล</th><th>วุฒิ</th><th>วันที่</th></tr>';
   list.forEach(function(a){
-    var stL=a.status==='daily'?'รายวัน':a.status==='monthly'?'ประจำ':a.status==='terminated'?'⛔ ลาออก':'ใหม่';
-    var cls=a.status==='terminated'?'term':a.status==='daily'?'daily':a.status==='monthly'?'monthly':'';
+    var stL=a.status==='daily'?'รายวัน':a.status==='monthly'?'ประจำ':a.status==='monthly_daily'?'ประจำ(รายวัน)':a.status==='terminated'?'⛔ ลาออก':'ใหม่';
+    var cls=a.status==='terminated'?'term':a.status==='daily'?'daily':a.status==='monthly'?'monthly':a.status==='monthly_daily'?'monthly':'';
     var isSCB=a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0);
     h+='<tr class="'+cls+'">';
     h+='<td'+(a.status==='terminated'?' class="term"':'')+'>'+esc(a.name)+'</td>';
@@ -1260,6 +1261,7 @@ function doFilter(){
     var typeLabel,typeBg;
     if(a.status==='daily'){typeLabel='รายวัน';typeBg='background:#fff3cd;color:#856404;border:1px solid #ffc107'}
     else if(a.status==='monthly'){typeLabel='ประจำ';typeBg='background:#d4edda;color:#155724;border:1px solid #28a745'}
+    else if(a.status==='monthly_daily'){typeLabel='ประจำ(รายวัน)';typeBg='background:#ede9fe;color:#7c3aed;border:1px solid #8b5cf6'}
     else if(a.status==='resigned_pending'){typeLabel='⏳ รอจ่าย';typeBg='background:#fef3c7;color:#d97706;border:1px solid #f59e0b'}
     else if(a.status==='terminated'){typeLabel='พ้นสภาพ';typeBg='background:#f8d7da;color:#721c24;border:1px solid #dc3545'}
     else{typeLabel='ใหม่';typeBg='background:#cce5ff;color:#004085;border:1px solid #007bff'}
@@ -1965,7 +1967,7 @@ function editEmp(id){
   var deptOpts='<option value="">-- เลือก --</option>';
   DEPT.forEach(function(d){deptOpts+='<option value="'+esc(d.title)+'"'+(d.title===a.department?' selected':'')+'>'+esc(d.title)+'</option>'});
 
-  var stOpts='<option value="new"'+(a.status==='new'?' selected':'')+'>ใหม่</option><option value="daily"'+(a.status==='daily'?' selected':'')+'>รายวัน</option><option value="monthly"'+(a.status==='monthly'?' selected':'')+'>ประจำ</option>';
+  var stOpts='<option value="new"'+(a.status==='new'?' selected':'')+'>ใหม่</option><option value="daily"'+(a.status==='daily'?' selected':'')+'>รายวัน</option><option value="monthly"'+(a.status==='monthly'?' selected':'')+'>ประจำ</option><option value="monthly_daily"'+(a.status==='monthly_daily'?' selected':'')+'>ประจำ(รายวัน)+ปกส.</option>';
 
   var docRow=function(label,icon,key,link){
     var has=link&&link.length>5;
@@ -3015,7 +3017,7 @@ var PAYDB2_FILTER='';
 
 function payDBBuildFilters(){
   var stMap={};
-  var stLabels={daily:'🟡 พนักงานรายวัน',monthly:'🟢 พนักงานประจำ',new:'🔵 พนักงานใหม่',resigned_pending:'⏳ รอจ่าย'};
+  var stLabels={daily:'🟡 พนักงานรายวัน',monthly:'🟢 พนักงานประจำ',monthly_daily:'🟣 ประจำ(รายวัน)',new:'🔵 พนักงานใหม่',resigned_pending:'⏳ รอจ่าย'};
   PAYDB2.forEach(function(e){var s=e.status||'new';stMap[s]=(stMap[s]||0)+1});
   var h='<button class="btn btn-s '+(PAYDB2_FILTER===''?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">ทั้งหมด ('+PAYDB2.length+')</button>';
   ['daily','monthly','new'].forEach(function(s){
@@ -3127,11 +3129,11 @@ function payDBLoadPrev(){
 function payDBRender(){
   if(!PAYDB2.length){$('paydb2-table').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่มีข้อมูล</p></div>';return}
 
-  // Sort by status group: monthly → daily → new → resigned_pending
-  var stOrder={monthly:0,daily:1,new:2,resigned_pending:3};
+  // Sort by status group: monthly → monthly_daily → daily → new → resigned_pending
+  var stOrder={monthly:0,monthly_daily:1,daily:2,new:3,resigned_pending:4};
   PAYDB2.sort(function(a,b){var sa=stOrder[a.status]!==undefined?stOrder[a.status]:9;var sb=stOrder[b.status]!==undefined?stOrder[b.status]:9;if(sa!==sb)return sa-sb;return a.name.localeCompare(b.name,'th')});
 
-  var stLabels={daily:'พนักงานรายวัน',monthly:'พนักงานประจำ',new:'พนักงานใหม่',resigned_pending:'⏳ ลาออก-รอจ่ายเงินเดือน'};
+  var stLabels={daily:'พนักงานรายวัน',monthly:'พนักงานประจำ',monthly_daily:'ประจำ(รายวัน)+ปกส.',new:'พนักงานใหม่',resigned_pending:'⏳ ลาออก-รอจ่ายเงินเดือน'};
   var stColors={daily:'#f59e0b',monthly:'#28a745',new:'#007bff',resigned_pending:'#d97706'};
   var stColors={daily:'#f59e0b',monthly:'#28a745',new:'#007bff'};
 
@@ -3226,10 +3228,13 @@ function payDBRender(){
 
 function payDBCalcRow(e){
   e.totalIncome=e.salary+e.diligence;
-  // รายวัน: หัก 3% ไม่หัก ปกส. / ประจำ: ไม่หัก 3% หัก ปกส.5%
+  // รายวัน: หัก 3% ไม่หัก ปกส. / ประจำ: ไม่หัก 3% หัก ปกส.5% / ประจำ(รายวัน): ไม่หัก 3% หัก ปกส.5%
   if(e.status==='daily'){
     e.tax3=Math.round(e.totalIncome*0.03*100)/100;
     e.ss5=0;
+  }else if(e.status==='monthly_daily'){
+    e.tax3=0;
+    e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,750);
   }else{
     e.tax3=0;
     e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,750);
@@ -3536,7 +3541,7 @@ function payDBExportSCB(){
   var whtH=[['Code','ลำดับที่\nCredit Seq. No.','เลขที่\nWHT Book No.','เลขประจำตัวผู้เสียภาษีอากร\nWHT Payer Tax ID','ผู้มีหน้าที่หักภาษี ณ ที่จ่าย\nWHT Payer Name','ที่อยู่ 1\nWHT Payer Address Line 1','ที่อยู่ 2\nWHT Payer Address Line 2','ที่อยู่ 2\nWHT Payer Address Line 2']];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(whtH),'WHT');
 
-  var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='daily'?'_รายวัน':'';
+  var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='monthly_daily'?'_ประจำรายวัน':PAYDB2_FILTER==='daily'?'_รายวัน':'';
   XLSX.writeFile(wb,'CPX_Payroll_'+(month||'export')+stLabel+'_'+valid.length+'คน.xlsx');
   toast('สร้างไฟล์ SCB '+valid.length+' คน'+(PAYDB2_FILTER?' ['+stLabel.replace('_','')+']':''),'tok');
   }catch(err){toast('❌ Error: '+err.message,'terr');console.error('payDBExportSCB error:',err)}
@@ -3548,11 +3553,11 @@ function payDBExportCSV(){
     return e.salary>0||e.diligence>0||e.late>0||e.absent_ded>0||e.tax3>0||e.ss5>0||e.loan>0||e.advance>0||e.net>0;
   });
   if(!valid.length){toast('ไม่มีข้อมูล'+(PAYDB2_FILTER?' ประเภทนี้':''),'terr');return}
-  var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='daily'?'_รายวัน':'';
+  var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='monthly_daily'?'_ประจำรายวัน':PAYDB2_FILTER==='daily'?'_รายวัน':'';
   var csv='\uFEFF';
   csv+='ชื่อ,ชื่อเล่น,ตำแหน่ง,สถานะ,ธนาคาร,เลขบัญชี,เงินเดือน,เบี้ยขยัน,รวมรายรับ,หักมาสาย,หักขาดงาน,ภาษี3%,ประกันสังคม5%,กยศ.,เบิกล่วงหน้า,รวมหัก,สุทธิ\n';
   valid.forEach(function(e){
-    var st=e.status==='monthly'?'ประจำ':e.status==='daily'?'รายวัน':'ใหม่';
+    var st=e.status==='monthly'?'ประจำ':e.status==='monthly_daily'?'ประจำ(รายวัน)':e.status==='daily'?'รายวัน':'ใหม่';
     csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.position)+'","'+st+'","'+esc(e.bank)+'","'+esc(e.account)+'",'+e.salary+','+e.diligence+','+e.totalIncome+','+e.late+','+e.absent_ded+','+e.tax3+','+e.ss5+','+e.loan+','+e.advance+','+e.totalDed+','+e.net+'\n';
   });
   accDownload(csv,'เงินเดือน_'+($('paydb2-month').value||'export')+stLabel+'.csv','text/csv;charset=utf-8');
@@ -4575,7 +4580,7 @@ function rptExportAttendance(){
   var expType=$('rpt-exp-type')?$('rpt-exp-type').value:'';
   if(expType)emps=emps.filter(function(a){return a.status===expType});
   // Sort: monthly → daily → new → terminated
-  var stOrd={monthly:0,daily:1,new:2,terminated:3};
+  var stOrd={monthly:0,monthly_daily:1,daily:2,new:3,terminated:4};
   emps.sort(function(a,b){var sa=stOrd[a.status]!==undefined?stOrd[a.status]:9;var sb=stOrd[b.status]!==undefined?stOrd[b.status]:9;if(sa!==sb)return sa-sb;return a.name.localeCompare(b.name,'th')});
   var typeLabel=expType==='monthly'?'ประจำ':expType==='daily'?'รายวัน':'ทุกประเภท';
   var ids=emps.map(function(a){return a.id});
@@ -4638,14 +4643,14 @@ function rptExportAttendance(){
 
     var totAbsent=0,totLeave=0,totPresent=0,totLate=0,num=0;
     var lastSt='';
-    var stFullLabels={monthly:'🟢 พนักงานประจำ',daily:'🟡 พนักงานรายวัน',new:'🔵 พนักงานใหม่',terminated:'⛔ พ้นสภาพ'};
+    var stFullLabels={monthly:'🟢 พนักงานประจำ',monthly_daily:'🟣 ประจำ(รายวัน)+ปกส.',daily:'🟡 พนักงานรายวัน',new:'🔵 พนักงานใหม่',terminated:'⛔ พ้นสภาพ'};
 
     emps.forEach(function(a){
       // Group header
       if(!expType&&a.status!==lastSt){
         lastSt=a.status;
         var grpCount=emps.filter(function(e){return e.status===a.status}).length;
-        h+='<tr><td colspan="9" style="background:#f0ead6;font-weight:bold;font-size:13px;padding:8px 12px;border-left:4px solid '+(a.status==='monthly'?'#28a745':a.status==='daily'?'#f59e0b':'#007bff')+'">'+(stFullLabels[a.status]||a.status)+' ('+grpCount+' คน)</td></tr>';
+        h+='<tr><td colspan="9" style="background:#f0ead6;font-weight:bold;font-size:13px;padding:8px 12px;border-left:4px solid '+(a.status==='monthly'?'#28a745':a.status==='monthly_daily'?'#8b5cf6':a.status==='daily'?'#f59e0b':'#007bff')+'">'+(stFullLabels[a.status]||a.status)+' ('+grpCount+' คน)</td></tr>';
       }
       var lv=lmap[a.id]||{leave:0,absent:0};
       var late=cmap[a.name.trim()]||0;
@@ -4699,7 +4704,7 @@ function rptExportLeaveDetail(){
   var expType=$('rpt-exp-type')?$('rpt-exp-type').value:'';
   var emps=ALL.slice();
   if(expType)emps=emps.filter(function(a){return a.status===expType});
-  var stOrd={monthly:0,daily:1,new:2,terminated:3};
+  var stOrd={monthly:0,monthly_daily:1,daily:2,new:3,terminated:4};
   emps.sort(function(a,b){var sa=stOrd[a.status]!==undefined?stOrd[a.status]:9;var sb2=stOrd[b.status]!==undefined?stOrd[b.status]:9;if(sa!==sb2)return sa-sb2;return a.name.localeCompare(b.name,'th')});
   var typeLabel=expType==='monthly'?'ประจำ':expType==='daily'?'รายวัน':'ทุกประเภท';
   var ids=emps.map(function(a){return a.id});
@@ -4753,13 +4758,13 @@ function rptExportLeaveDetail(){
       +'<th class="hdr" style="min-width:150px">หมายเหตุ</th></tr>';
 
     var totP=0,totS=0,totA=0,num=0,lastSt='';
-    var stFullLabels={monthly:'🟢 พนักงานประจำ',daily:'🟡 พนักงานรายวัน',new:'🔵 พนักงานใหม่',terminated:'⛔ พ้นสภาพ'};
+    var stFullLabels={monthly:'🟢 พนักงานประจำ',monthly_daily:'🟣 ประจำ(รายวัน)+ปกส.',daily:'🟡 พนักงานรายวัน',new:'🔵 พนักงานใหม่',terminated:'⛔ พ้นสภาพ'};
 
     emps.forEach(function(a){
       if(!expType&&a.status!==lastSt){
         lastSt=a.status;
         var grpCount=emps.filter(function(e){return e.status===a.status}).length;
-        h+='<tr><td colspan="11" class="grp" style="border-left:4px solid '+(a.status==='monthly'?'#28a745':a.status==='daily'?'#f59e0b':'#007bff')+'">'+(stFullLabels[a.status]||a.status)+' ('+grpCount+' คน)</td></tr>';
+        h+='<tr><td colspan="11" class="grp" style="border-left:4px solid '+(a.status==='monthly'?'#28a745':a.status==='monthly_daily'?'#8b5cf6':a.status==='daily'?'#f59e0b':'#007bff')+'">'+(stFullLabels[a.status]||a.status)+' ('+grpCount+' คน)</td></tr>';
       }
       var lv=lmap[a.id]||{personal:[],sick:[],absent:[],pDays:0,sDays:0,aDays:0};
       var hasLeave=lv.pDays>0||lv.sDays>0||lv.aDays>0;
@@ -4982,7 +4987,7 @@ function delWarning(id){
 
 /* ═══ ACCOUNTING ═══ */
 var ACC_DATA=[];
-var ACC_ST={new:{l:'ใหม่',c:'b-new'},daily:{l:'รายวัน',c:'b-daily'},monthly:{l:'ประจำ',c:'b-monthly'},terminated:{l:'พ้นสภาพ',c:'b-terminated'}};
+var ACC_ST={new:{l:'ใหม่',c:'b-new'},daily:{l:'รายวัน',c:'b-daily'},monthly:{l:'ประจำ',c:'b-monthly'},monthly_daily:{l:'ประจำ(รายวัน)',c:'b-monthly-daily'},terminated:{l:'พ้นสภาพ',c:'b-terminated'}};
 
 function doAccLogin(){
   var u=$('acc-user').value.trim(),p=$('acc-pass').value;$('acc-err').classList.add('hide');

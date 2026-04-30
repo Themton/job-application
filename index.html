@@ -2838,7 +2838,9 @@ function payDBLoad(){
       };
     });
     var prefilled=PAYDB2.filter(function(e){return e.salary>0}).length;
-    $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน'+(prefilled?' — ฐานเงินเดือน <b style="color:var(--ok)">'+prefilled+'</b> คน':'');
+    // คำนวณ ภาษี/ปกส. ให้พนักงานที่มีฐานเงินเดือนอัตโนมัติ
+    PAYDB2.forEach(function(e){if(e.salary>0)payDBCalcRow(e)});
+    $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน'+(prefilled?' — ฐานเงินเดือน <b style="color:var(--ok)">'+prefilled+'</b> คน (คำนวณภาษี/ปกส. แล้ว)':'');
     prog(100,'ดึงข้อมูล ✅ '+PAYDB2.length+' คน');
     PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
     $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';$('paydb2-late-area').classList.remove('hide');$('paydb2-late-area').style.display='block';
@@ -2881,6 +2883,8 @@ function payDBLoadPrev(){
     });
 
     var matched=PAYDB2.filter(function(e){return e.salary>0}).length;
+    // คำนวณใหม่ให้พนักงานที่ไม่มีข้อมูลเดือนก่อน แต่มีฐานเงินเดือน
+    PAYDB2.forEach(function(e){if(e.salary>0&&e.totalIncome===0)payDBCalcRow(e)});
     $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — ดึงเงินเดือนจาก '+prevMonth+' ได้ <b>'+matched+'</b> คน';
     PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
     $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';$('paydb2-late-area').classList.remove('hide');$('paydb2-late-area').style.display='block';

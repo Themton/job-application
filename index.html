@@ -3698,17 +3698,43 @@ var BANK_MAP={
   'BAAC':'ธ.ก.ส.','ธ.ก.ส.':'ธ.ก.ส.','ธ.ก.ส. (BAAC)':'ธ.ก.ส.',
   'LHB':'แลนด์ แอนด์ เฮ้าส์','LH Bank':'แลนด์ แอนด์ เฮ้าส์'
 };
-var BANK_CODE={
-  'ไทยพาณิชย์':'014','กสิกรไทย':'004','กรุงเทพ':'002','กรุงไทย':'006',
-  'กรุงศรีอยุธยา':'025','ทหารไทยธนชาต':'011','ออมสิน':'030','ธ.ก.ส.':'034',
-  'แลนด์ แอนด์ เฮ้าส์':'073'
+/* ═══ SCB CPX Toolkit — Bank Code Mapping (Master_data) ═══ */
+var SCB_BANK_MAP2={
+  'ไทยพาณิชย์':{c:'014',n:'ไทยพาณิชย์'},'SCB':{c:'014',n:'ไทยพาณิชย์'},
+  'กรุงเทพ':{c:'002',n:'กรุงเทพ'},'BBL':{c:'002',n:'กรุงเทพ'},
+  'กสิกรไทย':{c:'004',n:'กสิกรไทย'},'KBANK':{c:'004',n:'กสิกรไทย'},
+  'กรุงไทย':{c:'006',n:'กรุงไทย'},'KTB':{c:'006',n:'กรุงไทย'},
+  'ทหารไทยธนชาต':{c:'011',n:'ทหารไทยธนชาต จำกัด (มหาชน)'},'TTB':{c:'011',n:'ทหารไทยธนชาต จำกัด (มหาชน)'},'TMB':{c:'011',n:'ทหารไทยธนชาต จำกัด (มหาชน)'},
+  'ซีไอเอ็มบี':{c:'022',n:'ซีไอเอ็มบี'},'CIMB':{c:'022',n:'ซีไอเอ็มบี'},
+  'ยูโอบี':{c:'024',n:'ยูโอบี'},'UOB':{c:'024',n:'ยูโอบี'},
+  'กรุงศรีอยุธยา':{c:'025',n:'กรุงศรีอยุธยา'},'กรุงศรี':{c:'025',n:'กรุงศรีอยุธยา'},'BAY':{c:'025',n:'กรุงศรีอยุธยา'},
+  'ออมสิน':{c:'030',n:'ออมสิน'},'GSB':{c:'030',n:'ออมสิน'},
+  'อาคารสงเคราะห์':{c:'033',n:'อาคารสงเคราะห์'},'GHB':{c:'033',n:'อาคารสงเคราะห์'},
+  'ธ.ก.ส.':{c:'034',n:'เพื่อการเกษตรและสหกรณ์'},'BAAC':{c:'034',n:'เพื่อการเกษตรและสหกรณ์'},'เพื่อการเกษตรและสหกรณ์':{c:'034',n:'เพื่อการเกษตรและสหกรณ์'},
+  'ธนชาต':{c:'065',n:'ธนชาต'},
+  'ทิสโก้':{c:'067',n:'ทิสโก้'},'TISCO':{c:'067',n:'ทิสโก้'},
+  'เกียรตินาคิน':{c:'069',n:'เกียรตินาคิน'},'KKP':{c:'069',n:'เกียรตินาคิน'},
+  'ไอซีบีซี':{c:'070',n:'ไอซีบีซี (ไทย)'},'ICBC':{c:'070',n:'ไอซีบีซี (ไทย)'},
+  'แลนด์แอนด์เฮ้าส์':{c:'073',n:'แลนด์แอนด์เฮ้าส์'},'แลนด์ แอนด์ เฮ้าส์':{c:'073',n:'แลนด์แอนด์เฮ้าส์'},
+  'LH Bank':{c:'073',n:'แลนด์แอนด์เฮ้าส์'},'LHBANK':{c:'073',n:'แลนด์แอนด์เฮ้าส์'},'LH':{c:'073',n:'แลนด์แอนด์เฮ้าส์'}
 };
+function scbBank(raw){
+  if(!raw)return{c:'014',n:'ไทยพาณิชย์'};
+  var b=raw.trim();if(SCB_BANK_MAP2[b])return SCB_BANK_MAP2[b];
+  var ks=Object.keys(SCB_BANK_MAP2);
+  for(var i=0;i<ks.length;i++){if(b.indexOf(ks[i])>=0||ks[i].indexOf(b)>=0)return SCB_BANK_MAP2[ks[i]]}
+  return{c:'014',n:'ไทยพาณิชย์'};
+}
 
+/* ═══ SCB CPX Toolkit Payroll Export — ตาม Template v1.3.5 ═══ */
 function payExportSCB(){
   if(!PAY_DATA.length){toast('ยังไม่มีข้อมูลเงินเดือน','terr');return}
   var month=$('pay-month').value;
-  var dateStr='';
-  if(month){var d=new Date(month+'-28');dateStr=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear()}
+
+  // Value Date = วันสุดท้ายของเดือน DD/MM/YYYY
+  var vDate='';
+  if(month){var pp=month.split('-');var ld=new Date(parseInt(pp[0]),parseInt(pp[1]),0).getDate();vDate=String(ld).padStart(2,'0')+'/'+pp[1]+'/'+pp[0]}
+  else{var now=new Date();var ld=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();vDate=String(ld).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear()}
 
   // Filter: net > 0 AND NOT terminated
   var terminated=[];
@@ -3717,87 +3743,100 @@ function payExportSCB(){
     if(e.isTerminated){terminated.push(e.name);return false}
     return net>0;
   });
-
   if(!emps.length){toast('ไม่มีพนักงานที่ต้องจ่ายเงิน','terr');return}
 
-  // Show warning for terminated
   var msg='สร้างไฟล์ Payroll '+emps.length+' คน';
-  if(terminated.length){
-    msg+='\n\n⛔ ไม่รวมพนักงานลาออก '+terminated.length+' คน:\n— '+terminated.join('\n— ');
-  }
+  if(terminated.length){msg+='\n\n⛔ ไม่รวมพนักงานลาออก '+terminated.length+' คน:\n— '+terminated.join('\n— ')}
   if(!confirm(msg+'\n\nดำเนินการ?'))return;
 
-  // Build worksheet data
-  var ws_data=[];
+  // ═══ Build Payment sheet ตาม CPX Toolkit Template ═══
+  var D=[];var N=19; // 19 columns A-S
 
-  // Row 0: Config
-  var r0=new Array(19).fill('');r0[12]='PAY';r0[13]='0';
-  ws_data.push(r0);
+  // Row 1: M1='PAY', N1=0
+  var r1=new Array(N).fill(null);r1[12]='PAY';r1[13]=0;D.push(r1);
 
-  // Row 1
-  var r1=new Array(19).fill('');
-  r1[1]='Customer File Ref.';r1[3]='Customer Batch Ref.';
-  r1[12]='TBPPPayroll';r1[13]='TBBankPAY';r1[14]='TBFeePayroll';r1[15]='TBServiceType';
-  ws_data.push(r1);
+  // Row 2: B2=header, D2=header, M-P=lookup names
+  var r2=new Array(N).fill(null);
+  r2[1]='อ้างอิงไฟล์รายการ\nCustomer File Ref. ';r2[3]='อ้างอิงกลุ่มรายการ\nCustomer Batch Ref.';r2[6]=' ';
+  r2[12]='TBPPPayroll';r2[13]='TBBankPAY';r2[14]='TBFeePayroll';r2[15]='TBServiceType';
+  D.push(r2);
 
-  // Row 2
-  var r2=new Array(19).fill('');
-  r2[1]='Debit Account';r2[3]='Select Product';
-  ws_data.push(r2);
+  // Row 3: B3=Debit Account
+  var r3=new Array(N).fill(null);r3[1]='เลขที่บัญชีตัดเงิน\nDebit Account';D.push(r3);
 
-  // Row 3
-  var r3=new Array(19).fill('');
-  r3[1]='Debit Fee Account';r3[3]='Select Product';r3[4]='SCB Payroll1';
-  ws_data.push(r3);
+  // Row 4: B4=Debit Fee Account, D4=Select Product, E4=SCB Payroll1
+  var r4=new Array(N).fill(null);
+  r4[1]='เลขที่บัญชีหักค่าธรรมเนียม\nDebit Fee Account';r4[3]='Select Product';r4[4]='SCB Payroll1';
+  D.push(r4);
 
-  // Row 4
-  var r4=new Array(19).fill('');
-  r4[1]='Value Date';r4[2]=dateStr||'';r4[3]='WHT/Invoice';r4[4]='System Reference ID';
-  ws_data.push(r4);
+  // Row 5: B5=วันที่, C5=Value Date, D5=WHT/Invoice, E5=System Ref
+  var r5=new Array(N).fill(null);
+  r5[1]='วันที่รายการมีผล';r5[2]=vDate;r5[3]='เลือก WHT/Invoice';r5[4]='System Reference ID';
+  D.push(r5);
 
-  // Row 5
-  var r5=new Array(19).fill('');
-  r5[1]='Value Date (DD/MM/YYYY)';
-  ws_data.push(r5);
+  // Row 6: A6=' ', B6=label
+  var r6=new Array(N).fill(null);r6[0]=' ';r6[1]='Value Date (DD/MM/YYYY)';D.push(r6);
 
-  // Row 6: empty
-  ws_data.push(new Array(19).fill(''));
+  // Row 7: empty
+  D.push(new Array(N).fill(null));
 
-  // Row 7: Headers
-  var hdr=new Array(19).fill('');
-  hdr[0]='No.';hdr[1]='Bank';hdr[2]='Account No.';hdr[3]='Recipient Name';hdr[4]='Amount';
-  hdr[5]='Transaction Ref.';hdr[6]='Fee Charge';hdr[7]='Branch Code';hdr[8]='Service Type';
-  hdr[9]='SMS';hdr[10]='Email';hdr[11]='Remark';
-  ws_data.push(hdr);
+  // Row 8: Column headers
+  var r8=new Array(N).fill(null);
+  r8[0]='ลำดับที่\nCredit Seq. No.';
+  r8[1]='*เลือกธนาคาร\nBank Code';
+  r8[2]='*เลขที่บัญชี / หมายเลขพร้อมเพย์\nCredit Account Number / PromptPay ID';
+  r8[3]='*ชื่อผู้รับเงิน\nRecipient Name (TH/EN)';
+  r8[4]='*จำนวนเงิน\nAmount';
+  r8[5]='อ้างอิงรายการ\nCustomer Transaction Ref.';
+  r8[6]='หักค่าธรรมเนียมจาก\nFee Charge';
+  r8[7]='เลขที่สาขา\nBranch Code';
+  r8[8]='วัตถุประสงค์ของธุรกรรม\nService Type';
+  r8[9]='หมายเลขโทรศัพท์\nผู้รับเงิน\nSMS Notification';
+  r8[10]='อีเมล์ผู้รับเงิน\nEmail Notification/Receiving Document';
+  r8[11]='หมายเหตุสำหรับเอกสารแจ้งชำระเงิน\nPayment Advice Remark (Txn level)\n (=<200 ตัวอักษร)';
+  r8[12]='1';r8[17]='Y';r8[18]='Y';
+  D.push(r8);
 
-  // Employee rows
+  // Row 9+: Data rows
   emps.forEach(function(e,i){
     var net=e.pay?e.pay.net:e.net;
     var bankRaw=e.bank||'SCB';
-    var bankName=BANK_MAP[bankRaw]||bankRaw;
-    var bankCode=BANK_CODE[bankName]||'014';
-    var account=e.account||'';
-
-    var row=new Array(19).fill('');
-    row[0]=i+1;
-    row[1]=bankName;
+    var bk=scbBank(BANK_MAP[bankRaw]||bankRaw);
+    var account=String(e.account||'').replace(/[-\s]/g,'');
+    var row=new Array(N).fill(null);
+    row[0]=String(i+1);
+    row[1]=bk.n;
     row[2]=account;
     row[3]=e.name;
     row[4]=Math.round(net*100)/100;
     row[6]='Payer (OUR)';
-    row[13]=bankCode;
+    row[13]=bk.c;
     row[14]='OUR';
-    ws_data.push(row);
+    row[15]='';
+    D.push(row);
   });
 
-  // Create workbook
   var wb=XLSX.utils.book_new();
-  var ws=XLSX.utils.aoa_to_sheet(ws_data);
+  var ws=XLSX.utils.aoa_to_sheet(D);
 
-  // Set column widths
-  ws['!cols']=[{wch:6},{wch:16},{wch:18},{wch:28},{wch:14},{wch:16},{wch:14},{wch:10},{wch:14},{wch:14},{wch:28},{wch:30},{wch:6},{wch:6},{wch:6},{wch:6}];
+  // Column widths
+  ws['!cols']=[{wch:8},{wch:22},{wch:20},{wch:25},{wch:14},{wch:14},{wch:14},{wch:10},{wch:10},{wch:14},{wch:20},{wch:20},{wch:12},{wch:8},{wch:8},{wch:8},{wch:5},{wch:5},{wch:5}];
+
+  // Force account number as text (prevent leading zero loss)
+  for(var i=0;i<emps.length;i++){
+    var cr=XLSX.utils.encode_cell({r:8+i,c:2});
+    if(ws[cr]){ws[cr].t='s';ws[cr].z='@'}
+  }
 
   XLSX.utils.book_append_sheet(wb,ws,'Payment');
+
+  // ═══ Invoice sheet (empty template) ═══
+  var invH=[['Code','ลำดับที่\nCredit Seq. No.','*วันที่แจ้งหนี้\nInvoice Date','*Invoice Number\nหมายเลขใบแจ้งหนี้','*จำนวนแจ้งหนี้\nInvoice Amount','คำอธิบายใบแจ้งหนี้\nInvoice Description (=<100 Char)','หมายเลขใบสั่งซื้อ\nPurchase Order No.','ภาษีมูลค่าเพิ่ม\nVAT Amount','หัก ณ ที่จ่าย\nWHT Amount','*ยอดสุทธิในแจ้งหนี้\nInvoice Net Amount','หมายเหตุใบแจ้งหนี้\nRemark for Invoice (=<100 Char)']];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(invH),'Invoice');
+
+  // ═══ WHT sheet (empty template) ═══
+  var whtH=[['Code','ลำดับที่\nCredit Seq. No.','เลขที่\nWHT Book No.','เลขประจำตัวผู้เสียภาษีอากร\nWHT Payer Tax ID','ผู้มีหน้าที่หักภาษี ณ ที่จ่าย\nWHT Payer Name','ที่อยู่ 1\nWHT Payer Address Line 1','ที่อยู่ 2\nWHT Payer Address Line 2','ที่อยู่ 2\nWHT Payer Address Line 2']];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(whtH),'WHT');
 
   // Download
   var fname='CPX_Payroll_'+(month||'export')+'_'+emps.length+'คน.xlsx';

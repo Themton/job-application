@@ -368,6 +368,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
             <option value="daily">รายวัน</option>
           </select>
           <button class="btn btn-a btn-s" onclick="rptExportAttendance()">📥 Export ขาด/ลา/มา/สาย</button>
+          <button class="btn btn-a btn-s" onclick="rptExportLeaveDetail()" style="background:linear-gradient(135deg,#b45309,#d97706)">📋 Export ลากิจ/ลาป่วย/ขาด</button>
         </div>
         <!-- Holidays Management -->
         <div class="cd" style="margin-bottom:14px">
@@ -4598,6 +4599,122 @@ function rptExportAttendance(){
   }).catch(function(e){
     prog(-1);toast('Export ไม่สำเร็จ: '+e,'terr');
   });
+}
+
+/* ═══ EXPORT ลากิจ/ลาป่วย/ขาดงาน แยกรายละเอียด ═══ */
+function rptExportLeaveDetail(){
+  var month=$('rpt-exp-month').value;
+  if(!month){toast('กรุณาเลือกเดือน','terr');return}
+  var expType=$('rpt-exp-type')?$('rpt-exp-type').value:'';
+  var emps=ALL.slice();
+  if(expType)emps=emps.filter(function(a){return a.status===expType});
+  var stOrd={monthly:0,daily:1,new:2,terminated:3};
+  emps.sort(function(a,b){var sa=stOrd[a.status]!==undefined?stOrd[a.status]:9;var sb2=stOrd[b.status]!==undefined?stOrd[b.status]:9;if(sa!==sb2)return sa-sb2;return a.name.localeCompare(b.name,'th')});
+  var typeLabel=expType==='monthly'?'ประจำ':expType==='daily'?'รายวัน':'ทุกประเภท';
+  var ids=emps.map(function(a){return a.id});
+  if(!ids.length){toast('ไม่พบพนักงาน','terr');return}
+  prog(10,'กำลังดึงข้อมูลลา...');
+  var y=parseInt(month.split('-')[0]),m=parseInt(month.split('-')[1])-1;
+  var daysInMonth=new Date(y,m+1,0).getDate();
+  var startDate=month+'-01',endDate=month+'-'+String(daysInMonth).padStart(2,'0');
+
+  sb("leaves","GET",null,"?emp_id=in.("+ids.join(',')+")"+"&date=gte."+startDate+"&date=lte."+endDate+"&select=emp_id,type,date,days,note&order=date").then(function(leaves){
+    if(!Array.isArray(leaves))leaves=[];
+    prog(60,'กำลังสร้างไฟล์...');
+
+    // Group leaves by emp_id
+    var lmap={};
+    leaves.forEach(function(l){
+      if(!lmap[l.emp_id])lmap[l.emp_id]={personal:[],sick:[],absent:[],pDays:0,sDays:0,aDays:0};
+      var d=l.days||1;
+      var entry={date:l.date,days:d,note:l.note||''};
+      if(l.type==='personal'){lmap[l.emp_id].personal.push(entry);lmap[l.emp_id].pDays+=d}
+      else if(l.type==='sick'){lmap[l.emp_id].sick.push(entry);lmap[l.emp_id].sDays+=d}
+      else if(l.type==='absent'){lmap[l.emp_id].absent.push(entry);lmap[l.emp_id].aDays+=d}
+    });
+
+    // Build XLS
+    var h='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"><style>'
+      +'table{border-collapse:collapse}'
+      +'td,th{border:1px solid #bbb;padding:5px 10px;font-size:12px;font-family:sans-serif}'
+      +'.hdr{background:#5c4a1e;color:#fff;font-weight:bold;text-align:center}'
+      +'.hdr-p{background:#3b82f6;color:#fff;font-weight:bold;text-align:center}'
+      +'.hdr-s{background:#f59e0b;color:#fff;font-weight:bold;text-align:center}'
+      +'.hdr-a{background:#dc2626;color:#fff;font-weight:bold;text-align:center}'
+      +'.grp{background:#f0ead6;font-weight:bold;font-size:13px;padding:8px 12px}'
+      +'.c{text-align:center}.r{text-align:right}'
+      +'.p-bg{background:#eff6ff}.s-bg{background:#fffbeb}.a-bg{background:#fef2f2}'
+      +'.sum{font-weight:bold;background:#f0ead6}'
+      +'</style></head><body>';
+
+    h+='<table><tr><td colspan="11" style="font-size:16px;font-weight:bold;padding:10px;border:none;color:#5c4a1e">'
+      +'📋 รายงาน ลากิจ / ลาป่วย / ขาดงาน — '+month+' ['+typeLabel+']</td></tr>';
+
+    h+='<tr><th class="hdr">ลำดับ</th><th class="hdr" style="text-align:left;min-width:160px">ชื่อ-สกุล</th>'
+      +'<th class="hdr" style="text-align:left;min-width:80px">ชื่อเล่น</th>'
+      +'<th class="hdr" style="text-align:left;min-width:100px">ตำแหน่ง</th>'
+      +'<th class="hdr-p" style="min-width:60px">ลากิจ<br>(วัน)</th>'
+      +'<th class="hdr-p" style="min-width:120px">วันที่ลากิจ</th>'
+      +'<th class="hdr-s" style="min-width:60px">ลาป่วย<br>(วัน)</th>'
+      +'<th class="hdr-s" style="min-width:120px">วันที่ลาป่วย</th>'
+      +'<th class="hdr-a" style="min-width:60px">ขาดงาน<br>(วัน)</th>'
+      +'<th class="hdr-a" style="min-width:120px">วันที่ขาดงาน</th>'
+      +'<th class="hdr" style="min-width:150px">หมายเหตุ</th></tr>';
+
+    var totP=0,totS=0,totA=0,num=0,lastSt='';
+    var stFullLabels={monthly:'🟢 พนักงานประจำ',daily:'🟡 พนักงานรายวัน',new:'🔵 พนักงานใหม่',terminated:'⛔ พ้นสภาพ'};
+
+    emps.forEach(function(a){
+      if(!expType&&a.status!==lastSt){
+        lastSt=a.status;
+        var grpCount=emps.filter(function(e){return e.status===a.status}).length;
+        h+='<tr><td colspan="11" class="grp" style="border-left:4px solid '+(a.status==='monthly'?'#28a745':a.status==='daily'?'#f59e0b':'#007bff')+'">'+(stFullLabels[a.status]||a.status)+' ('+grpCount+' คน)</td></tr>';
+      }
+      var lv=lmap[a.id]||{personal:[],sick:[],absent:[],pDays:0,sDays:0,aDays:0};
+      var hasLeave=lv.pDays>0||lv.sDays>0||lv.aDays>0;
+      totP+=lv.pDays;totS+=lv.sDays;totA+=lv.aDays;num++;
+
+      // Format dates
+      var pDates=lv.personal.map(function(e){return e.date.substring(5)+(e.days===0.5?' (½)':'')}).join(', ');
+      var sDates=lv.sick.map(function(e){return e.date.substring(5)+(e.days===0.5?' (½)':'')}).join(', ');
+      var aDates=lv.absent.map(function(e){return e.date.substring(5)+(e.days===0.5?' (½)':'')}).join(', ');
+      // Collect all notes
+      var allNotes=[];
+      lv.personal.forEach(function(e){if(e.note)allNotes.push('กิจ: '+e.note)});
+      lv.sick.forEach(function(e){if(e.note)allNotes.push('ป่วย: '+e.note)});
+      lv.absent.forEach(function(e){if(e.note)allNotes.push('ขาด: '+e.note)});
+
+      h+='<tr'+(a.status==='terminated'?' style="opacity:.6"':'')+'>';
+      h+='<td class="c">'+num+'</td>';
+      h+='<td>'+esc(a.name)+'</td>';
+      h+='<td>'+esc(a.nickname||'')+'</td>';
+      h+='<td>'+esc(a.position||'')+'</td>';
+      h+='<td class="c'+(lv.pDays>0?' p-bg':'')+'" style="font-weight:'+(lv.pDays>0?'bold':'normal')+';color:'+(lv.pDays>0?'#2563eb':'#999')+'">'+(lv.pDays||'-')+'</td>';
+      h+='<td style="font-size:11px;'+(lv.pDays>0?'color:#2563eb':'color:#ccc')+'">'+(pDates||'-')+'</td>';
+      h+='<td class="c'+(lv.sDays>0?' s-bg':'')+'" style="font-weight:'+(lv.sDays>0?'bold':'normal')+';color:'+(lv.sDays>0?'#b45309':'#999')+'">'+(lv.sDays||'-')+'</td>';
+      h+='<td style="font-size:11px;'+(lv.sDays>0?'color:#b45309':'color:#ccc')+'">'+(sDates||'-')+'</td>';
+      h+='<td class="c'+(lv.aDays>0?' a-bg':'')+'" style="font-weight:'+(lv.aDays>0?'bold':'normal')+';color:'+(lv.aDays>0?'#dc2626':'#999')+'">'+(lv.aDays||'-')+'</td>';
+      h+='<td style="font-size:11px;'+(lv.aDays>0?'color:#dc2626':'color:#ccc')+'">'+(aDates||'-')+'</td>';
+      h+='<td style="font-size:11px">'+esc(allNotes.join('; ')||'-')+'</td>';
+      h+='</tr>';
+    });
+
+    // Summary row
+    h+='<tr class="sum"><td colspan="4" style="text-align:right;padding-right:12px">รวมทั้งหมด ('+num+' คน)</td>';
+    h+='<td class="c p-bg" style="color:#2563eb;font-size:14px">'+totP+'</td><td></td>';
+    h+='<td class="c s-bg" style="color:#b45309;font-size:14px">'+totS+'</td><td></td>';
+    h+='<td class="c a-bg" style="color:#dc2626;font-size:14px">'+totA+'</td><td></td>';
+    h+='<td></td></tr>';
+
+    h+='</table></body></html>';
+
+    var blob=new Blob(['\uFEFF'+h],{type:'application/vnd.ms-excel;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a2=document.createElement('a');a2.href=url;a2.download='รายงาน_ลากิจ_ลาป่วย_ขาดงาน_'+month+'_'+typeLabel+'.xls';
+    document.body.appendChild(a2);a2.click();document.body.removeChild(a2);URL.revokeObjectURL(url);
+    prog(100,'Export สำเร็จ ✅');
+    toast('Export ลากิจ/ลาป่วย/ขาดงาน '+num+' คน — '+month,'tok');
+  }).catch(function(e){prog(-1);toast('Export ไม่สำเร็จ: '+e,'terr')});
 }
 
 /* ═══ DASHBOARD ═══ */

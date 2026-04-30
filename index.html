@@ -2828,24 +2828,53 @@ function payDBBuildFilters(){
 }
 
 function payDBLoad(){
+  var month=$('paydb2-month').value;
   $('paydb2-status').textContent='⏳ กำลังดึงข้อมูลพนักงาน...';
   prog(10,'ดึงข้อมูลพนักงาน...');
-  sb("applications","GET",null,"?select=*&status=neq.terminated&order=status,name").then(function(r){
+
+  var queries=[sb("applications","GET",null,"?select=*&status=neq.terminated&order=status,name")];
+  if(month)queries.push(sb("payroll","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*").catch(function(){return[]}));
+
+  Promise.all(queries).then(function(res){
+    var r=res[0];
+    var saved=Array.isArray(res[1])?res[1]:[];
     if(!Array.isArray(r)||!r.length){$('paydb2-status').textContent='ไม่พบพนักงาน';return}
+
+    // Map saved payroll by name
+    var savedMap={};
+    saved.forEach(function(p){savedMap[p.emp_name.trim()]=p});
+
     PAYDB2=r.map(function(a){
+      var p=savedMap[a.name.trim()]||{};
+      var hasSaved=!!savedMap[a.name.trim()];
       return{
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         bank:a.bank||'',account:a.bank_account||'',
-        salary:a.salary||0,diligence:0,late:0,absent_ded:0,tax3:0,ss5:0,loan:a.loan||0,advance:0,commission:0,
-        totalIncome:0,totalDed:0,net:0,
+        salary:hasSaved?p.salary:(a.salary||0),
+        diligence:p.diligence||0,
+        late:p.late||0,
+        absent_ded:p.absent_ded||0,
+        tax3:p.tax3||0,
+        ss5:p.ss5||0,
+        loan:hasSaved?p.loan:(a.loan||0),
+        advance:p.advance||0,
+        commission:p.commission||0,
+        totalIncome:p.total_income||0,totalDed:p.total_ded||0,net:p.net||0,
         isTerminated:false
       };
     });
+
     var prefilled=PAYDB2.filter(function(e){return e.salary>0}).length;
-    // คำนวณ ภาษี/ปกส. ให้พนักงานที่มีฐานเงินเดือนอัตโนมัติ
-    PAYDB2.forEach(function(e){if(e.salary>0)payDBCalcRow(e)});
-    $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน'+(prefilled?' — ฐานเงินเดือน <b style="color:var(--ok)">'+prefilled+'</b> คน (คำนวณภาษี/ปกส. แล้ว)':'');
+    var savedCount=saved.length;
+    // คำนวณ ภาษี/ปกส. ให้พนักงานที่ยังไม่มี totalIncome
+    PAYDB2.forEach(function(e){if(e.salary>0&&e.totalIncome===0)payDBCalcRow(e)});
+
+    if(savedCount>0){
+      $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — <span style="color:var(--ok)">โหลดข้อมูลที่บันทึกไว้เดือน '+month+' ได้ <b>'+savedCount+'</b> คน</span>';
+    }else{
+      $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน'+(prefilled?' — ฐานเงินเดือน <b style="color:var(--ok)">'+prefilled+'</b> คน (คำนวณภาษี/ปกส. แล้ว)':'');
+    }
     prog(100,'ดึงข้อมูล ✅ '+PAYDB2.length+' คน');
     PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
     $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';$('paydb2-late-area').classList.remove('hide');$('paydb2-late-area').style.display='block';

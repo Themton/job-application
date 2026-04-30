@@ -2585,13 +2585,13 @@ function payCalc(emp,attA){
   var daily=emp.position.indexOf("รายวัน")>=0;
   if(daily){
     var eff=attA.full+attA.half*0.5,adj=eff*PAY_DAILY,ti=adj+emp.diligence;
-    var t3=emp.tax3>0?Math.round(ti*0.03*100)/100:0,s5=emp.ss5>0?Math.min(Math.round(ti*0.05*100)/100,750):0;
+    var t3=emp.tax3>0?Math.round(ti*0.03*100)/100:0,s5=emp.ss5>0?Math.min(Math.round(ti*0.05*100)/100,875):0;
     var td=t3+s5+emp.loan+emp.advance;
     return{rate:PAY_DAILY,halfDed:attA.half*(PAY_DAILY/2),absDed:attA.absent*PAY_DAILY,attDed:Math.max(0,emp.salary-adj),adjSal:adj,totalIn:ti,tax3:t3,ss5:s5,totalDed:td,net:Math.max(0,ti-td),daily:true,eff:eff,method:"Telesales รายวัน "+PAY_DAILY+"฿×"+eff+"วัน"};
   }else{
     var hd=attA.half*(PAY_PERM/2),ad=attA.absent*PAY_PERM,atd=hd+ad;
     var adj=Math.max(0,emp.salary-atd),ti=adj+emp.diligence;
-    var t3=emp.tax3>0?Math.round(ti*0.03*100)/100:0,s5=emp.ss5>0?Math.min(Math.round(ti*0.05*100)/100,750):0;
+    var t3=emp.tax3>0?Math.round(ti*0.03*100)/100:0,s5=emp.ss5>0?Math.min(Math.round(ti*0.05*100)/100,875):0;
     var td=t3+s5+emp.loan+emp.advance;
     return{rate:PAY_PERM,halfDed:hd,absDed:ad,attDed:atd,adjSal:adj,totalIn:ti,tax3:t3,ss5:s5,totalDed:td,net:Math.max(0,ti-td),daily:false,method:"Telesales รายเดือน หัก "+PAY_PERM+"฿/วัน"};
   }
@@ -3234,10 +3234,10 @@ function payDBCalcRow(e){
     e.ss5=0;
   }else if(e.status==='monthly_daily'){
     e.tax3=0;
-    e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,750);
+    e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,875);
   }else{
     e.tax3=0;
-    e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,750);
+    e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,875);
   }
   e.totalDed=e.late+e.absent_ded+e.tax3+e.ss5+e.loan+e.advance;
   e.net=Math.max(0,e.totalIncome-e.totalDed);

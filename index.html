@@ -4339,6 +4339,9 @@ function rptExportAttendance(){
   var emps=ALL.slice();
   var expType=$('rpt-exp-type')?$('rpt-exp-type').value:'';
   if(expType)emps=emps.filter(function(a){return a.status===expType});
+  // Sort: monthly → daily → new → terminated
+  var stOrd={monthly:0,daily:1,new:2,terminated:3};
+  emps.sort(function(a,b){var sa=stOrd[a.status]!==undefined?stOrd[a.status]:9;var sb=stOrd[b.status]!==undefined?stOrd[b.status]:9;if(sa!==sb)return sa-sb;return a.name.localeCompare(b.name,'th')});
   var typeLabel=expType==='monthly'?'ประจำ':expType==='daily'?'รายวัน':'ทุกประเภท';
   var ids=emps.map(function(a){return a.id});
   if(!ids.length){toast('ไม่พบพนักงาน'+(expType?' ประเภท '+typeLabel:''),'terr');return}
@@ -4399,8 +4402,16 @@ function rptExportAttendance(){
       +'<th class="hdr" style="min-width:60px">สาย</th></tr>';
 
     var totAbsent=0,totLeave=0,totPresent=0,totLate=0,num=0;
+    var lastSt='';
+    var stFullLabels={monthly:'🟢 พนักงานประจำ',daily:'🟡 พนักงานรายวัน',new:'🔵 พนักงานใหม่',terminated:'⛔ พ้นสภาพ'};
 
     emps.forEach(function(a){
+      // Group header
+      if(!expType&&a.status!==lastSt){
+        lastSt=a.status;
+        var grpCount=emps.filter(function(e){return e.status===a.status}).length;
+        h+='<tr><td colspan="9" style="background:#f0ead6;font-weight:bold;font-size:13px;padding:8px 12px;border-left:4px solid '+(a.status==='monthly'?'#28a745':a.status==='daily'?'#f59e0b':'#007bff')+'">'+(stFullLabels[a.status]||a.status)+' ('+grpCount+' คน)</td></tr>';
+      }
       var lv=lmap[a.id]||{leave:0,absent:0};
       var late=cmap[a.name.trim()]||0;
       var present=Math.max(0,workDays-lv.absent-lv.leave);

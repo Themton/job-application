@@ -3728,8 +3728,9 @@ function scbBank(raw){
 
 /* ═══ SCB CPX Toolkit Payroll Export — ตาม Template v1.3.5 ═══ */
 function payExportSCB(){
-  if(!PAY_DATA.length){toast('ยังไม่มีข้อมูลเงินเดือน','terr');return}
-  var month=$('pay-month').value;
+  try{
+  if(!PAY_DATA||!PAY_DATA.length){toast('ยังไม่มีข้อมูลเงินเดือน','terr');return}
+  var month=$('pay-month')?$('pay-month').value:'';
 
   // Value Date = วันสุดท้ายของเดือน DD/MM/YYYY
   var vDate='';
@@ -3753,35 +3754,35 @@ function payExportSCB(){
   var D=[];var N=19; // 19 columns A-S
 
   // Row 1: M1='PAY', N1=0
-  var r1=new Array(N).fill(null);r1[12]='PAY';r1[13]=0;D.push(r1);
+  var r1=new Array(N).fill('');r1[12]='PAY';r1[13]=0;D.push(r1);
 
   // Row 2: B2=header, D2=header, M-P=lookup names
-  var r2=new Array(N).fill(null);
+  var r2=new Array(N).fill('');
   r2[1]='อ้างอิงไฟล์รายการ\nCustomer File Ref. ';r2[3]='อ้างอิงกลุ่มรายการ\nCustomer Batch Ref.';r2[6]=' ';
   r2[12]='TBPPPayroll';r2[13]='TBBankPAY';r2[14]='TBFeePayroll';r2[15]='TBServiceType';
   D.push(r2);
 
   // Row 3: B3=Debit Account
-  var r3=new Array(N).fill(null);r3[1]='เลขที่บัญชีตัดเงิน\nDebit Account';D.push(r3);
+  var r3=new Array(N).fill('');r3[1]='เลขที่บัญชีตัดเงิน\nDebit Account';D.push(r3);
 
   // Row 4: B4=Debit Fee Account, D4=Select Product, E4=SCB Payroll1
-  var r4=new Array(N).fill(null);
+  var r4=new Array(N).fill('');
   r4[1]='เลขที่บัญชีหักค่าธรรมเนียม\nDebit Fee Account';r4[3]='Select Product';r4[4]='SCB Payroll1';
   D.push(r4);
 
   // Row 5: B5=วันที่, C5=Value Date, D5=WHT/Invoice, E5=System Ref
-  var r5=new Array(N).fill(null);
+  var r5=new Array(N).fill('');
   r5[1]='วันที่รายการมีผล';r5[2]=vDate;r5[3]='เลือก WHT/Invoice';r5[4]='System Reference ID';
   D.push(r5);
 
   // Row 6: A6=' ', B6=label
-  var r6=new Array(N).fill(null);r6[0]=' ';r6[1]='Value Date (DD/MM/YYYY)';D.push(r6);
+  var r6=new Array(N).fill('');r6[0]=' ';r6[1]='Value Date (DD/MM/YYYY)';D.push(r6);
 
   // Row 7: empty
-  D.push(new Array(N).fill(null));
+  D.push(new Array(N).fill(''));
 
   // Row 8: Column headers
-  var r8=new Array(N).fill(null);
+  var r8=new Array(N).fill('');
   r8[0]='ลำดับที่\nCredit Seq. No.';
   r8[1]='*เลือกธนาคาร\nBank Code';
   r8[2]='*เลขที่บัญชี / หมายเลขพร้อมเพย์\nCredit Account Number / PromptPay ID';
@@ -3803,7 +3804,7 @@ function payExportSCB(){
     var bankRaw=e.bank||'SCB';
     var bk=scbBank(BANK_MAP[bankRaw]||bankRaw);
     var account=String(e.account||'').replace(/[-\s]/g,'');
-    var row=new Array(N).fill(null);
+    var row=new Array(N).fill('');
     row[0]=String(i+1);
     row[1]=bk.n;
     row[2]=account;
@@ -3842,6 +3843,7 @@ function payExportSCB(){
   var fname='CPX_Payroll_'+(month||'export')+'_'+emps.length+'คน.xlsx';
   XLSX.writeFile(wb,fname);
   toast('สร้างไฟล์ '+fname+' ('+emps.length+' คน)','tok');
+  }catch(err){toast('❌ Error: '+err.message,'terr');console.error('payExportSCB error:',err)}
 }
 
 function payExportCSV2(){

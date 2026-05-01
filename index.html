@@ -3579,7 +3579,7 @@ function payDBSave(){
   sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
     prog(40,'กำลังบันทึก '+valid.length+' คน...');
     var records=valid.map(function(e){
-      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||352,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
+      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
     });
     sb("payroll","POST",records).then(function(){
       prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');

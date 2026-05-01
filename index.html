@@ -3344,7 +3344,7 @@ function payDBCell(i,field,val){
 
   var t3inp=$('paydb2-table').querySelector('input[data-i="'+i+'"][data-c="tax3"]');
   var s5inp=$('paydb2-table').querySelector('input[data-i="'+i+'"][data-c="ss5"]');
-  if(field==='salary'||field==='diligence'){
+  if(field==='salary'||field==='diligence'||field==='work_days'){
     if(t3inp)t3inp.value=e.tax3||'';
     if(s5inp)s5inp.value=e.ss5||'';
   }

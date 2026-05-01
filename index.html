@@ -1522,6 +1522,61 @@ function resetEmpPass(id,name){
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
 
+function auditDetailTH(action,details){
+  if(!details)return'-';
+  var d=typeof details==='string'?JSON.parse(details):details;
+  var parts=[];
+  try{
+    // Leave actions
+    if(action.indexOf('leave')>=0){
+      if(d.type){var tl={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน',absent:'ขาดงาน',other:'อื่นๆ'};parts.push(tl[d.type]||d.type)}
+      if(d.days)parts.push(d.days+(d.days===0.5?' (ครึ่งวัน)':' วัน'));
+      if(d.start_date&&d.end_date)parts.push(d.start_date+' ถึง '+d.end_date);
+      else if(d.start_date)parts.push(d.start_date);
+      if(d.emp_name)parts.push('👤 '+d.emp_name);
+      else if(d.emp_id)parts.push('ID: '+d.emp_id.substring(0,10));
+      if(d.note)parts.push('📝 '+d.note);
+      if(d.reason)parts.push('📝 '+d.reason);
+      if(d.has_cert)parts.push('📄 มีใบรับรองแพทย์');
+    }
+    // Status change
+    else if(action==='status_change'||action==='chg_status'){
+      var stMap={new:'ใหม่',daily:'รายวัน',monthly:'ประจำ',monthly_daily:'ประจำ(รายวัน)',terminated:'พ้นสภาพ',resigned_pending:'ลาออก-รอจ่าย'};
+      if(d.from)parts.push('จาก: '+(stMap[d.from]||d.from));
+      if(d.to)parts.push('เป็น: '+(stMap[d.to]||d.to));
+      if(d.status)parts.push('สถานะ: '+(stMap[d.status]||d.status));
+      if(d.emp_name)parts.push('👤 '+d.emp_name);
+    }
+    // Password reset
+    else if(action.indexOf('password')>=0){
+      if(d.emp_name)parts.push('👤 '+d.emp_name);
+      if(d.emp_email)parts.push('📧 '+d.emp_email);
+    }
+    // Payroll
+    else if(action.indexOf('payroll')>=0||action.indexOf('salary')>=0){
+      if(d.month)parts.push('เดือน '+d.month);
+      if(d.count)parts.push(d.count+' คน');
+      if(d.total)parts.push('รวม '+Number(d.total).toLocaleString()+' บาท');
+    }
+    // Login/logout
+    else if(action.indexOf('login')>=0||action.indexOf('logout')>=0){
+      return d.email||d.username||'-';
+    }
+    // Generic fallback
+    if(!parts.length){
+      var keys=Object.keys(d);
+      keys.forEach(function(k){
+        var v=d[k];
+        if(v!==null&&v!==undefined&&v!==''){
+          var label=k==='emp_name'?'👤':k==='note'?'📝':k==='days'?'📅':k==='type'?'ประเภท':k;
+          parts.push(label+': '+String(v).substring(0,30));
+        }
+      });
+    }
+  }catch(e){return esc(JSON.stringify(d)).substring(0,50)}
+  return parts.length?esc(parts.join(' | ')):'-';
+}
+
 function viewAuditLog(){
   sbRpc('audit_read',{p_token:TOK(),p_limit:200}).then(function(r){
     if(!r||!r.ok){toast('ดึงข้อมูลไม่สำเร็จ','terr');return}
@@ -1530,14 +1585,24 @@ function viewAuditLog(){
       +'<div style="background:#fff;border-radius:14px;padding:20px;max-width:900px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0;color:var(--pri)">📋 Audit Log — '+rows.length+' รายการล่าสุด</h3>'
       +'<button class="btn btn-g btn-s" onclick="this.closest(\'div[style*=fixed]\').remove()">✕ ปิด</button></div>'
-      +'<div class="tw"><table><thead><tr><th>เวลา</th><th>ผู้ใช้</th><th>สิทธิ์</th><th>Action</th><th>Target</th><th>รายละเอียด</th></tr></thead><tbody>';
+      +'<div class="tw"><table><thead><tr><th>เวลา</th><th>ผู้ใช้</th><th>สิทธิ์</th><th>การกระทำ</th><th>เป้าหมาย</th><th>รายละเอียด</th></tr></thead><tbody>';
     rows.forEach(function(x){
+      var actionLabel={
+        'leave_submit':'📝 ยื่นขอลา','leave_approve':'✅ อนุมัติลา','leave_reject':'❌ ปฏิเสธลา','leave_cancel':'🚫 ยกเลิกลา',
+        'login:admin':'🔓 เข้าสู่ระบบ','login:emp':'🔓 เข้าสู่ระบบ','login:hr':'🔓 เข้าสู่ระบบ',
+        'logout:admin':'🔒 ออกจากระบบ','logout:emp':'🔒 ออกจากระบบ','logout:hr':'🔒 ออกจากระบบ',
+        'emp_password_reset':'🔑 รีเซ็ตรหัสผ่าน','status_change':'🔄 เปลี่ยนสถานะ','chg_status':'🔄 เปลี่ยนสถานะ',
+        'payroll_save':'💾 บันทึกเงินเดือน','payroll_delete':'🗑️ ลบเงินเดือน',
+        'emp_create':'➕ เพิ่มพนักงาน','emp_update':'✏️ แก้ไขพนักงาน','emp_delete':'🗑️ ลบพนักงาน'
+      };
+      var roleLabel={admin:'แอดมิน',employee:'พนักงาน',hr:'HR'};
+      var roleBg={admin:'background:#fef3c7;color:#b45309',employee:'background:#eff6ff;color:#3b82f6',hr:'background:#ede9fe;color:#7c3aed'};
       h+='<tr><td style="font-size:11px;white-space:nowrap">'+String(x.created_at).replace('T',' ').substring(0,19)+'</td>'
         +'<td>'+esc(x.username||'-')+'</td>'
-        +'<td><span class="bg b-new" style="font-size:10px">'+esc(x.role||'-')+'</span></td>'
-        +'<td style="font-family:monospace;font-size:11px">'+esc(x.action)+'</td>'
+        +'<td><span style="font-size:10px;padding:2px 8px;border-radius:6px;'+(roleBg[x.role]||'background:#f1f5f9;color:#64748b')+'">'+esc(roleLabel[x.role]||x.role||'-')+'</span></td>'
+        +'<td style="font-size:11px">'+esc(actionLabel[x.action]||x.action)+'</td>'
         +'<td style="font-size:11px">'+(x.target_type?esc(x.target_type)+':'+esc(x.target_id||'').substring(0,12):'-')+'</td>'
-        +'<td style="font-size:10px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis">'+(x.details?esc(JSON.stringify(x.details)):'')+'</td></tr>';
+        +'<td style="font-size:10px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis">'+auditDetailTH(x.action,x.details)+'</td></tr>';
     });
     h+='</tbody></table></div></div></div>';
     var d=document.createElement('div');d.innerHTML=h;document.body.appendChild(d.firstChild);

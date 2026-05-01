@@ -3117,6 +3117,8 @@ function payDBLoad(){
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         bank:a.bank||'',account:a.bank_account||'',
+        daily_rate:hasSaved&&p.daily_rate?p.daily_rate:352,
+        work_days:hasSaved?p.work_days||0:0,
         salary:hasSaved?p.salary:(a.salary||0),
         diligence:p.diligence||0,
         late:p.late||0,
@@ -3199,8 +3201,7 @@ function payDBRender(){
   PAYDB2.sort(function(a,b){var sa=stOrder[a.status]!==undefined?stOrder[a.status]:9;var sb=stOrder[b.status]!==undefined?stOrder[b.status]:9;if(sa!==sb)return sa-sb;return a.name.localeCompare(b.name,'th')});
 
   var stLabels={daily:'พนักงานรายวัน',monthly:'พนักงานประจำ',monthly_daily:'ประจำ(รายวัน)+ปกส.',new:'พนักงานใหม่',resigned_pending:'⏳ ลาออก-รอจ่ายเงินเดือน'};
-  var stColors={daily:'#f59e0b',monthly:'#28a745',new:'#007bff',resigned_pending:'#d97706'};
-  var stColors={daily:'#f59e0b',monthly:'#28a745',new:'#007bff'};
+  var stColors={daily:'#f59e0b',monthly:'#28a745',monthly_daily:'#7c3aed',new:'#007bff',resigned_pending:'#d97706'};
 
   // Build filtered list with original indices
   var srch=$('paydb2-srch')?$('paydb2-srch').value.toLowerCase():'';
@@ -3211,8 +3212,8 @@ function payDBRender(){
     filtered.push({e:e,idx:i});
   });
 
-  var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0;
-  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net});
+  var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0;
+  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;if(e.status==='daily'||e.status==='monthly_daily')tWD+=e.work_days});
 
   var cols=[
     {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
@@ -3224,7 +3225,7 @@ function payDBRender(){
     {k:'loan',l:'กยศ.',w:70,type:'ded'},
     {k:'advance',l:'เบิกล่วงหน้า',w:85,type:'ded'}
   ];
-  var totalCols=4+cols.length+3;
+  var totalCols=4+2+cols.length+3; // +2 for daily_rate & work_days
   var sums=[tSal,tDil,tLa,tAb,tT3,tS5,tLo,tAd];
 
   var h='<div class="xls-wrap"><table class="xls"><thead><tr>';
@@ -3232,15 +3233,19 @@ function payDBRender(){
   h+='<th style="min-width:40px">A</th>';
   h+='<th style="min-width:150px">B</th>';
   h+='<th style="min-width:90px">C</th>';
-  cols.forEach(function(c,ci){h+='<th style="min-width:'+c.w+'px">'+String.fromCharCode(68+ci)+'</th>'});
-  h+='<th style="min-width:90px;background:#d4ecc0">'+String.fromCharCode(68+cols.length)+'</th>';
-  h+='<th style="min-width:80px;background:#f5d0c0">'+String.fromCharCode(69+cols.length)+'</th>';
-  h+='<th style="min-width:100px;background:#c0d8f0">'+String.fromCharCode(70+cols.length)+'</th>';
+  h+='<th style="min-width:60px;background:#e8d5f5">D</th>';
+  h+='<th style="min-width:60px;background:#e8d5f5">E</th>';
+  cols.forEach(function(c,ci){h+='<th style="min-width:'+c.w+'px">'+String.fromCharCode(70+ci)+'</th>'});
+  h+='<th style="min-width:90px;background:#d4ecc0">'+String.fromCharCode(70+cols.length)+'</th>';
+  h+='<th style="min-width:80px;background:#f5d0c0">'+String.fromCharCode(71+cols.length)+'</th>';
+  h+='<th style="min-width:100px;background:#c0d8f0">'+String.fromCharCode(72+cols.length)+'</th>';
   h+='</tr><tr>';
   h+='<th class="xr"></th>';
   h+='<th style="font-size:9px">ลำดับ</th>';
   h+='<th style="text-align:left;padding-left:6px">ชื่อ-สกุล</th>';
   h+='<th style="text-align:left;padding-left:6px">ตำแหน่ง</th>';
+  h+='<th style="background:#e8d5f5;font-size:10px">ค่าแรง/วัน</th>';
+  h+='<th style="background:#e8d5f5;font-size:10px">จำนวนวัน</th>';
   cols.forEach(function(c){h+='<th>'+c.l+'</th>'});
   h+='<th style="background:#d4ecc0">รวมรับ</th>';
   h+='<th style="background:#f5d0c0">รวมหัก</th>';
@@ -3266,9 +3271,18 @@ function payDBRender(){
     h+='<td class="xr" style="font-size:10px">'+rowNum+'</td>';
     h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
     h+='<td class="xpos">'+esc(e.position)+'</td>';
+    // ค่าแรง/วัน & จำนวนวัน — active for daily/monthly_daily
+    var isDaily=(e.status==='daily'||e.status==='monthly_daily');
+    if(isDaily){
+      h+='<td style="background:#f3e8ff;text-align:center;font-weight:bold;color:#7c3aed;font-size:12px">'+e.daily_rate+'</td>';
+      h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="0" style="color:#7c3aed;font-weight:bold"></td>';
+    }else{
+      h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
+      h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
+    }
     cols.forEach(function(c){
       var v=e[c.k]||0;
-      var auto=(c.k==='tax3'||c.k==='ss5');
+      var auto=(c.k==='tax3'||c.k==='ss5')||(isDaily&&c.k==='salary'&&e.work_days>0);
       h+='<td style="'+(auto?'background:#f0f8ff':'')+'"><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" data-i="'+i+'" placeholder="0" style="'+(auto?'color:#4a90d9':'')+'"></td>';
     });
     h+='<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
@@ -3282,6 +3296,8 @@ function payDBRender(){
   h+='<td class="xr"></td>';
   h+='<td class="xsum xsum-pri" colspan="2" style="text-align:left;padding-left:6px">รวม '+filtered.length+' คน'+(PAYDB2_FILTER?' ('+esc(stLabels[PAYDB2_FILTER]||PAYDB2_FILTER)+')':'')+'</td>';
   h+='<td></td>';
+  h+='<td style="text-align:center;font-size:10px;color:#7c3aed">352</td>';
+  h+='<td class="xsum" style="color:#7c3aed">'+(tWD||'')+'</td>';
   sums.forEach(function(s){h+='<td class="xsum">'+payFmt(s)+'</td>'});
   h+='<td class="xsum xsum-ok">'+payFmt(tI)+'</td>';
   h+='<td class="xsum xsum-err">'+payFmt(tD)+'</td>';
@@ -3312,7 +3328,13 @@ function payDBCell(i,field,val){
   PAYDB2[i][field]=parseFloat(val)||0;
   var e=PAYDB2[i];
 
-  if(field==='salary'||field==='diligence'){
+  // work_days changed → auto-calc salary
+  if(field==='work_days'){
+    e.salary=Math.round(e.daily_rate*e.work_days*100)/100;
+    var salInp=$('paydb2-table').querySelector('input[data-i="'+i+'"][data-c="salary"]');
+    if(salInp)salInp.value=e.salary||'';
+    payDBCalcRow(e);
+  }else if(field==='salary'||field==='diligence'){
     payDBCalcRow(e);
   }else{
     e.totalIncome=e.salary+e.diligence;
@@ -3337,15 +3359,16 @@ function payDBCell(i,field,val){
 }
 
 function payDBUpdateFooter(){
-  var tSal=0,tDil=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tI=0,tD=0,tN=0;
-  PAYDB2.forEach(function(e){tSal+=e.salary;tDil+=e.diligence;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tI+=e.totalIncome;tD+=e.totalDed;tN+=e.net});
+  var tSal=0,tDil=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tI=0,tD=0,tN=0,tWD=0;
+  PAYDB2.forEach(function(e){tSal+=e.salary;tDil+=e.diligence;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tI+=e.totalIncome;tD+=e.totalDed;tN+=e.net;if(e.status==='daily'||e.status==='monthly_daily')tWD+=e.work_days});
   var foot=$('paydb2-table').querySelectorAll('tfoot td.xsum');
-  var vals=[tSal,tDil,tLa,tAb,tT3,tS5,tLo,tAd,tI,tD,tN];
+  // xsum cells: [0]=label, [1]=work_days, [2]=sal, [3]=dil, [4]=late, [5]=absent, [6]=tax3, [7]=ss5, [8]=loan, [9]=adv, [10]=totI, [11]=totD, [12]=net
+  var vals=[tWD,tSal,tDil,tLa,tAb,tT3,tS5,tLo,tAd,tI,tD,tN];
   foot.forEach(function(td,j){if(j>0&&vals[j-1]!==undefined)td.textContent=payFmt(vals[j-1])});
 }
 
 function payDBNav(e,dispRow,col){
-  var cols=['salary','diligence','late','absent_ded','tax3','ss5','loan','advance'];
+  var cols=['work_days','salary','diligence','late','absent_ded','tax3','ss5','loan','advance'];
   var ci=cols.indexOf(col);
   var nr=dispRow,nc=ci;
   if(e.key==='Tab'){
@@ -3556,7 +3579,7 @@ function payDBSave(){
   sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
     prog(40,'กำลังบันทึก '+valid.length+' คน...');
     var records=valid.map(function(e){
-      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
+      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||352,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
     });
     sb("payroll","POST",records).then(function(){
       prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');

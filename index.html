@@ -3139,7 +3139,7 @@ function payDBLoad(){
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         bank:a.bank||'',account:a.bank_account||'',
-        daily_rate:hasSaved&&p.daily_rate?p.daily_rate:(a.daily_rate||352),
+        daily_rate:hasSaved&&p.daily_rate!==undefined?p.daily_rate:(a.daily_rate||352),
         work_days:hasSaved?p.work_days||0:0,
         salary:hasSaved?p.salary:(a.salary||0),
         diligence:p.diligence||0,
@@ -3225,7 +3225,7 @@ function payDBRender(){
 
   // Sort by status group: monthly → monthly_daily → daily → new → resigned_pending
   var stOrder={monthly:0,monthly_daily:1,daily:2,new:3,resigned_pending:4};
-  PAYDB2.sort(function(a,b){var sa=stOrder[a.status]!==undefined?stOrder[a.status]:9;var sb=stOrder[b.status]!==undefined?stOrder[b.status]:9;if(sa!==sb)return sa-sb;return a.name.localeCompare(b.name,'th')});
+  PAYDB2.sort(function(a,b){var sa=stOrder[a.status]!==undefined?stOrder[a.status]:9;var sb2=stOrder[b.status]!==undefined?stOrder[b.status]:9;if(sa!==sb2)return sa-sb2;return a.name.localeCompare(b.name,'th')});
 
   var stLabels={daily:'พนักงานรายวัน',monthly:'พนักงานประจำ',monthly_daily:'ประจำ(รายวัน)+ปกส.',new:'พนักงานใหม่',resigned_pending:'⏳ ลาออก-รอจ่ายเงินเดือน'};
   var stColors={daily:'#f59e0b',monthly:'#28a745',monthly_daily:'#7c3aed',new:'#007bff',resigned_pending:'#d97706'};
@@ -3387,7 +3387,11 @@ function payDBCell(i,field,val){
 
 function payDBUpdateFooter(){
   var tSal=0,tDil=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tI=0,tD=0,tN=0,tWD=0;
-  PAYDB2.forEach(function(e){tSal+=e.salary;tDil+=e.diligence;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tI+=e.totalIncome;tD+=e.totalDed;tN+=e.net;if(e.status==='daily'||e.status==='monthly_daily')tWD+=e.work_days});
+  var srch=$('paydb2-srch')?$('paydb2-srch').value.toLowerCase():'';
+  PAYDB2.forEach(function(e){
+    if(PAYDB2_FILTER&&e.status!==PAYDB2_FILTER)return;
+    if(srch&&(e.name+' '+e.nickname+' '+e.position).toLowerCase().indexOf(srch)<0)return;
+    tSal+=e.salary;tDil+=e.diligence;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tI+=e.totalIncome;tD+=e.totalDed;tN+=e.net;if(e.status==='daily'||e.status==='monthly_daily')tWD+=e.work_days});
   var foot=$('paydb2-table').querySelectorAll('tfoot td.xsum');
   // xsum cells: [0]=label, [1]=work_days, [2]=sal, [3]=dil, [4]=late, [5]=absent, [6]=tax3, [7]=ss5, [8]=loan, [9]=adv, [10]=totI, [11]=totD, [12]=net
   var vals=[tWD,tSal,tDil,tLa,tAb,tT3,tS5,tLo,tAd,tI,tD,tN];
@@ -3605,8 +3609,8 @@ function payDBSave(){
 
   sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
     prog(40,'กำลังบันทึก '+valid.length+' คน...');
-    var records=valid.map(function(e){
-      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||0,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
+    var records=valid.map(function(e,ri){
+      return{id:'PR-'+month+'-'+Date.now()+'-'+ri+'-'+Math.random().toString(36).substr(2,6),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||0,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
     });
     sb("payroll","POST",records).then(function(){
       prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');
@@ -4099,23 +4103,26 @@ function paySaveToDB(){
   // Delete old records for this month first
   sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
     // Insert all
-    var records=PAY_DATA.map(function(e){
+    var records=PAY_DATA.map(function(e,ri){
       return{
-        id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),
+        id:'PR-'+month+'-'+Date.now()+'-'+ri+'-'+Math.random().toString(36).substr(2,6),
         month:month,
         emp_name:e.name,
         nickname:e.nickname||'',
         position:e.position||'',
+        daily_rate:e.daily_rate||0,
+        work_days:e.work_days||0,
         salary:e.pay?e.pay.adjSal:e.salary,
         diligence:e.diligence||0,
+        late:e.late||0,
+        absent_ded:e.absent_ded||0,
         total_income:e.pay?e.pay.totalIn:e.totalIncome,
         tax3:e.pay?e.pay.tax3:e.tax3,
         ss5:e.pay?e.pay.ss5:e.ss5,
         loan:e.loan||0,
         advance:e.advance||0,
         total_ded:e.pay?e.pay.totalDed:e.totalDed,
-        net:e.pay?e.pay.net:e.net,
-        commission:e.commission||0
+        net:e.pay?e.pay.net:e.net
       };
     });
 
@@ -4696,7 +4703,7 @@ function rptExportAttendance(){
   if(expType)emps=emps.filter(function(a){return a.status===expType});
   // Sort: monthly → daily → new → terminated
   var stOrd={monthly:0,monthly_daily:1,daily:2,new:3,terminated:4};
-  emps.sort(function(a,b){var sa=stOrd[a.status]!==undefined?stOrd[a.status]:9;var sb=stOrd[b.status]!==undefined?stOrd[b.status]:9;if(sa!==sb)return sa-sb;return a.name.localeCompare(b.name,'th')});
+  emps.sort(function(a,b){var sa=stOrd[a.status]!==undefined?stOrd[a.status]:9;var sb2=stOrd[b.status]!==undefined?stOrd[b.status]:9;if(sa!==sb2)return sa-sb2;return a.name.localeCompare(b.name,'th')});
   var typeLabel=expType==='monthly'?'ประจำ':expType==='daily'?'รายวัน':'ทุกประเภท';
   var ids=emps.map(function(a){return a.id});
   if(!ids.length){toast('ไม่พบพนักงาน'+(expType?' ประเภท '+typeLabel:''),'terr');return}

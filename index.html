@@ -3139,7 +3139,7 @@ function payDBLoad(){
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         bank:a.bank||'',account:a.bank_account||'',
-        daily_rate:hasSaved&&p.daily_rate?p.daily_rate:352,
+        daily_rate:hasSaved&&p.daily_rate?p.daily_rate:(a.daily_rate||352),
         work_days:hasSaved?p.work_days||0:0,
         salary:hasSaved?p.salary:(a.salary||0),
         diligence:p.diligence||0,
@@ -3151,14 +3151,15 @@ function payDBLoad(){
         advance:p.advance||0,
         commission:p.commission||0,
         totalIncome:p.total_income||0,totalDed:p.total_ded||0,net:p.net||0,
+        _saved:hasSaved,
         isTerminated:false
       };
     });
 
     var prefilled=PAYDB2.filter(function(e){return e.salary>0}).length;
     var savedCount=saved.length;
-    // คำนวณ ภาษี/ปกส. ให้ทุกคนที่มีเงินเดือน (เพื่อให้ถูกต้องตาม status ปัจจุบัน)
-    PAYDB2.forEach(function(e){if(e.salary>0)payDBCalcRow(e)});
+    // คำนวณ ภาษี/ปกส. เฉพาะพนักงานใหม่ที่ไม่มีข้อมูลบันทึก (ไม่ทับค่าที่บันทึกไว้)
+    PAYDB2.forEach(function(e){if(!e._saved&&e.salary>0)payDBCalcRow(e)});
 
     if(savedCount>0){
       $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — <span style="color:var(--ok)">โหลดข้อมูลที่บันทึกไว้เดือน '+month+' ได้ <b>'+savedCount+'</b> คน</span>';
@@ -3195,19 +3196,23 @@ function payDBLoadPrev(){
 
     PAYDB2=emps.map(function(a){
       var p=prevMap[a.name.trim()]||{};
+      var hasPrev=!!prevMap[a.name.trim()];
       return{
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         bank:a.bank||'',account:a.bank_account||'',
-        salary:p.salary||a.salary||0,diligence:p.diligence||0,late:p.late||0,absent_ded:p.absent_ded||0,
-        tax3:p.tax3||0,ss5:p.ss5||0,loan:p.loan||a.loan||0,advance:p.advance||0,commission:p.commission||0,
-        totalIncome:p.total_income||0,totalDed:p.total_ded||0,net:p.net||0,
+        daily_rate:p.daily_rate||(a.daily_rate||352),
+        work_days:0,
+        salary:p.salary||a.salary||0,diligence:p.diligence||0,late:0,absent_ded:0,
+        tax3:p.tax3||0,ss5:p.ss5||0,loan:p.loan||a.loan||0,advance:0,commission:0,
+        totalIncome:0,totalDed:0,net:0,
+        _saved:false,
         isTerminated:false
       };
     });
 
     var matched=PAYDB2.filter(function(e){return e.salary>0}).length;
-    // คำนวณ ภาษี/ปกส. ใหม่ทุกคนที่มีเงินเดือน
+    // ดึงจากเดือนก่อน → คำนวณ tax3/ss5 ใหม่ (เพราะเป็นเดือนใหม่)
     PAYDB2.forEach(function(e){if(e.salary>0)payDBCalcRow(e)});
     $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — ดึงเงินเดือนจาก '+prevMonth+' ได้ <b>'+matched+'</b> คน';
     PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
@@ -3601,7 +3606,7 @@ function payDBSave(){
   sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
     prog(40,'กำลังบันทึก '+valid.length+' คน...');
     var records=valid.map(function(e){
-      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
+      return{id:'PR-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||0,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
     });
     sb("payroll","POST",records).then(function(){
       prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');

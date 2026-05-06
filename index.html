@@ -3135,8 +3135,8 @@ function payDBLoad(){
 
     var prefilled=PAYDB2.filter(function(e){return e.salary>0}).length;
     var savedCount=saved.length;
-    // คำนวณ ภาษี/ปกส. ให้พนักงานที่ยังไม่มี totalIncome
-    PAYDB2.forEach(function(e){if(e.salary>0&&e.totalIncome===0)payDBCalcRow(e)});
+    // คำนวณ ภาษี/ปกส. ให้ทุกคนที่มีเงินเดือน (เพื่อให้ถูกต้องตาม status ปัจจุบัน)
+    PAYDB2.forEach(function(e){if(e.salary>0)payDBCalcRow(e)});
 
     if(savedCount>0){
       $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — <span style="color:var(--ok)">โหลดข้อมูลที่บันทึกไว้เดือน '+month+' ได้ <b>'+savedCount+'</b> คน</span>';
@@ -3185,8 +3185,8 @@ function payDBLoadPrev(){
     });
 
     var matched=PAYDB2.filter(function(e){return e.salary>0}).length;
-    // คำนวณใหม่ให้พนักงานที่ไม่มีข้อมูลเดือนก่อน แต่มีฐานเงินเดือน
-    PAYDB2.forEach(function(e){if(e.salary>0&&e.totalIncome===0)payDBCalcRow(e)});
+    // คำนวณ ภาษี/ปกส. ใหม่ทุกคนที่มีเงินเดือน
+    PAYDB2.forEach(function(e){if(e.salary>0)payDBCalcRow(e)});
     $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — ดึงเงินเดือนจาก '+prevMonth+' ได้ <b>'+matched+'</b> คน';
     PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
     $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';$('paydb2-late-area').classList.remove('hide');$('paydb2-late-area').style.display='block';

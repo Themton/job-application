@@ -3104,10 +3104,10 @@ var PAYDB2_FILTER='';
 
 function payDBBuildFilters(){
   var stMap={};
-  var stLabels={daily:'🟡 พนักงานรายวัน',monthly:'🟢 พนักงานประจำ',monthly_daily:'🟣 ประจำ(รายวัน)',new:'🔵 พนักงานใหม่',resigned_pending:'⏳ รอจ่าย'};
+  var stLabels={daily:'🟡 พนักงานรายวัน',monthly:'🟢 พนักงานประจำ',monthly_daily:'🟣 ประจำ(รายวัน)+ปกส.',new:'🔵 พนักงานใหม่',resigned_pending:'⏳ รอจ่าย'};
   PAYDB2.forEach(function(e){var s=e.status||'new';stMap[s]=(stMap[s]||0)+1});
   var h='<button class="btn btn-s '+(PAYDB2_FILTER===''?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">ทั้งหมด ('+PAYDB2.length+')</button>';
-  ['daily','monthly','new'].forEach(function(s){
+  ['monthly','monthly_daily','daily','new'].forEach(function(s){
     if(!stMap[s])return;
     h+='<button class="btn btn-s '+(PAYDB2_FILTER===s?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\''+s+'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">'+(stLabels[s]||s)+' ('+stMap[s]+')</button>';
   });

@@ -923,6 +923,8 @@ function showTab(t){
   if($('sb-active-label'))$('sb-active-label').textContent=TAB_LABELS[t]||t;
   // Close sidebar on mobile
   if(window.innerWidth<=900)sbClose();
+  // จำ tab ที่เปิดอยู่ — รีเฟรชแล้วกลับมาหน้าเดิม
+  try{sessionStorage.setItem('mt_tab',t)}catch(e){}
 }
 
 function sbToggle(){
@@ -1051,6 +1053,9 @@ function loadAdmin(){
     DEPT=Array.isArray(r[3])?r[3]:[];
     $('A-ld').classList.add('hide');$('A-main').classList.remove('hide');emailSyncFromAll();stats();doFilter();renderPos();renderUsr();renderDept();
     prog(100,'โหลดเสร็จ ✅ '+ALL.length+' คน');
+    // กลับไปหน้าเดิมที่เปิดอยู่ก่อนรีเฟรช
+    var savedTab=sessionStorage.getItem('mt_tab');
+    if(savedTab&&$('tab-'+savedTab))showTab(savedTab);
     updateLeavePendingBadge();
     if(window._admPendingPoll)clearInterval(window._admPendingPoll);
     window._admPendingPoll=setInterval(updateLeavePendingBadge,30000);

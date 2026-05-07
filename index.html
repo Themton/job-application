@@ -262,10 +262,13 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <button class="sb-item hr-hide" onclick="viewAuditLog()"><span class="sb-ic">🔐</span><span class="sb-tx">Audit Log</span></button>
         <div class="sb-sep">เงินเดือน</div>
         <button class="sb-item" id="tab-pay" onclick="showTab('pay')"><span class="sb-ic">💰</span><span class="sb-tx">คิดเงินเดือน</span></button>
+        <button class="sb-item" id="tab-ot" onclick="showTab('ot')"><span class="sb-ic">⏰</span><span class="sb-tx">OT ค่าล่วงเวลา</span></button>
         <button class="sb-item" id="tab-comm" onclick="showTab('comm')"><span class="sb-ic">⭐</span><span class="sb-tx">คอมมิชชั่น</span></button>
+        <button class="sb-item" id="tab-exp" onclick="showTab('exp')"><span class="sb-ic">🧾</span><span class="sb-tx">เบิกค่าใช้จ่าย</span></button>
         <button class="sb-item" id="tab-paydb" onclick="showTab('paydb')"><span class="sb-ic">🗂️</span><span class="sb-tx">รายงานรวม + ส่งสลิป</span></button>
         <div class="sb-sep">เอกสาร</div>
         <button class="sb-item" id="tab-cert" onclick="showTab('cert')"><span class="sb-ic">📜</span><span class="sb-tx">หนังสือรับรองเงินเดือน</span></button>
+        <button class="sb-item" id="tab-tax" onclick="showTab('tax')"><span class="sb-ic">📄</span><span class="sb-tx">รายงานภาษี / ปกส.</span></button>
       </div>
       <div class="sb-foot">
         <button class="sb-item sb-logout" onclick="adminLogout()"><span class="sb-ic">🚪</span><span class="sb-tx">ออกจากระบบ</span></button>
@@ -571,6 +574,28 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
     </div>
 
     <!-- TAB: Commission -->
+    <!-- ═══ OT OVERTIME ═══ -->
+    <div id="T-ot" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span class="ttl" style="font-size:18px">⏰ OT ค่าล่วงเวลา</span>
+      </div>
+      <div class="cd">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="ot-month" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
+          <button class="btn btn-a btn-s" onclick="otLoad()">ดึงข้อมูล</button>
+        </div>
+        <div id="ot-status" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
+      </div>
+      <div id="ot-summary" style="margin-top:12px"></div>
+      <div style="margin-top:10px;margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="ot-srch" placeholder="ค้นหาชื่อ..." oninput="otRender()"></div></div>
+      <div id="ot-table"></div>
+      <div id="ot-actions" class="hide" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-a" onclick="otSave()">💾 บันทึก OT</button>
+        <button class="btn btn-g btn-s" onclick="otExport()">📥 Export CSV</button>
+        <span id="ot-save-status" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+    </div>
+
     <div id="T-comm" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <span class="ttl" style="font-size:18px">⭐ จัดการคอมมิชชั่น</span>
@@ -596,6 +621,30 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       </div>
     </div>
 
+    <!-- ═══ EXPENSE CLAIMS ═══ -->
+    <div id="T-exp" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span class="ttl" style="font-size:18px">🧾 เบิกค่าใช้จ่าย</span>
+        <button class="btn btn-a btn-s" onclick="expShowAdd()">➕ สร้างใบเบิก</button>
+      </div>
+      <div id="exp-add-form" class="cd hide" style="margin-bottom:14px">
+        <div class="cd-t"><span class="dot"></span> สร้างใบเบิกใหม่</div>
+        <div class="g2">
+          <div class="fld"><label>พนักงาน <span class="rq">*</span></label><select id="exp-emp"><option value="">-- เลือก --</option></select></div>
+          <div class="fld"><label>วันที่ <span class="rq">*</span></label><input type="date" id="exp-date"></div>
+          <div class="fld"><label>ประเภท <span class="rq">*</span></label><select id="exp-type"><option value="travel">🚗 ค่าเดินทาง</option><option value="food">🍽️ ค่าอาหาร</option><option value="supply">📦 วัสดุอุปกรณ์</option><option value="medical">🏥 ค่ารักษาพยาบาล</option><option value="other">📋 อื่นๆ</option></select></div>
+          <div class="fld"><label>จำนวนเงิน (บาท) <span class="rq">*</span></label><input type="number" id="exp-amount" placeholder="0" inputmode="decimal"></div>
+          <div class="fld" style="grid-column:1/-1"><label>รายละเอียด</label><input id="exp-desc" placeholder="อธิบายรายการเบิก"></div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn btn-a btn-s" onclick="expSave()">💾 บันทึก</button>
+          <button class="btn btn-g btn-s" onclick="$('exp-add-form').classList.add('hide')">ยกเลิก</button>
+        </div>
+      </div>
+      <div id="exp-summary" style="margin-bottom:12px"></div>
+      <div id="exp-table"></div>
+    </div>
+
     <!-- TAB: Payroll History + Report -->
     <div id="T-paydb" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px">
@@ -618,6 +667,21 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
     </div>
 
     <!-- TAB: Salary Certificate -->
+    <!-- ═══ TAX REPORTS ═══ -->
+    <div id="T-tax" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span class="ttl" style="font-size:18px">📄 รายงานภาษี / ประกันสังคม</span>
+      </div>
+      <div class="cd">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="tax-month" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
+          <button class="btn btn-a btn-s" onclick="taxLoad()">📊 สร้างรายงาน</button>
+        </div>
+        <div id="tax-status" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
+      </div>
+      <div id="tax-report" style="margin-top:14px"></div>
+    </div>
+
     <!-- ═══ ATTENDANCE ═══ -->
     <div id="T-att" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -1023,10 +1087,10 @@ function page(p){
   window.scrollTo(0,0);
 }
 
-var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',warn:'⚠️ ใบเตือน',eval:'📝 ประเมินผล',att:'📋 ขาด/ลา/มาสาย',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',paydb:'🗂️ รายงานรวม + ส่งสลิป',cert:'📜 หนังสือรับรอง'};
+var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',warn:'⚠️ ใบเตือน',eval:'📝 ประเมินผล',att:'📋 ขาด/ลา/มาสาย',ot:'⏰ OT',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',exp:'🧾 เบิกค่าใช้จ่าย',paydb:'🗂️ รายงานรวม',cert:'📜 หนังสือรับรอง',tax:'📄 ภาษี/ปกส.'};
 
 function showTab(t){
-  ['dash','app','dept','pos','usr','rpt','lv','warn','eval','att','pay','comm','paydb','cert'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
+  ['dash','app','dept','pos','usr','rpt','lv','warn','eval','att','ot','pay','comm','exp','paydb','cert','tax'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   if(t==='lv')loadLeaveRequests();
   if(t==='dash')loadDashboard();
@@ -1038,6 +1102,9 @@ function showTab(t){
   if(t==='cert')certInit();
   if(t==='eval')evalInit();
   if(t==='att'&&!$('att-month').value){var now=new Date();$('att-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
+  if(t==='ot')otInit();
+  if(t==='exp')expInit();
+  if(t==='tax'&&!$('tax-month').value){var now=new Date();$('tax-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   // Update mobile topbar label
   if($('sb-active-label'))$('sb-active-label').textContent=TAB_LABELS[t]||t;
   // Close sidebar on mobile
@@ -3687,6 +3754,250 @@ function attSaveToDB(){
     }
     next();
   }).catch(function(e){toast('Error: '+e,'terr');$('att-save-status').textContent='❌ Error'});
+}
+
+/* ═══ OT OVERTIME SYSTEM ═══ */
+var OT_DATA=[];
+var OT_RATE=1.5; // OT rate multiplier
+
+function otInit(){
+  if(!$('ot-month').value){var now=new Date();$('ot-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
+}
+
+function otLoad(){
+  var month=$('ot-month').value;if(!month){toast('เลือกเดือน','terr');return}
+  $('ot-status').textContent='⏳ กำลังโหลด...';
+
+  sb("overtime","GET",null,"?month=eq."+encodeURIComponent(month)+"&order=emp_name").then(function(saved){
+    saved=Array.isArray(saved)?saved:[];
+    var savedMap={};
+    saved.forEach(function(s){savedMap[s.emp_name]=s});
+
+    var active=ALL.filter(function(a){return a.status!=='terminated'});
+    OT_DATA=active.map(function(a){
+      var s=savedMap[a.name]||{};
+      return{id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
+        daily_rate:a.salary?(a.salary/30):0,
+        ot_hours:s.ot_hours||0,ot_rate:s.ot_rate||0,ot_amount:s.ot_amount||0,
+        note:s.note||'',_sid:s.id||''};
+    });
+    $('ot-status').textContent='✅ โหลด '+OT_DATA.length+' คน'+(saved.length?' — พบข้อมูลบันทึกไว้ '+saved.length+' คน':'');
+    $('ot-actions').classList.remove('hide');$('ot-actions').style.display='flex';
+    otRender();
+  }).catch(function(e){$('ot-status').textContent='⚠️ ตาราง overtime ยังไม่มี — กรุณารัน SQL สร้างตาราง'});
+}
+
+function otRender(){
+  var srch=$('ot-srch')?$('ot-srch').value.toLowerCase():'';
+  var f=OT_DATA.filter(function(e){return!srch||(e.name+' '+e.nickname).toLowerCase().indexOf(srch)>=0});
+  var tHrs=0,tAmt=0;
+  f.forEach(function(e){tHrs+=e.ot_hours;tAmt+=e.ot_amount});
+
+  var h='<div class="tw"><table><thead><tr><th>#</th><th>ชื่อ</th><th>ตำแหน่ง</th><th style="text-align:center">ค่าแรง/ชม.</th><th style="text-align:center;background:#fff3cd">ชั่วโมง OT</th><th style="text-align:right">เรท OT</th><th style="text-align:right;color:var(--ok)">เงิน OT</th><th>หมายเหตุ</th></tr></thead><tbody>';
+  f.forEach(function(e,i){
+    var hrRate=Math.round(e.daily_rate/8*100)/100;
+    var idx=OT_DATA.indexOf(e);
+    h+='<tr><td>'+(i+1)+'</td><td class="nm" style="font-size:12px">'+esc(e.name)+(e.nickname?' <span class="em">('+esc(e.nickname)+')</span>':'')+'</td>';
+    h+='<td style="font-size:11px">'+esc(e.position)+'</td>';
+    h+='<td style="text-align:center;font-size:11px;color:var(--muted)">'+payFmt(hrRate)+'</td>';
+    h+='<td style="text-align:center;background:#fff3cd"><input type="number" value="'+(e.ot_hours||'')+'" placeholder="0" style="width:60px;text-align:center;padding:4px;border:1px solid var(--bdr);border-radius:5px;font-size:13px;font-family:inherit;font-weight:700" onchange="otCalc('+idx+',this.value)" inputmode="decimal"></td>';
+    h+='<td style="text-align:right;font-size:11px">×'+OT_RATE+'</td>';
+    h+='<td style="text-align:right;font-weight:700;color:var(--ok)">'+payFmt(e.ot_amount)+'</td>';
+    h+='<td><input value="'+esc(e.note)+'" placeholder="—" onchange="OT_DATA['+idx+'].note=this.value" style="width:100%;padding:4px;border:1px solid var(--bdr);border-radius:5px;font-size:11px;font-family:inherit"></td></tr>';
+  });
+  h+='<tr style="font-weight:700;background:var(--inp)"><td colspan="4">รวม</td><td style="text-align:center">'+tHrs.toFixed(1)+'</td><td></td><td style="text-align:right;color:var(--ok)">'+payFmt(tAmt)+'</td><td></td></tr>';
+  h+='</tbody></table></div>';
+  $('ot-table').innerHTML=h;
+}
+
+function otCalc(idx,val){
+  var e=OT_DATA[idx];if(!e)return;
+  e.ot_hours=parseFloat(val)||0;
+  var hrRate=e.daily_rate/8;
+  e.ot_rate=Math.round(hrRate*OT_RATE*100)/100;
+  e.ot_amount=Math.round(e.ot_hours*e.ot_rate*100)/100;
+  otRender();
+}
+
+function otSave(){
+  var month=$('ot-month').value;if(!month)return;
+  var valid=OT_DATA.filter(function(e){return e.ot_hours>0});
+  if(!valid.length){toast('ไม่มีข้อมูล OT','terr');return}
+  $('ot-save-status').textContent='⏳ กำลังบันทึก...';
+  sb("overtime","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
+    var records=valid.map(function(e,i){
+      return{id:'OT-'+month+'-'+Date.now()+'-'+i,month:month,emp_id:e.id,emp_name:e.name,ot_hours:e.ot_hours,ot_rate:e.ot_rate,ot_amount:e.ot_amount,note:e.note};
+    });
+    sb("overtime","POST",records).then(function(){
+      $('ot-save-status').innerHTML='✅ บันทึก OT <b>'+valid.length+'</b> คน';
+      toast('บันทึก OT เรียบร้อย','tok');
+      logAct('ot_save','บันทึก OT เดือน '+month+' — '+valid.length+' คน');
+    });
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function otExport(){
+  var month=$('ot-month').value||'ot';
+  var csv='ชื่อ,ตำแหน่ง,ชั่วโมงOT,เรทOT,เงินOT,หมายเหตุ\n';
+  OT_DATA.filter(function(e){return e.ot_hours>0}).forEach(function(e){
+    csv+='"'+e.name+'","'+e.position+'",'+e.ot_hours+','+e.ot_rate+','+e.ot_amount+',"'+e.note+'"\n';
+  });
+  var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='OT_'+month+'.csv';a.click();
+}
+
+/* ═══ EXPENSE CLAIMS ═══ */
+function expInit(){
+  var sel=$('exp-emp');
+  sel.innerHTML='<option value="">-- เลือก --</option>';
+  ALL.filter(function(a){return a.status!=='terminated'}).forEach(function(a){
+    sel.innerHTML+='<option value="'+a.id+'">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</option>';
+  });
+  if(!$('exp-date').value)$('exp-date').value=new Date().toISOString().substring(0,10);
+  expLoad();
+}
+
+function expShowAdd(){$('exp-add-form').classList.toggle('hide')}
+
+function expSave(){
+  var empId=$('exp-emp').value;if(!empId){toast('เลือกพนักงาน','terr');return}
+  var date=$('exp-date').value;if(!date){toast('เลือกวันที่','terr');return}
+  var type=$('exp-type').value;
+  var amount=parseFloat($('exp-amount').value)||0;if(!amount){toast('กรอกจำนวนเงิน','terr');return}
+  var desc=$('exp-desc').value.trim();
+  var emp;ALL.forEach(function(a){if(a.id===empId)emp=a});
+
+  var data={
+    id:'EXP-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),
+    emp_id:empId,emp_name:emp?emp.name:'',
+    date:date,type:type,amount:amount,description:desc,status:'pending'
+  };
+  sb("expenses","POST",data).then(function(){
+    toast('บันทึกใบเบิกเรียบร้อย','tok');
+    logAct('exp_create','เบิกค่าใช้จ่าย '+emp.name+' '+payFmt(amount)+' บาท');
+    $('exp-amount').value='';$('exp-desc').value='';
+    $('exp-add-form').classList.add('hide');
+    expLoad();
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function expLoad(){
+  sb("expenses","GET",null,"?select=*&order=created_at.desc&limit=100").then(function(r){
+    if(!Array.isArray(r)||!r.length){$('exp-table').innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px">ยังไม่มีรายการเบิก</div>';$('exp-summary').innerHTML='';return}
+
+    var typeLabels={travel:'🚗 เดินทาง',food:'🍽️ อาหาร',supply:'📦 วัสดุ',medical:'🏥 รักษาพยาบาล',other:'📋 อื่นๆ'};
+    var stColors={pending:'#f59e0b',approved:'#10b981',rejected:'#dc2626'};
+    var stLabels={pending:'⏳ รออนุมัติ',approved:'✅ อนุมัติ',rejected:'❌ ไม่อนุมัติ'};
+
+    var totalPending=0,totalApproved=0;
+    r.forEach(function(e){if(e.status==='pending')totalPending+=e.amount;if(e.status==='approved')totalApproved+=e.amount});
+
+    $('exp-summary').innerHTML='<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#f59e0b0a;border:1px solid #f59e0b25;border-radius:10px;padding:12px 20px;text-align:center"><div style="font-size:18px;font-weight:800;color:#f59e0b">'+payFmt(totalPending)+'</div><div style="font-size:11px;color:#f59e0b">⏳ รออนุมัติ</div></div><div style="background:#10b9810a;border:1px solid #10b98125;border-radius:10px;padding:12px 20px;text-align:center"><div style="font-size:18px;font-weight:800;color:#10b981">'+payFmt(totalApproved)+'</div><div style="font-size:11px;color:#10b981">✅ อนุมัติแล้ว</div></div></div>';
+
+    var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>พนักงาน</th><th>ประเภท</th><th>รายละเอียด</th><th style="text-align:right">จำนวน</th><th style="text-align:center">สถานะ</th><th></th></tr></thead><tbody>';
+    r.forEach(function(e){
+      var st=e.status||'pending';
+      h+='<tr><td style="font-size:11px;white-space:nowrap">'+esc(e.date)+'</td>';
+      h+='<td style="font-weight:600;font-size:12px">'+esc(e.emp_name)+'</td>';
+      h+='<td style="font-size:11px">'+(typeLabels[e.type]||e.type)+'</td>';
+      h+='<td style="font-size:11px;color:var(--muted)">'+esc(e.description||'-')+'</td>';
+      h+='<td style="text-align:right;font-weight:700">'+payFmt(e.amount)+'</td>';
+      h+='<td style="text-align:center"><span style="background:'+stColors[st]+'18;color:'+stColors[st]+';padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700">'+stLabels[st]+'</span></td>';
+      h+='<td style="white-space:nowrap">';
+      if(st==='pending'){
+        h+='<button class="btn btn-s" style="font-size:10px;padding:3px 8px;background:#10b981;color:#fff;border:none" onclick="expApprove(\''+e.id+'\',\'approved\')">✅</button> ';
+        h+='<button class="btn btn-s" style="font-size:10px;padding:3px 8px;background:#dc2626;color:#fff;border:none" onclick="expApprove(\''+e.id+'\',\'rejected\')">❌</button>';
+      }
+      h+=' <button class="btn btn-d btn-s" style="font-size:10px;padding:3px 6px" onclick="expDel(\''+e.id+'\')">🗑️</button>';
+      h+='</td></tr>';
+    });
+    h+='</tbody></table></div>';
+    $('exp-table').innerHTML=h;
+  }).catch(function(){$('exp-table').innerHTML='<div style="color:var(--muted);font-size:12px">⚠️ ตาราง expenses ยังไม่มี — กรุณารัน SQL</div>'});
+}
+
+function expApprove(id,st){
+  sb("expenses","PATCH",{status:st},"?id=eq."+id).then(function(){toast(st==='approved'?'อนุมัติแล้ว':'ไม่อนุมัติ','tok');expLoad()});
+}
+function expDel(id){
+  if(!confirm('ลบรายการนี้?'))return;
+  sb("expenses","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');expLoad()});
+}
+
+/* ═══ TAX / SSO REPORTS ═══ */
+function taxLoad(){
+  var month=$('tax-month').value;if(!month){toast('เลือกเดือน','terr');return}
+  $('tax-status').textContent='⏳ กำลังสร้างรายงาน...';
+
+  sb("payroll","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=emp_name,salary,total_income,tax3,ss5,net&order=emp_name").then(function(r){
+    if(!Array.isArray(r)||!r.length){$('tax-status').textContent='⚠️ ไม่มีข้อมูลเงินเดือนเดือน '+month;$('tax-report').innerHTML='';return}
+    $('tax-status').textContent='✅ พบ '+r.length+' คน';
+
+    var tIncome=0,tTax=0,tSS=0,tSSCompany=0;
+    r.forEach(function(e){tIncome+=e.total_income||0;tTax+=e.tax3||0;tSS+=e.ss5||0});
+    tSSCompany=tSS; // company matches employee contribution
+
+    var h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
+
+    // ภ.ง.ด.1
+    h+='<div class="cd"><div class="cd-t"><span class="dot"></span> 📄 ภ.ง.ด.1 (ภาษีหัก ณ ที่จ่าย)</div>';
+    h+='<div style="margin-bottom:10px;font-size:12px;color:var(--muted)">เดือน '+month+'</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">';
+    h+='<div style="background:var(--inp);padding:10px;border-radius:8px"><div style="font-size:10px;color:var(--muted)">จำนวนผู้มีเงินได้</div><div style="font-size:18px;font-weight:800">'+r.filter(function(e){return(e.tax3||0)>0}).length+' คน</div></div>';
+    h+='<div style="background:var(--inp);padding:10px;border-radius:8px"><div style="font-size:10px;color:var(--muted)">เงินได้รวม</div><div style="font-size:18px;font-weight:800">'+payFmt(tIncome)+'</div></div>';
+    h+='<div style="background:#fee2e2;padding:10px;border-radius:8px"><div style="font-size:10px;color:#dc2626">ภาษีหัก ณ ที่จ่าย (3%)</div><div style="font-size:18px;font-weight:800;color:#dc2626">'+payFmt(tTax)+'</div></div>';
+    h+='</div>';
+    h+='<div class="tw"><table style="font-size:11px"><thead><tr><th>#</th><th>ชื่อ</th><th style="text-align:right">เงินได้</th><th style="text-align:right;color:#dc2626">ภาษี 3%</th></tr></thead><tbody>';
+    var taxIdx=0;
+    r.forEach(function(e){if(!e.tax3)return;taxIdx++;
+      h+='<tr><td>'+taxIdx+'</td><td>'+esc(e.emp_name)+'</td><td style="text-align:right">'+payFmt(e.total_income)+'</td><td style="text-align:right;color:#dc2626;font-weight:700">'+payFmt(e.tax3)+'</td></tr>';
+    });
+    h+='<tr style="font-weight:700;background:var(--inp)"><td colspan="2">รวม</td><td style="text-align:right">'+payFmt(r.filter(function(e){return e.tax3>0}).reduce(function(s,e){return s+(e.total_income||0)},0))+'</td><td style="text-align:right;color:#dc2626">'+payFmt(tTax)+'</td></tr>';
+    h+='</tbody></table></div>';
+    h+='<button class="btn btn-g btn-s" onclick="taxExport(\'pnd1\')" style="margin-top:8px">📥 Export ภ.ง.ด.1</button></div>';
+
+    // ปกส.
+    h+='<div class="cd"><div class="cd-t"><span class="dot"></span> 🏥 ประกันสังคม (สปส.1-10)</div>';
+    h+='<div style="margin-bottom:10px;font-size:12px;color:var(--muted)">เดือน '+month+' — เพดาน 875 บาท/คน</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">';
+    h+='<div style="background:var(--inp);padding:10px;border-radius:8px"><div style="font-size:10px;color:var(--muted)">ผู้ประกันตน</div><div style="font-size:18px;font-weight:800">'+r.filter(function(e){return(e.ss5||0)>0}).length+' คน</div></div>';
+    h+='<div style="background:#dbeafe;padding:10px;border-radius:8px"><div style="font-size:10px;color:#2563eb">สมทบลูกจ้าง (5%)</div><div style="font-size:18px;font-weight:800;color:#2563eb">'+payFmt(tSS)+'</div></div>';
+    h+='<div style="background:#dbeafe;padding:10px;border-radius:8px"><div style="font-size:10px;color:#2563eb">สมทบนายจ้าง (5%)</div><div style="font-size:18px;font-weight:800;color:#2563eb">'+payFmt(tSSCompany)+'</div></div>';
+    h+='</div>';
+    h+='<div class="tw"><table style="font-size:11px"><thead><tr><th>#</th><th>ชื่อ</th><th style="text-align:right">ค่าจ้าง</th><th style="text-align:right;color:#2563eb">ปกส. ลูกจ้าง</th><th style="text-align:right;color:#2563eb">ปกส. นายจ้าง</th></tr></thead><tbody>';
+    var ssIdx=0;
+    r.forEach(function(e){if(!e.ss5)return;ssIdx++;
+      h+='<tr><td>'+ssIdx+'</td><td>'+esc(e.emp_name)+'</td><td style="text-align:right">'+payFmt(e.total_income)+'</td><td style="text-align:right;color:#2563eb;font-weight:700">'+payFmt(e.ss5)+'</td><td style="text-align:right;color:#2563eb;font-weight:700">'+payFmt(e.ss5)+'</td></tr>';
+    });
+    h+='<tr style="font-weight:700;background:var(--inp)"><td colspan="2">รวม</td><td style="text-align:right">'+payFmt(r.filter(function(e){return e.ss5>0}).reduce(function(s,e){return s+(e.total_income||0)},0))+'</td><td style="text-align:right;color:#2563eb">'+payFmt(tSS)+'</td><td style="text-align:right;color:#2563eb">'+payFmt(tSSCompany)+'</td></tr>';
+    h+='</tbody></table></div>';
+    h+='<div style="margin-top:8px;padding:8px 12px;background:#eff6ff;border-radius:8px;font-size:11px;color:#1e40af"><b>ยอดนำส่ง ปกส.:</b> '+payFmt(tSS+tSSCompany)+' บาท (ลูกจ้าง '+payFmt(tSS)+' + นายจ้าง '+payFmt(tSSCompany)+')</div>';
+    h+='<button class="btn btn-g btn-s" onclick="taxExport(\'sso\')" style="margin-top:8px">📥 Export สปส.1-10</button></div>';
+
+    h+='</div>';
+    $('tax-report').innerHTML=h;
+  }).catch(function(){$('tax-status').textContent='❌ โหลดไม่ได้';$('tax-report').innerHTML=''});
+}
+
+function taxExport(type){
+  var month=$('tax-month').value||'tax';
+  // Re-fetch and export
+  sb("payroll","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=emp_name,salary,total_income,tax3,ss5&order=emp_name").then(function(r){
+    if(!Array.isArray(r))return;
+    var csv='';
+    if(type==='pnd1'){
+      csv='ลำดับ,ชื่อ-สกุล,เงินได้,ภาษีหัก 3%\n';
+      var idx=0;
+      r.forEach(function(e){if(!e.tax3)return;idx++;csv+=idx+',"'+e.emp_name+'",'+e.total_income+','+e.tax3+'\n'});
+    }else{
+      csv='ลำดับ,ชื่อ-สกุล,ค่าจ้าง,ปกส.ลูกจ้าง,ปกส.นายจ้าง\n';
+      var idx=0;
+      r.forEach(function(e){if(!e.ss5)return;idx++;csv+=idx+',"'+e.emp_name+'",'+e.total_income+','+e.ss5+','+e.ss5+'\n'});
+    }
+    var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(type==='pnd1'?'PND1_':'SSO_')+month+'.csv';a.click();
+    toast('Export สำเร็จ','tok');
+  });
 }
 
 /* ═══ SCB PAYROLL FILE EXPORT ═══ */

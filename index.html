@@ -1152,7 +1152,9 @@ function empUpdateSelBar(){
 
 function empToggle(id,checked){if(checked)EMP_SEL[id]=true;else delete EMP_SEL[id];empUpdateSelBar()}
 function empToggle2(idx,btn){
-  empCardToggle(idx);
+  var a=window._empFiltered[idx];if(!a)return;
+  if(EMP_SEL[a.id])delete EMP_SEL[a.id];else EMP_SEL[a.id]=true;
+  empUpdateSelBar();doFilter();
 }
 function empToggleAll2(){
   var allChk=window._empFiltered.length>0&&window._empFiltered.every(function(a){return EMP_SEL[a.id]});

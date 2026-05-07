@@ -257,6 +257,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <button class="sb-item" id="tab-rpt" onclick="showTab('rpt')"><span class="sb-ic">📊</span><span class="sb-tx">รายงาน / ตรวจสอบ</span></button>
         <button class="sb-item" id="tab-lv" onclick="showTab('lv')"><span class="sb-ic">🗓️</span><span class="sb-tx">อนุมัติการลา <span id="lv-pending-dot" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;margin-left:4px"></span></span></button>
         <button class="sb-item" id="tab-warn" onclick="showTab('warn')"><span class="sb-ic">⚠️</span><span class="sb-tx">ใบเตือน / บันทึก</span></button>
+        <button class="sb-item" id="tab-eval" onclick="showTab('eval')"><span class="sb-ic">📝</span><span class="sb-tx">ประเมินผลพนักงาน</span></button>
         <button class="sb-item hr-hide" onclick="viewAuditLog()"><span class="sb-ic">🔐</span><span class="sb-tx">Audit Log</span></button>
         <div class="sb-sep">เงินเดือน</div>
         <button class="sb-item" id="tab-pay" onclick="showTab('pay')"><span class="sb-ic">💰</span><span class="sb-tx">คิดเงินเดือน</span></button>
@@ -616,6 +617,35 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
     </div>
 
     <!-- TAB: Salary Certificate -->
+    <!-- ═══ EVALUATION ═══ -->
+    <div id="T-eval" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span class="ttl" style="font-size:18px">📝 ประเมินผลพนักงาน</span>
+      </div>
+      <div class="cd">
+        <div class="cd-t"><span class="dot"></span> สร้างแบบประเมิน</div>
+        <div class="g2">
+          <div class="fld"><label>เลือกพนักงาน <span class="rq">*</span></label><select id="ev-emp"><option value="">-- เลือก --</option></select></div>
+          <div class="fld"><label>รอบประเมิน <span class="rq">*</span></label><input id="ev-period" placeholder="เช่น Q1/2569, เม.ย. 2569" value=""></div>
+          <div class="fld"><label>ผู้ประเมิน</label><input id="ev-evaluator" placeholder="ชื่อหัวหน้า/ผู้ประเมิน" value=""></div>
+        </div>
+        <div style="margin-top:14px">
+          <div style="font-size:13px;font-weight:700;color:var(--pri);margin-bottom:10px">เกณฑ์การประเมิน (1-5 คะแนน)</div>
+          <div id="ev-criteria" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div>
+        </div>
+        <div class="fld" style="margin-top:14px"><label>ความคิดเห็น / ข้อเสนอแนะ</label><textarea id="ev-comment" rows="3" placeholder="พิมพ์ความคิดเห็น..." style="width:100%;padding:10px;border:1px solid var(--bdr);border-radius:8px;font-size:13px;font-family:inherit;background:var(--inp);resize:vertical"></textarea></div>
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+          <button class="btn btn-a" onclick="evalSave()">💾 บันทึกผลประเมิน</button>
+          <span id="ev-total" style="font-size:14px;font-weight:700;color:var(--pri)"></span>
+        </div>
+      </div>
+      <div class="cd" style="margin-top:14px">
+        <div class="cd-t"><span class="dot"></span> ประวัติการประเมิน</div>
+        <div style="margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="ev-search" placeholder="ค้นหาชื่อ..." oninput="evalLoad()"></div></div>
+        <div id="ev-history">กำลังโหลด...</div>
+      </div>
+    </div>
+
     <div id="T-cert" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <span class="ttl" style="font-size:18px">📜 ออกหนังสือรับรองเงินเดือน</span>
@@ -963,10 +993,10 @@ function page(p){
   window.scrollTo(0,0);
 }
 
-var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',warn:'⚠️ ใบเตือน',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',paydb:'🗂️ รายงานรวม + ส่งสลิป',cert:'📜 หนังสือรับรอง'};
+var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',warn:'⚠️ ใบเตือน',eval:'📝 ประเมินผล',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',paydb:'🗂️ รายงานรวม + ส่งสลิป',cert:'📜 หนังสือรับรอง'};
 
 function showTab(t){
-  ['dash','app','dept','pos','usr','rpt','lv','warn','pay','comm','paydb','cert'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
+  ['dash','app','dept','pos','usr','rpt','lv','warn','eval','pay','comm','paydb','cert'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   if(t==='lv')loadLeaveRequests();
   if(t==='dash')loadDashboard();
@@ -976,6 +1006,7 @@ function showTab(t){
   if(t==='rpt'&&!$('rpt-exp-month').value){var now=new Date();$('rpt-exp-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='rpt')loadHolidays();
   if(t==='cert')certInit();
+  if(t==='eval')evalInit();
   // Update mobile topbar label
   if($('sb-active-label'))$('sb-active-label').textContent=TAB_LABELS[t]||t;
   // Close sidebar on mobile
@@ -3146,6 +3177,184 @@ function certPrint(){
       }
     }
   },1000);
+}
+
+/* ═══ EVALUATION SYSTEM ═══ */
+var EVAL_CRITERIA=[
+  {key:'work_quality',label:'🎯 คุณภาพผลงาน',desc:'ความถูกต้อง ครบถ้วน ตรงเวลา'},
+  {key:'work_quantity',label:'📈 ปริมาณงาน',desc:'ทำงานได้ตามเป้าหมาย'},
+  {key:'attendance',label:'⏰ การมาทำงาน',desc:'ตรงเวลา ไม่ขาด ไม่ลาบ่อย'},
+  {key:'teamwork',label:'🤝 การทำงานเป็นทีม',desc:'ความร่วมมือ ช่วยเหลือเพื่อนร่วมงาน'},
+  {key:'attitude',label:'💪 ทัศนคติ & วินัย',desc:'ความรับผิดชอบ ปฏิบัติตามกฎ'},
+  {key:'skill',label:'🧠 ทักษะ & การพัฒนาตน',desc:'เรียนรู้สิ่งใหม่ พัฒนาตนเอง'}
+];
+var EVAL_GRADE_LABELS=['','ต้องปรับปรุง','พอใช้','ดี','ดีมาก','ดีเยี่ยม'];
+var EVAL_GRADE_COLORS=['','#dc2626','#f59e0b','#3b82f6','#10b981','#059669'];
+
+function evalInit(){
+  // Populate employee dropdown
+  var sel=$('ev-emp');
+  var cur=sel.value;
+  sel.innerHTML='<option value="">-- เลือกพนักงาน --</option>';
+  ALL.filter(function(a){return a.status!=='terminated'}).forEach(function(a){
+    sel.innerHTML+='<option value="'+a.id+'">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</option>';
+  });
+  if(cur)sel.value=cur;
+
+  // Build criteria inputs
+  var h='';
+  EVAL_CRITERIA.forEach(function(c){
+    h+='<div style="background:var(--inp);border:1px solid var(--bdr);border-radius:10px;padding:12px">';
+    h+='<div style="font-size:13px;font-weight:700;margin-bottom:2px">'+c.label+'</div>';
+    h+='<div style="font-size:10px;color:var(--muted);margin-bottom:8px">'+c.desc+'</div>';
+    h+='<div style="display:flex;gap:4px" id="ev-stars-'+c.key+'">';
+    for(var i=1;i<=5;i++){
+      h+='<button onclick="evalSetStar(\''+c.key+'\','+i+')" data-star="'+i+'" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--bdr);background:var(--card);cursor:pointer;font-size:16px;font-weight:700;color:var(--muted);transition:all .15s">'+i+'</button>';
+    }
+    h+='</div>';
+    h+='</div>';
+  });
+  $('ev-criteria').innerHTML=h;
+  evalUpdateTotal();
+  evalLoad();
+}
+
+function evalSetStar(key,val){
+  var container=$('ev-stars-'+key);
+  if(!container)return;
+  var btns=container.querySelectorAll('button');
+  btns.forEach(function(b){
+    var sv=parseInt(b.getAttribute('data-star'));
+    if(sv<=val){
+      b.style.background=EVAL_GRADE_COLORS[val];
+      b.style.borderColor=EVAL_GRADE_COLORS[val];
+      b.style.color='#fff';
+    }else{
+      b.style.background='var(--card)';
+      b.style.borderColor='var(--bdr)';
+      b.style.color='var(--muted)';
+    }
+  });
+  container.setAttribute('data-val',val);
+  evalUpdateTotal();
+}
+
+function evalUpdateTotal(){
+  var total=0,count=0;
+  EVAL_CRITERIA.forEach(function(c){
+    var container=$('ev-stars-'+c.key);
+    var val=parseInt(container?container.getAttribute('data-val'):0)||0;
+    if(val>0){total+=val;count++}
+  });
+  var avg=count>0?(total/count):0;
+  var grade=Math.round(avg);
+  if(count===EVAL_CRITERIA.length&&avg>0){
+    $('ev-total').innerHTML='คะแนนรวม: <span style="font-size:18px">'+avg.toFixed(1)+'</span>/5.0 — <span style="color:'+EVAL_GRADE_COLORS[grade]+'">'+EVAL_GRADE_LABELS[grade]+'</span>';
+  }else{
+    $('ev-total').textContent='';
+  }
+}
+
+function evalSave(){
+  var empId=$('ev-emp').value;
+  if(!empId){toast('เลือกพนักงาน','terr');return}
+  var period=$('ev-period').value.trim();
+  if(!period){toast('กรอกรอบประเมิน','terr');return}
+  var evaluator=$('ev-evaluator').value.trim();
+  var comment=$('ev-comment').value.trim();
+
+  var scores={};var total=0,count=0;
+  EVAL_CRITERIA.forEach(function(c){
+    var container=$('ev-stars-'+c.key);
+    var val=parseInt(container?container.getAttribute('data-val'):0)||0;
+    scores[c.key]=val;
+    if(val>0){total+=val;count++}
+  });
+  if(count<EVAL_CRITERIA.length){toast('กรุณาให้คะแนนครบทุกหัวข้อ','terr');return}
+
+  var avg=total/count;
+  var grade=Math.round(avg);
+  var emp;ALL.forEach(function(a){if(a.id===empId)emp=a});
+
+  var data={
+    id:'EV-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),
+    emp_id:empId,
+    emp_name:emp?emp.name:'',
+    nickname:emp?emp.nickname||'':'',
+    position:emp?emp.position||'':'',
+    evaluator:evaluator,
+    period:period,
+    score_work_quality:scores.work_quality,
+    score_work_quantity:scores.work_quantity,
+    score_attendance:scores.attendance,
+    score_teamwork:scores.teamwork,
+    score_attitude:scores.attitude,
+    score_skill:scores.skill,
+    total_score:parseFloat(avg.toFixed(2)),
+    grade:EVAL_GRADE_LABELS[grade],
+    comment:comment
+  };
+
+  sb("evaluations","POST",data).then(function(r){
+    toast('บันทึกผลประเมิน '+emp.name+' เรียบร้อย','tok');
+    logAct('eval_save','ประเมิน '+emp.name+' รอบ '+period+' = '+avg.toFixed(1)+'/5');
+    $('ev-comment').value='';
+    $('ev-period').value='';
+    EVAL_CRITERIA.forEach(function(c){
+      var container=$('ev-stars-'+c.key);
+      if(container){container.setAttribute('data-val','0');
+        container.querySelectorAll('button').forEach(function(b){b.style.background='var(--card)';b.style.borderColor='var(--bdr)';b.style.color='var(--muted)'});}
+    });
+    evalUpdateTotal();
+    evalLoad();
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function evalLoad(){
+  var srch=$('ev-search')?$('ev-search').value.toLowerCase():'';
+  sb("evaluations","GET",null,"?select=*&order=created_at.desc&limit=50").then(function(r){
+    if(!Array.isArray(r)||!r.length){$('ev-history').innerHTML='<div style="color:var(--muted);font-size:12px">ยังไม่มีประวัติการประเมิน</div>';return}
+    var filtered=r;
+    if(srch)filtered=r.filter(function(e){return(e.emp_name+' '+e.nickname).toLowerCase().indexOf(srch)>=0});
+
+    var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>พนักงาน</th><th>ตำแหน่ง</th><th>รอบ</th><th>ผู้ประเมิน</th>';
+    EVAL_CRITERIA.forEach(function(c){h+='<th style="text-align:center;font-size:10px;max-width:60px">'+c.label.split(' ')[0]+'</th>'});
+    h+='<th style="text-align:center">คะแนน</th><th>เกรด</th><th></th></tr></thead><tbody>';
+
+    filtered.forEach(function(e){
+      var dt=String(e.created_at||'').substring(0,10);
+      var gradeIdx=EVAL_GRADE_LABELS.indexOf(e.grade);
+      var gc=gradeIdx>0?EVAL_GRADE_COLORS[gradeIdx]:'#666';
+      h+='<tr>';
+      h+='<td style="font-size:11px;color:var(--muted);white-space:nowrap">'+dt+'</td>';
+      h+='<td style="font-size:12px;font-weight:600">'+esc(e.emp_name)+(e.nickname?' <span style="color:var(--muted);font-weight:400">('+esc(e.nickname)+')</span>':'')+'</td>';
+      h+='<td style="font-size:11px">'+esc(e.position||'-')+'</td>';
+      h+='<td style="font-size:11px;font-weight:600">'+esc(e.period)+'</td>';
+      h+='<td style="font-size:11px">'+esc(e.evaluator||'-')+'</td>';
+      var scoreFields=['score_work_quality','score_work_quantity','score_attendance','score_teamwork','score_attitude','score_skill'];
+      scoreFields.forEach(function(f){
+        var v=e[f]||0;
+        var sc=v>=4?'#10b981':v>=3?'#3b82f6':v>=2?'#f59e0b':'#dc2626';
+        h+='<td style="text-align:center;font-weight:700;color:'+sc+'">'+v+'</td>';
+      });
+      h+='<td style="text-align:center;font-size:14px;font-weight:800;color:'+gc+'">'+parseFloat(e.total_score||0).toFixed(1)+'</td>';
+      h+='<td><span style="background:'+gc+'18;color:'+gc+';padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700">'+esc(e.grade||'-')+'</span></td>';
+      h+='<td style="text-align:center"><button class="btn btn-d btn-s" style="font-size:10px;padding:3px 8px" onclick="evalDelete(\''+e.id+'\')">🗑️</button></td>';
+      h+='</tr>';
+      if(e.comment){
+        h+='<tr><td colspan="'+(6+EVAL_CRITERIA.length+1)+'" style="padding:2px 12px 8px;font-size:11px;color:var(--muted);border-top:none">💬 '+esc(e.comment)+'</td></tr>';
+      }
+    });
+    h+='</tbody></table></div>';
+    $('ev-history').innerHTML=h;
+  }).catch(function(){$('ev-history').innerHTML='<div style="color:var(--err);font-size:12px">โหลดไม่ได้</div>'});
+}
+
+function evalDelete(id){
+  if(!confirm('ลบผลประเมินนี้?'))return;
+  sb("evaluations","DELETE",null,"?id=eq."+id).then(function(){
+    toast('ลบแล้ว','tok');evalLoad();
+  }).catch(function(e){toast('Error: '+e,'terr')});
 }
 
 /* ═══ SCB PAYROLL FILE EXPORT ═══ */

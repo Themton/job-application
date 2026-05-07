@@ -92,6 +92,7 @@
 .xls input{width:100%;height:100%;border:none;background:transparent;text-align:right;font-size:12px;font-family:inherit;padding:2px 6px;outline:none;color:var(--txt)}.xls input:focus{background:#e8f0fe;box-shadow:inset 0 0 0 2px #4285f4}.xls .xsum{background:#f0e8d4;font-weight:700;text-align:right;padding:2px 6px;font-size:12px}.xls .xsum-ok{color:var(--ok)}.xls .xsum-err{color:var(--err)}.xls .xsum-pri{color:var(--pri)}
 .xls-wrap{border:2px solid #b8a880;border-radius:8px;overflow:auto;max-height:70vh;box-shadow:var(--sh2)}
 @keyframes ti{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .emp{text-align:center;padding:44px 16px;color:var(--muted)}.emp .ei{font-size:36px;opacity:.3;margin-bottom:8px}.emp p{font-size:14px;font-weight:500}
 .sp{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sn .6s linear infinite}@keyframes sn{to{transform:rotate(360deg)}}
 .ldp{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}.ldp .logo{width:56px;height:56px;border-radius:12px}
@@ -287,6 +288,10 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       <div class="dg" style="gap:14px;margin-top:14px">
         <div class="cd"><div class="cd-t"><span class="dot"></span> ⏳ รอจ่ายเงินเดือน</div><div id="dash-pending-pay"></div></div>
         <div class="cd"><div class="cd-t"><span class="dot"></span> 💰 สรุปเงินเดือนล่าสุด</div><div id="dash-payroll"></div></div>
+      </div>
+      <div class="dg" style="gap:14px;margin-top:14px">
+        <div class="cd"><div class="cd-t"><span class="dot"></span> 🎂 วันเกิดเดือนนี้</div><div id="dash-birthday"></div></div>
+        <div class="cd"><div class="cd-t"><span class="dot"></span> 🎂 วันเกิดเดือนหน้า</div><div id="dash-birthday-next"></div></div>
       </div>
     </div>
 
@@ -5039,6 +5044,45 @@ function loadDashboard(){
       '<div><div style="font-size:10px;color:var(--muted)">รวมหัก</div><div style="font-size:16px;font-weight:700;color:var(--err)">'+payFmt(tDed)+'</div></div>'+
       '<div><div style="font-size:10px;color:var(--muted)">สุทธิ</div><div style="font-size:16px;font-weight:700;color:var(--pri)">'+payFmt(tNet)+'</div></div></div>';
   }).catch(function(){$('dash-payroll').innerHTML='<span style="color:var(--muted);font-size:12px">โหลดไม่ได้</span>'});
+
+  // Birthday this month & next month
+  var curMonth=today.getMonth()+1;
+  var curYear=today.getFullYear();
+  var nextMonth=curMonth===12?1:curMonth+1;
+  var thaiMonths=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var bdayThisMonth=[],bdayNextMonth=[];
+  ALL.forEach(function(a){
+    if(!a.birthday||a.status==='terminated')return;
+    var parts=a.birthday.split('-');
+    var bMonth=parseInt(parts[1]);
+    var bDay=parseInt(parts[2]);
+    var bYear=parseInt(parts[0]);
+    var age=curYear-bYear;
+    if(bMonth===curMonth) bdayThisMonth.push({name:a.name,nickname:a.nickname,day:bDay,age:age,id:a.id,birthday:a.birthday});
+    if(bMonth===nextMonth) bdayNextMonth.push({name:a.name,nickname:a.nickname,day:bDay,age:age+(nextMonth===1?1:0),id:a.id,birthday:a.birthday});
+  });
+  bdayThisMonth.sort(function(a,b){return a.day-b.day});
+  bdayNextMonth.sort(function(a,b){return a.day-b.day});
+
+  function renderBdayList(list,monthNum){
+    if(!list.length)return '<div style="color:var(--muted);font-size:12px">ไม่มีวันเกิดเดือน'+thaiMonths[monthNum]+'</div>';
+    var h='<div style="font-size:12px;color:var(--acc);font-weight:700;margin-bottom:6px">🎉 '+list.length+' คน</div>';
+    list.forEach(function(b){
+      var todayDate=today.getDate();
+      var isToday=(monthNum===curMonth&&b.day===todayDate);
+      var isPast=(monthNum===curMonth&&b.day<todayDate);
+      h+='<div style="padding:4px 0;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px'+(isPast?';opacity:.5':'')+'" onclick="showTab(\'app\');setTimeout(function(){detail(\''+b.id+'\')},300)">';
+      if(isToday)h+='<span style="background:#fee2e2;color:#dc2626;font-size:9px;padding:2px 6px;border-radius:6px;font-weight:700;animation:pulse 1.5s infinite">🎂 วันนี้!</span>';
+      h+='<span style="color:var(--pri);font-weight:600;min-width:20px">'+b.day+'</span>';
+      h+='<span>'+esc(b.name)+'</span>';
+      if(b.nickname)h+='<span style="color:var(--muted)">('+esc(b.nickname)+')</span>';
+      h+='<span style="color:var(--muted);font-size:10px;margin-left:auto">อายุ '+b.age+' ปี</span>';
+      h+='</div>';
+    });
+    return h;
+  }
+  $('dash-birthday').innerHTML=renderBdayList(bdayThisMonth,curMonth);
+  $('dash-birthday-next').innerHTML=renderBdayList(bdayNextMonth,nextMonth);
 }
 
 /* ═══ SALARY HISTORY ═══ */

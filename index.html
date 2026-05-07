@@ -3395,7 +3395,7 @@ function evalSave(){
 
   sb("evaluations","POST",data).then(function(r){
     toast('บันทึกผลประเมิน '+emp.name+' เรียบร้อย','tok');
-    logAct('eval_save','ประเมิน '+emp.name+' รอบ '+period+' = '+avg.toFixed(1)+'/5');
+    audit('eval_save','evaluation','','ประเมิน '+emp.name+' รอบ '+period+' = '+avg.toFixed(1)+'/5');
     $('ev-comment').value='';
     $('ev-period').value='';
     EVAL_CRITERIA.forEach(function(c){
@@ -3747,7 +3747,7 @@ function attSaveToDB(){
       if(!batch.length){
         $('att-save-status').innerHTML='✅ บันทึก <b>'+records.length+'</b> รายการเรียบร้อย';
         toast('บันทึก ขาด/มาสาย '+records.length+' รายการ','tok');
-        logAct('att_save','บันทึก ขาด/มาสาย เดือน '+monthVal+' — '+records.length+' รายการ');
+        audit('att_save','attendance','','บันทึก ขาด/มาสาย เดือน '+monthVal+' — '+records.length+' รายการ');
         return;
       }
       sb("leaves","POST",batch).then(function(){i+=chunk;next()}).catch(function(e){toast('Error: '+e,'terr');$('att-save-status').textContent='❌ Error'});
@@ -3831,7 +3831,7 @@ function otSave(){
     sb("overtime","POST",records).then(function(){
       $('ot-save-status').innerHTML='✅ บันทึก OT <b>'+valid.length+'</b> คน';
       toast('บันทึก OT เรียบร้อย','tok');
-      logAct('ot_save','บันทึก OT เดือน '+month+' — '+valid.length+' คน');
+      audit('ot_save','overtime','','บันทึก OT เดือน '+month+' — '+valid.length+' คน');
     });
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
@@ -3874,7 +3874,7 @@ function expSave(){
   };
   sb("expenses","POST",data).then(function(){
     toast('บันทึกใบเบิกเรียบร้อย','tok');
-    logAct('exp_create','เบิกค่าใช้จ่าย '+emp.name+' '+payFmt(amount)+' บาท');
+    audit('exp_create','expense','','เบิกค่าใช้จ่าย '+emp.name+' '+payFmt(amount)+' บาท');
     $('exp-amount').value='';$('exp-desc').value='';
     $('exp-add-form').classList.add('hide');
     expLoad();

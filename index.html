@@ -42,6 +42,43 @@
 .sb{flex:1;min-width:200px;position:relative}.sb input{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--bdr);border-radius:8px;font-size:13px;font-family:inherit;background:var(--card);box-shadow:var(--sh);outline:none}.sb::before{content:"🔍";position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px}
 .fsel{padding:8px 10px;border:1px solid var(--bdr);border-radius:7px;font-size:12px;font-family:inherit;background:var(--card);cursor:pointer;font-weight:500}
 .rcnt{font-size:12px;color:var(--muted);margin-bottom:10px;font-weight:500}
+/* === Employee Card Layout === */
+.emp-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.emp-stat{flex:1;min-width:80px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:12px 14px;text-align:center;cursor:pointer;transition:.2s;box-shadow:var(--sh)}
+.emp-stat:hover{border-color:var(--acc);box-shadow:var(--sh2)}
+.emp-stat.active{border-color:var(--acc);background:linear-gradient(135deg,rgba(198,149,43,.06),rgba(198,149,43,.02));box-shadow:0 0 0 2px rgba(198,149,43,.15)}
+.emp-stat .es-num{font-size:22px;font-weight:700;line-height:1}
+.emp-stat .es-lbl{font-size:10px;font-weight:600;color:var(--muted);margin-top:3px;letter-spacing:.3px}
+.emp-toolbar{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--sh)}
+.emp-search{position:relative;margin-bottom:12px}
+.emp-search input{width:100%;padding:11px 14px 11px 40px;border:1.5px solid var(--bdr);border-radius:10px;font-size:14px;font-family:inherit;background:var(--inp);outline:none;transition:.2s}
+.emp-search input:focus{border-color:var(--pri2);box-shadow:0 0 0 3px rgba(92,74,30,.08);background:#fff}
+.emp-search::before{content:"🔍";position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px}
+.emp-filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.emp-filters select{padding:7px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:11px;font-family:inherit;background:var(--inp);cursor:pointer;font-weight:500;color:var(--txt2)}
+.emp-actions{display:flex;gap:6px;margin-left:auto}
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
+.emp-card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .15s;box-shadow:var(--sh);display:flex;align-items:flex-start;gap:12px;position:relative}
+.emp-card:hover{border-color:var(--acc);box-shadow:var(--sh2);transform:translateY(-1px)}
+.emp-card.selected{border-color:var(--acc);background:rgba(198,149,43,.04)}
+.emp-card.terminated{opacity:.5}
+.ec-avatar{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0}
+.ec-body{flex:1;min-width:0}
+.ec-name{font-size:13px;font-weight:700;color:var(--pri);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ec-nick{font-size:10px;color:var(--muted);font-weight:400}
+.ec-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.ec-tag{padding:2px 8px;border-radius:6px;font-size:9.5px;font-weight:600;white-space:nowrap}
+.ec-status{position:absolute;top:10px;right:12px}
+.ec-email{margin-top:6px;font-size:10px;color:var(--ok)}
+.ec-email-inp{margin-top:6px}
+.ec-email-inp input{width:100%;padding:4px 8px;border:1px solid var(--bdr);border-radius:5px;font-size:10px;font-family:inherit;background:var(--inp);outline:none}
+.ec-actions{display:flex;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--bdr2)}
+.emp-group{margin-top:6px;margin-bottom:8px;padding:8px 4px;display:flex;align-items:center;gap:8px}
+.emp-group-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.emp-group-lbl{font-size:13px;font-weight:700}
+.emp-group-cnt{font-size:11px;font-weight:400;color:var(--muted)}
+.emp-group-line{flex:1;height:1px;background:var(--bdr2)}
+@media(max-width:700px){.emp-grid{grid-template-columns:1fr}.emp-stats{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:8px;padding-bottom:4px}.emp-stat{min-width:70px;flex:0 0 auto}}
 .tw{background:var(--card);border:1px solid var(--bdr);border-radius:11px;overflow:hidden;box-shadow:var(--sh)}.tw table{width:100%;border-collapse:collapse}
 .tw th{text-align:left;padding:11px 13px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--inp);border-bottom:1px solid var(--bdr)}
 .tw td{padding:11px 13px;font-size:12px;border-bottom:1px solid var(--bdr2)}.tw tr:last-child td{border-bottom:none}.tw tbody tr{cursor:pointer;transition:.1s}.tw tbody tr:hover{background:rgba(194,122,44,.03)}
@@ -55,6 +92,22 @@
 .dr{padding:5px 0;font-size:13px;color:var(--txt);display:flex;align-items:center;gap:7px}.dr .i{font-size:15px;opacity:.4;flex-shrink:0}
 .ssel{padding:7px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;outline:none;background:var(--card)}
 .sts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}.st{background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:16px}.st .l{font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}.st .v{font-size:24px;font-weight:700;color:var(--pri)}
+/* Employee page chips & info */
+.emp-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.emp-chip{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;border:1.5px solid var(--bdr);background:var(--card);cursor:pointer;font-family:inherit;font-size:12px;font-weight:500;color:var(--txt2);transition:all .2s;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.emp-chip:hover{border-color:var(--chip-c);background:color-mix(in srgb,var(--chip-c) 6%,var(--card));transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.08)}
+.emp-chip-on{border-color:var(--chip-c)!important;background:color-mix(in srgb,var(--chip-c) 10%,var(--card))!important;color:var(--chip-c);font-weight:700;box-shadow:0 2px 8px color-mix(in srgb,var(--chip-c) 20%,transparent)}
+.emp-chip-cnt{font-size:16px;font-weight:800;color:var(--chip-c);line-height:1}
+.emp-chip-label{font-size:11px;white-space:nowrap}
+.emp-info-bar{display:flex;gap:16px;font-size:11px;color:var(--muted);margin-bottom:14px;padding:0 4px}
+.emp-info-bar b{color:var(--txt);font-weight:700;margin-left:2px}
+/* Employee table improvements */
+.emp-row{transition:all .15s}.emp-row:hover{background:rgba(194,122,44,.04)!important}
+.emp-avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:-.5px}
+.emp-name-cell{display:flex;align-items:center;gap:10px}
+.emp-badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap;letter-spacing:.2px}
+.emp-grp-hdr{background:var(--inp);border-left:4px solid;padding:10px 16px!important;font-weight:700;font-size:12px;letter-spacing:.3px}
+@media(max-width:700px){.emp-chips{gap:6px}.emp-chip{padding:6px 10px;font-size:11px}.emp-chip-cnt{font-size:14px}.emp-info-bar{gap:10px;font-size:10px;flex-wrap:wrap}}
 .toast{position:fixed;bottom:18px;right:18px;padding:12px 20px;border-radius:9px;font-size:13px;font-weight:500;box-shadow:var(--sh3);z-index:9999;color:#fff;animation:ti .3s}.toast.tok{background:var(--ok)}.toast.terr{background:var(--err)}.toast.tinfo{background:var(--pri2)}
 
 .xls{border-collapse:collapse;width:100%;font-size:12px;font-family:'Noto Sans Thai',sans-serif}.xls th,.xls td{border:1px solid #c8c0a8;padding:0;height:28px}.xls thead th{background:#e8dfc8;color:var(--pri);font-weight:600;font-size:10px;text-align:center;position:sticky;top:0;z-index:2;padding:4px 6px;white-space:nowrap}.xls tbody td{background:#fff}.xls tbody tr:hover td{background:#fdf5e0}.xls .xr{background:#e8dfc8;color:var(--pri);font-weight:600;font-size:10px;text-align:center;width:30px;min-width:30px;padding:2px}.xls .xname{text-align:left;padding:2px 6px;font-weight:600;color:var(--pri);font-size:12px;min-width:140px;white-space:nowrap}.xls .xpos{text-align:left;padding:2px 6px;font-size:10px;color:var(--txt2);min-width:80px;white-space:nowrap}
@@ -260,16 +313,26 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       </div>
     </div>
 
-    <div id="T-app"><div class="sts" id="A-sts"></div>
-      <div class="tb"><div class="sb"><input id="i-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร..." oninput="debounce(doFilter,'sf')"></div>
-        <select class="fsel" id="f-dept" onchange="doFilter()"><option value="">ทุกแผนก</option></select>
-        <select class="fsel" id="f-pos" onchange="doFilter()"><option value="">ทุกตำแหน่ง</option></select>
-        <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="monthly_daily">ประจำ(รายวัน)</option><option value="resigned_pending">ลาออก-รอจ่าย</option><option value="terminated">พ้นสภาพ</option></select>
-        <select class="fsel" id="f-bank" onchange="doFilter()"><option value="">ทุกธนาคาร</option><option value="scb">ไทยพาณิชย์ (SCB)</option><option value="other">ธนาคารอื่น</option></select>
-        <select class="fsel" id="f-email" onchange="doFilter()"><option value="">ทุกอีเมล</option><option value="has">มีอีเมล</option><option value="no">ไม่มีอีเมล</option></select>
-        <button class="btn btn-a btn-s" onclick="showAdminAddEmp()">➕ เพิ่มพนักงาน</button>
-        <button class="btn btn-a btn-s" onclick="empExport()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">📥 Export</button>
-        <button class="btn btn-g btn-s" onclick="loadAdmin()">🔄</button></div>
+    <div id="T-app">
+      <!-- Stats Cards -->
+      <div class="emp-stats" id="A-sts"></div>
+
+      <!-- Toolbar -->
+      <div class="emp-toolbar">
+        <div class="emp-search"><input id="i-srch" placeholder="ค้นหาชื่อ ชื่อเล่น เบอร์โทร..." oninput="debounce(doFilter,'sf')"></div>
+        <div class="emp-filters">
+          <select class="fsel" id="f-dept" onchange="doFilter()"><option value="">ทุกแผนก</option></select>
+          <select class="fsel" id="f-pos" onchange="doFilter()"><option value="">ทุกตำแหน่ง</option></select>
+          <select class="fsel" id="f-st" onchange="stats();doFilter()" style="display:none"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="monthly_daily">ประจำ(รายวัน)</option><option value="resigned_pending">ลาออก-รอจ่าย</option><option value="terminated">พ้นสภาพ</option></select>
+          <select class="fsel" id="f-bank" onchange="doFilter()"><option value="">ทุกธนาคาร</option><option value="scb">ไทยพาณิชย์ (SCB)</option><option value="other">ธนาคารอื่น</option></select>
+          <select class="fsel" id="f-email" onchange="doFilter()"><option value="">ทุกอีเมล</option><option value="has">มีอีเมล</option><option value="no">ไม่มีอีเมล</option></select>
+          <div class="emp-actions">
+            <button class="btn btn-a btn-s" onclick="showAdminAddEmp()">➕ เพิ่มพนักงาน</button>
+            <button class="btn btn-s" onclick="empExport()" style="background:linear-gradient(135deg,#2d5080,#3b82f6);color:#fff">📥 Export</button>
+            <button class="btn btn-g btn-s" onclick="loadAdmin()" title="รีเฟรช">🔄</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Add Employee Form -->
       <div id="admin-add-emp" class="cd hide" style="margin:14px 0;border:2px solid var(--acc)">
@@ -1074,11 +1137,43 @@ function updateLeavePendingBadge(){
 
 /* ═══ STATS ═══ */
 function stats(){
-  var t=ALL.length,dy=0,mt=0,md=0,tm=0,posMap={},scbCnt=0,otherCnt=0,hasEmail=0;
-  ALL.forEach(function(a){if(a.status==='daily')dy++;else if(a.status==='monthly')mt++;else if(a.status==='monthly_daily')md++;if(a.status==='terminated')tm++;if(a.position)posMap[a.position]=(posMap[a.position]||0)+1;
+  var t=ALL.length,dy=0,mt=0,md=0,nw=0,rp=0,tm=0,posMap={},scbCnt=0,otherCnt=0,hasEmail=0;
+  ALL.forEach(function(a){
+    if(a.status==='daily')dy++;
+    else if(a.status==='monthly')mt++;
+    else if(a.status==='monthly_daily')md++;
+    else if(a.status==='new')nw++;
+    else if(a.status==='resigned_pending')rp++;
+    if(a.status==='terminated')tm++;
+    if(a.position)posMap[a.position]=(posMap[a.position]||0)+1;
     if(a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))scbCnt++;else if(a.bank)otherCnt++;
     if(a.email&&a.email.indexOf('@')>=0)hasEmail++});
-  $('A-sts').innerHTML='<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div><div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div><div class="st"><div class="l">ประจำ</div><div class="v" style="color:var(--ok)">'+mt+'</div></div><div class="st"><div class="l">ประจำ(รายวัน)</div><div class="v" style="color:#7c3aed">'+md+'</div></div><div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div><div class="st"><div class="l">SCB</div><div class="v" style="color:#4b0082">'+scbCnt+'</div></div><div class="st"><div class="l">ธ.อื่น</div><div class="v" style="color:#006400">'+otherCnt+'</div></div><div class="st"><div class="l">มีอีเมล</div><div class="v" style="color:#2d5080">'+hasEmail+'</div></div>';
+  var cur=$('f-st').value;
+  var chips=[
+    {k:'',label:'ทั้งหมด',cnt:t,color:'#5c4a1e',icon:'👥'},
+    {k:'monthly',label:'ประจำ',cnt:mt,color:'#28a745',icon:'🟢'},
+    {k:'monthly_daily',label:'ประจำ(รายวัน)',cnt:md,color:'#7c3aed',icon:'🟣'},
+    {k:'daily',label:'รายวัน',cnt:dy,color:'#f59e0b',icon:'🟡'},
+    {k:'new',label:'ใหม่',cnt:nw,color:'#3b82f6',icon:'🔵'},
+    {k:'resigned_pending',label:'รอจ่าย',cnt:rp,color:'#d97706',icon:'🟠'},
+    {k:'terminated',label:'พ้นสภาพ',cnt:tm,color:'#6b7280',icon:'⛔'}
+  ];
+  var h='<div class="emp-chips">';
+  chips.forEach(function(c){
+    if(c.cnt===0&&c.k!=='')return;
+    var on=(cur===c.k);
+    h+='<button class="emp-chip'+(on?' emp-chip-on':'')+'" onclick="$(\'f-st\').value=\''+c.k+'\';doFilter()" style="--chip-c:'+c.color+'">';
+    h+='<span class="emp-chip-cnt">'+c.cnt+'</span>';
+    h+='<span class="emp-chip-label">'+c.label+'</span>';
+    h+='</button>';
+  });
+  h+='</div>';
+  h+='<div class="emp-info-bar">';
+  h+='<span>🏦 SCB <b>'+scbCnt+'</b></span>';
+  h+='<span>🏦 อื่น <b>'+otherCnt+'</b></span>';
+  h+='<span>📧 มีอีเมล <b>'+hasEmail+'</b></span>';
+  h+='</div>';
+  $('A-sts').innerHTML=h;
   var sel=$('f-pos'),cur=sel.value;
   sel.innerHTML='<option value="">ทุกตำแหน่ง ('+t+')</option>';
   Object.keys(posMap).sort().forEach(function(p){sel.innerHTML+='<option value="'+esc(p)+'"'+(cur===p?' selected':'')+'>'+esc(p)+' ('+posMap[p]+')</option>'});
@@ -1107,32 +1202,12 @@ function empUpdateSelBar(){
 
 function empToggle(id,checked){if(checked)EMP_SEL[id]=true;else delete EMP_SEL[id];empUpdateSelBar()}
 function empToggle2(idx,btn){
-  var a=window._empFiltered[idx];
-  if(EMP_SEL[a.id]){delete EMP_SEL[a.id]}else{EMP_SEL[a.id]=true}
-  var sel=EMP_SEL[a.id];
-  // Update only this button + row (no full re-render)
-  btn.style.background=sel?'#b8860b':'none';
-  btn.style.borderColor=sel?'#b8860b':'#ccc';
-  btn.style.color=sel?'#fff':'transparent';
-  btn.closest('tr').style.background=sel?'rgba(198,149,43,.1)':'';
-  empUpdateSelBar();
+  empCardToggle(idx);
 }
 function empToggleAll2(){
   var allChk=window._empFiltered.length>0&&window._empFiltered.every(function(a){return EMP_SEL[a.id]});
   window._empFiltered.forEach(function(a){if(allChk)delete EMP_SEL[a.id];else EMP_SEL[a.id]=true});
-  // Update all buttons visually
-  var btns=$('A-tbl').querySelectorAll('tbody button[onclick*="empToggle2"]');
-  btns.forEach(function(btn,i){
-    var a=window._empFiltered[i];if(!a)return;
-    var sel=EMP_SEL[a.id];
-    btn.style.background=sel?'#b8860b':'none';
-    btn.style.borderColor=sel?'#b8860b':'#ccc';
-    btn.style.color=sel?'#fff':'transparent';
-    btn.closest('tr').style.background=sel?'rgba(198,149,43,.1)':'';
-  });
-  // Update header button
-  var hdrBtn=$('A-tbl').querySelector('thead button');
-  if(hdrBtn){hdrBtn.style.borderColor=allChk?'#ccc':'#b8860b';hdrBtn.textContent=allChk?'':'✓'}
+  doFilter();
   empUpdateSelBar();
 }
 function empToggleAll(checked){
@@ -1253,85 +1328,117 @@ function doFilter(){
   });
   window._empFiltered=f;
   $('A-cnt').textContent='พบ '+f.length+' คน';
-  if(!f.length){$('A-tbl').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูล</p></div>';return}
+  if(!f.length){$('A-tbl').innerHTML='<div class="emp" style="padding:60px 20px;text-align:center"><div class="ei" style="font-size:48px;margin-bottom:12px">📭</div><p style="color:var(--muted);font-size:14px">ไม่พบข้อมูลพนักงาน</p></div>';return}
 
-  // Sort by status group: monthly → monthly_daily → daily → new → resigned_pending → terminated
+  // Sort by status group
   var stOrder={monthly:0,monthly_daily:1,daily:2,new:3,resigned_pending:4,terminated:5};
   f.sort(function(a,b){var sa=stOrder[a.status]!==undefined?stOrder[a.status]:9;var sb2=stOrder[b.status]!==undefined?stOrder[b.status]:9;if(sa!==sb2)return sa-sb2;return a.name.localeCompare(b.name,'th')});
   window._empFiltered=f;
 
-  var stGroupLabels={monthly:'🟢 พนักงานประจำ',monthly_daily:'🟣 ประจำ(รายวัน)+ปกส.',daily:'🟡 พนักงานรายวัน',new:'🔵 พนักงานใหม่',resigned_pending:'🟠 ลาออก-รอจ่าย',terminated:'⛔ พ้นสภาพ'};
-  var stGroupColors={monthly:'#28a745',monthly_daily:'#7c3aed',daily:'#f59e0b',new:'#007bff',resigned_pending:'#d97706',terminated:'#dc3545'};
+  var stGroupLabels={monthly:'พนักงานประจำ',monthly_daily:'ประจำ(รายวัน)+ปกส.',daily:'พนักงานรายวัน',new:'พนักงานใหม่',resigned_pending:'ลาออก-รอจ่าย',terminated:'พ้นสภาพ'};
+  var stGroupColors={monthly:'#28a745',monthly_daily:'#7c3aed',daily:'#f59e0b',new:'#3b82f6',resigned_pending:'#d97706',terminated:'#9ca3af'};
+  var avatarBgs={monthly:'linear-gradient(135deg,#28a745,#20c997)',monthly_daily:'linear-gradient(135deg,#7c3aed,#a78bfa)',daily:'linear-gradient(135deg,#f59e0b,#fbbf24)',new:'linear-gradient(135deg,#3b82f6,#60a5fa)',resigned_pending:'linear-gradient(135deg,#d97706,#f59e0b)',terminated:'linear-gradient(135deg,#9ca3af,#6b7280)'};
 
-  var allChk=f.length>0&&f.every(function(a){return EMP_SEL[a.id]});
-  var h='<div class="tw"><table><thead><tr>';
-  h+='<th style="width:36px;text-align:center;padding:4px"><button onclick="empToggleAll2()" style="background:none;border:2px solid '+(allChk?'#b8860b':'#ccc')+';border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:18px;color:#b8860b">'+(allChk?'✓':'')+'</button></th>';
-  h+='<th>ชื่อ-สกุล</th><th>แผนก</th><th>ตำแหน่ง</th><th>ธนาคาร</th><th>ประเภท</th><th style="min-width:160px">📧 อีเมล</th><th style="text-align:center">จัดการ</th>';
-  h+='</tr></thead><tbody>';
-
-  var lastSt='';
+  var h='',lastSt='';
   f.forEach(function(a,idx){
-    // Insert group header when status changes
+    // Group header
     if(a.status!==lastSt){
       var grpCnt=f.filter(function(x){return x.status===a.status}).length;
       var grpLabel=stGroupLabels[a.status]||a.status;
       var grpColor=stGroupColors[a.status]||'#666';
-      h+='<tr><td colspan="8" style="background:linear-gradient(90deg,'+grpColor+'15,transparent);border-left:4px solid '+grpColor+';padding:8px 12px;font-weight:700;font-size:13px;color:'+grpColor+'">'+grpLabel+' <span style="font-weight:400;font-size:11px;opacity:.7">('+grpCnt+' คน)</span></td></tr>';
+      if(lastSt)h+='</div>'; // close previous grid
+      h+='<div class="emp-group"><div class="emp-group-dot" style="background:'+grpColor+'"></div><span class="emp-group-lbl" style="color:'+grpColor+'">'+grpLabel+'</span><span class="emp-group-cnt">'+grpCnt+' คน</span><div class="emp-group-line"></div></div>';
+      h+='<div class="emp-grid">';
       lastSt=a.status;
     }
-    var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
-    var typeLabel,typeBg;
-    if(a.status==='daily'){typeLabel='รายวัน';typeBg='background:#fff3cd;color:#856404;border:1px solid #ffc107'}
-    else if(a.status==='monthly'){typeLabel='ประจำ';typeBg='background:#d4edda;color:#155724;border:1px solid #28a745'}
-    else if(a.status==='monthly_daily'){typeLabel='ประจำ(รายวัน)';typeBg='background:#ede9fe;color:#7c3aed;border:1px solid #8b5cf6'}
-    else if(a.status==='resigned_pending'){typeLabel='⏳ รอจ่าย';typeBg='background:#fef3c7;color:#d97706;border:1px solid #f59e0b'}
-    else if(a.status==='terminated'){typeLabel='พ้นสภาพ';typeBg='background:#f8d7da;color:#721c24;border:1px solid #dc3545'}
-    else{typeLabel='ใหม่';typeBg='background:#cce5ff;color:#004085;border:1px solid #007bff'}
+
     var sel=EMP_SEL[a.id];
-    h+='<tr style="'+(sel?'background:rgba(198,149,43,.1);':'')+(a.status==='terminated'?'opacity:.5':'')+'"">';
-    h+='<td style="text-align:center;padding:4px"><button onclick="empToggle2('+idx+',this)" style="background:'+(sel?'#b8860b':'none')+';border:2px solid '+(sel?'#b8860b':'#ccc')+';border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:18px;color:'+(sel?'#fff':'transparent')+'">✓</button></td>';
-    h+='<td class="nm" style="cursor:pointer" data-detail="'+idx+'">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'');
-    // Contract expiry warning
+    var isTerm=a.status==='terminated';
+    var initial=a.name.charAt(0);
+    var avBg=avatarBgs[a.status]||'linear-gradient(135deg,#8b6914,#c6952b)';
+
+    h+='<div class="emp-card'+(sel?' selected':'')+(isTerm?' terminated':'')+'" data-idx="'+idx+'" data-id="'+a.id+'">';
+
+    // Checkbox
+    h+='<div onclick="event.stopPropagation();empCardToggle('+idx+')" style="position:absolute;top:8px;left:8px;width:20px;height:20px;border-radius:4px;border:2px solid '+(sel?'var(--acc)':'var(--bdr)')+';background:'+(sel?'var(--acc)':'transparent')+';display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:#fff;transition:.15s">'+(sel?'✓':'')+'</div>';
+
+    // Avatar
+    h+='<div class="ec-avatar" style="background:'+avBg+';margin-left:16px">'+initial+'</div>';
+
+    // Body
+    h+='<div class="ec-body">';
+    h+='<div class="ec-name">'+esc(a.name)+(a.nickname?' <span class="ec-nick">('+esc(a.nickname)+')</span>':'')+'</div>';
+
+    // Contract warning
     if(a.contract_period&&a.start_date){
       var _sd=new Date(a.start_date+'T00:00:00'),_ms={'1m':1,'3m':3,'6m':6,'1y':12},_am=_ms[a.contract_period]||0;
       if(_am){var _ed=new Date(_sd);_ed.setMonth(_ed.getMonth()+_am);var _dl=Math.ceil((_ed-new Date())/(864e5));
-        if(_dl<0)h+=' <span style="background:#fee2e2;color:#c00;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:700">หมดสัญญา</span>';
-        else if(_dl<=30)h+=' <span style="background:#fef3c7;color:#92400e;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:700">⏳ '+_dl+' วัน</span>';
+        if(_dl<0)h+='<span style="background:#fee2e2;color:#c00;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">หมดสัญญา</span>';
+        else if(_dl<=30)h+='<span style="background:#fef3c7;color:#92400e;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">⏳ '+_dl+' วัน</span>';
       }
     }
-    h+='</td>';
-    h+='<td style="font-size:11px" data-detail="'+idx+'">'+(a.department?'<span style="background:rgba(92,74,30,.08);color:var(--pri);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600">'+esc(a.department)+'</span>':'-')+'</td>';
-    h+='<td style="font-size:12px" data-detail="'+idx+'">'+esc(a.position||'-')+'</td>';
+
+    // Meta tags
+    h+='<div class="ec-meta">';
+    if(a.position)h+='<span class="ec-tag" style="background:rgba(92,74,30,.06);color:var(--pri)">'+esc(a.position)+'</span>';
+    if(a.department)h+='<span class="ec-tag" style="background:rgba(92,74,30,.04);color:var(--txt2)">🏢 '+esc(a.department)+'</span>';
     var isSCB=a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0);
-    h+='<td style="font-size:11px" data-detail="'+idx+'">'+(a.bank?'<span style="background:'+(isSCB?'rgba(75,0,130,.08);color:#4b0082':'rgba(0,100,0,.08);color:#006400')+';padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600">'+esc(a.bank)+'</span>':'-')+'</td>';
-    h+='<td data-detail="'+idx+'"><span style="'+typeBg+';padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap">'+typeLabel+'</span></td>';
-    h+='<td style="padding:2px">';
+    if(a.bank)h+='<span class="ec-tag" style="background:'+(isSCB?'rgba(75,0,130,.06);color:#4b0082':'rgba(0,100,0,.06);color:#006400')+'">🏦 '+esc(a.bank)+'</span>';
+    h+='</div>';
+
+    // Email
     if(a.email&&a.email.indexOf('@')>=0){
-      h+='<span style="font-size:11px;color:var(--ok)">'+esc(a.email)+'</span>';
-    }else{
-      h+='<input value="" placeholder="email@..." onchange="empSaveEmail('+idx+',this.value)" style="width:100%;padding:4px 6px;border:1px solid var(--bdr);border-radius:4px;font-size:11px;font-family:inherit;background:var(--inp)" type="email">';
+      h+='<div class="ec-email">📧 '+esc(a.email)+'</div>';
+    }else if(!isTerm){
+      h+='<div class="ec-email-inp" onclick="event.stopPropagation()"><input placeholder="📧 เพิ่มอีเมล..." onchange="empSaveEmail('+idx+',this.value)" type="email"></div>';
     }
-    h+='</td>';
-    h+='<td style="text-align:center;white-space:nowrap">';
-    if(a.status!=='terminated'&&a.status!=='resigned_pending'){
-      h+='<button class="btn btn-d btn-s" style="font-size:10px;padding:3px 8px" onclick="quickTerminate(window._empFiltered['+idx+'].id,window._empFiltered['+idx+'].name)">⛔ ลาออก</button>';
-    }else if(a.status==='resigned_pending'){
-      h+='<span style="color:#d97706;font-size:10px;font-weight:600">⏳ รอจ่ายเงินเดือน</span>';
-    }else{
-      h+='<span style="color:var(--err);font-size:10px;font-weight:600">⛔ ลาออกแล้ว</span>';
-    }
-    h+='</td></tr>';
+
+    h+='</div>'; // ec-body
+
+    // Status badge (top right)
+    var typeLabel,typeStyle;
+    if(a.status==='daily'){typeLabel='รายวัน';typeStyle='background:#fff3cd;color:#856404'}
+    else if(a.status==='monthly'){typeLabel='ประจำ';typeStyle='background:#d4edda;color:#155724'}
+    else if(a.status==='monthly_daily'){typeLabel='ประจำ(รายวัน)';typeStyle='background:#ede9fe;color:#7c3aed'}
+    else if(a.status==='resigned_pending'){typeLabel='⏳ รอจ่าย';typeStyle='background:#fef3c7;color:#d97706'}
+    else if(a.status==='terminated'){typeLabel='พ้นสภาพ';typeStyle='background:#f1f1f1;color:#6b7280'}
+    else{typeLabel='ใหม่';typeStyle='background:#dbeafe;color:#1e40af'}
+    h+='<div class="ec-status"><span style="'+typeStyle+';padding:3px 8px;border-radius:8px;font-size:9px;font-weight:700;white-space:nowrap">'+typeLabel+'</span></div>';
+
+    h+='</div>'; // emp-card
   });
-  h+='</tbody></table></div>';
+  if(f.length)h+='</div>'; // close last grid
   $('A-tbl').innerHTML=h;
 
-  // Click on name/dept/position cells -> detail view
+  // Click card -> detail
   $('A-tbl').onclick=function(ev){
     var t=ev.target;
-    if(t.tagName==='BUTTON'||t.tagName==='INPUT')return;
-    var dd=t.closest('[data-detail]');
-    if(dd)detail(window._empFiltered[parseInt(dd.getAttribute('data-detail'))].id);
+    if(t.tagName==='INPUT'||t.closest('.ec-email-inp'))return;
+    var card=t.closest('.emp-card');
+    if(card){
+      var idx=parseInt(card.getAttribute('data-idx'));
+      if(window._empFiltered[idx])detail(window._empFiltered[idx].id);
+    }
   };
+  // Update stats highlights
+  stats();
+}
+
+function empCardToggle(idx){
+  var a=window._empFiltered[idx];if(!a)return;
+  if(EMP_SEL[a.id])delete EMP_SEL[a.id];else EMP_SEL[a.id]=true;
+  var card=$('A-tbl').querySelector('.emp-card[data-idx="'+idx+'"]');
+  if(card){
+    card.classList.toggle('selected',!!EMP_SEL[a.id]);
+    var chk=card.querySelector('div[onclick*="empCardToggle"]');
+    if(chk){
+      var sel=EMP_SEL[a.id];
+      chk.style.borderColor=sel?'var(--acc)':'var(--bdr)';
+      chk.style.background=sel?'var(--acc)':'transparent';
+      chk.textContent=sel?'✓':'';
+    }
+  }
+  empUpdateSelBar();
 }
 
 /* ═══ DEPARTMENTS ═══ */

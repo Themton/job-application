@@ -486,24 +486,18 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
 
     <!-- TAB: Payroll -->
     <div id="T-pay" class="hide">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <span class="ttl" style="font-size:18px">💰 คำนวณเงินเดือน</span>
-        <div style="display:flex;gap:4px">
-          <button class="btn btn-a btn-s" id="pay-mode-db" onclick="payShowMode('db')">🗄️ ดึงจากฐานข้อมูล</button>
-          <button class="btn btn-g btn-s" id="pay-mode-file" onclick="payShowMode('file')">📂 อัปโหลดไฟล์</button>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="fld" style="margin:0"><label style="font-size:11px;color:var(--muted)">เดือน/ปี</label><input type="month" id="paydb2-month" value="" style="padding:9px 14px;border:1.5px solid var(--bdr);border-radius:8px;font-size:14px;font-family:inherit;background:var(--card);box-shadow:var(--sh)"></div>
+        <button class="btn btn-a" onclick="payDBLoad()" style="padding:10px 20px">ดึงข้อมูล</button>
+        <button class="btn btn-g btn-s" onclick="payDBLoadPrev()">📋 เดือนก่อน</button>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <button class="btn btn-g btn-s" id="pay-mode-file" onclick="payShowMode('file')" title="อัปโหลดไฟล์">📂 ไฟล์</button>
         </div>
       </div>
+      <div id="paydb2-status" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
 
       <!-- Mode: DB (default) -->
       <div id="pay-db-area">
-        <div class="cd">
-          <div class="cd-t"><span class="dot"></span> ตั้งค่าเงินเดือนจากฐานข้อมูล</div>
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-            <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="paydb2-month" value="" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
-            <button class="btn btn-a btn-s" onclick="payDBLoad()">🗄️ ดึงข้อมูลพนักงาน</button>
-            <button class="btn btn-g btn-s" onclick="payDBLoadPrev()">📋 ดึงเงินเดือนเดือนก่อน</button>
-          </div>
-          <div id="paydb2-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
           <!-- Late Detection -->
           <div id="paydb2-late-area" class="hide" style="padding:10px 14px;background:rgba(245,158,11,.06);border:1px solid #fbbf24;border-radius:10px;margin-bottom:12px">
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -519,18 +513,18 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
           <div id="paydb2-filters" class="hide" style="display:none;gap:4px;margin-bottom:10px;flex-wrap:wrap"></div>
           <div style="margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="paydb2-srch" placeholder="ค้นหาชื่อ..." oninput="debounce(payDBRender,'pdr')"></div></div>
           <div id="paydb2-table"></div>
-          <div id="paydb2-actions" class="hide" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <div id="paydb2-actions" class="hide" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
             <button class="btn btn-a" onclick="payDBCalcAll()">📊 คำนวณทั้งหมด</button>
             <button class="btn btn-a btn-s" onclick="payDBSave()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">💾 บันทึกลงระบบ</button>
             <button class="btn btn-a btn-s" onclick="payDBExportSCB()" style="background:linear-gradient(135deg,#4e2a84,#7b3fa0)">🏦 สร้างไฟล์ SCB</button>
             <button class="btn btn-g btn-s" onclick="payDBExportCSV()">📥 Export CSV</button>
             <span id="paydb2-save-status" style="font-size:12px;color:var(--muted)"></span>
           </div>
-        </div>
       </div>
 
-      <!-- Mode: File Upload (existing) -->
+      <!-- Mode: File Upload -->
       <div id="pay-file-area" class="hide">
+      <div style="margin-bottom:10px"><button class="btn btn-g btn-s" onclick="payShowMode('db')">← กลับ</button></div>
       <div class="cd" id="pay-upload">
         <div class="cd-t"><span class="dot"></span> อัปโหลดไฟล์</div>
         <div class="g2">
@@ -3201,8 +3195,6 @@ var PAYDB2=[];
 function payShowMode(mode){
   $('pay-db-area').classList.toggle('hide',mode!=='db');
   $('pay-file-area').classList.toggle('hide',mode!=='file');
-  $('pay-mode-db').className='btn btn-s '+(mode==='db'?'btn-a':'btn-g');
-  $('pay-mode-file').className='btn btn-s '+(mode==='file'?'btn-a':'btn-g');
   if(mode==='db'&&!$('paydb2-month').value){var now=new Date();$('paydb2-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
 }
 

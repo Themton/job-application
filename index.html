@@ -620,23 +620,31 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
     <!-- TAB: Salary Certificate -->
     <!-- ═══ ATTENDANCE ═══ -->
     <div id="T-att" class="hide">
-      <span class="ttl" style="font-size:18px">📋 สรุป ขาด / ลา / มาสาย</span>
-      <div class="cd" style="margin-top:14px">
-        <div class="cd-t"><span class="dot"></span> อัปโหลดไฟล์ลงเวลา (.xlsx)</div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="att-month" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
-          <label style="cursor:pointer;padding:10px 20px;border:2px dashed var(--acc);border-radius:10px;font-size:13px;color:var(--pri);font-weight:600;background:rgba(184,134,11,.04);transition:all .15s">
-            📂 เลือกไฟล์เวลา
-            <input type="file" accept=".xlsx,.xls" onchange="attUpload(this)" style="display:none">
-          </label>
-          <span id="att-file-status" style="font-size:12px;color:var(--muted)"></span>
-        </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:8px">รองรับไฟล์จากเครื่องสแกนลายนิ้วมือ — คอลัมน์: รหัส, ชื่อ, แผนก, วันที่ (เวลาเข้า/ออก)</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span class="ttl" style="font-size:18px">📋 ขาด / ลา / มาสาย</span>
+        <span id="att-file-status" style="font-size:12px;color:var(--muted)"></span>
       </div>
-      <!-- Summary cards -->
-      <div id="att-summary" style="margin-top:14px"></div>
-      <!-- Detail sections -->
-      <div id="att-detail" style="margin-top:14px"></div>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap">
+        <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="att-month" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
+        <label style="cursor:pointer;padding:9px 18px;border:2px dashed var(--acc);border-radius:10px;font-size:13px;color:var(--pri);font-weight:600;background:rgba(184,134,11,.04)">
+          📂 อัปโหลดไฟล์เวลา
+          <input type="file" accept=".xlsx,.xls" onchange="attUpload(this)" style="display:none">
+        </label>
+      </div>
+      <!-- Summary -->
+      <div id="att-summary"></div>
+      <!-- Tab buttons -->
+      <div id="att-tabs" style="display:none;gap:4px;margin-bottom:12px;flex-wrap:wrap"></div>
+      <!-- Detail -->
+      <div id="att-detail"></div>
+      <!-- Save button -->
+      <div id="att-save-area" style="display:none;margin-top:14px;padding:14px;background:rgba(45,80,128,.04);border:1px solid rgba(45,80,128,.15);border-radius:10px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-a" onclick="attSaveToDB()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">💾 บันทึกลงระบบ</button>
+          <span id="att-save-status" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">บันทึก ขาดงาน + มาสาย ลงตาราง leaves เพื่อใช้ในรายงานและเงินเดือน</div>
+      </div>
     </div>
 
     <!-- ═══ EVALUATION ═══ -->
@@ -3504,86 +3512,181 @@ function attUpload(inp){
   reader.readAsArrayBuffer(f);
 }
 
+var ATT_DATA=null; // store parsed results for save
+
 function attRenderResults(d){
-  // Summary cards
-  var h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">';
-  var cards=[
-    {n:d.totalEmps,label:'👥 พนักงานทั้งหมด',color:'#5c4a1e'},
-    {n:d.workDays,label:'📅 วันทำงาน',color:'#2d5080'},
-    {n:d.onTimeList.length,label:'✅ มาตรงเวลา',color:'#10b981'},
-    {n:d.lateList.length,label:'⏰ มาสาย',color:'#f59e0b'},
-    {n:d.absentList.length,label:'❌ ขาดงาน',color:'#dc2626'},
-    {n:d.totalLeaves,label:'📋 ลา (จากระบบ)',color:'#3b82f6'}
+  ATT_DATA=d;
+
+  // Summary row
+  var h='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">';
+  var items=[
+    {n:d.lateList.length,label:'⏰ มาสาย',color:'#f59e0b',key:'late'},
+    {n:d.absentList.length,label:'❌ ขาดงาน',color:'#dc2626',key:'absent'},
+    {n:d.totalLeaves,label:'📋 ลา (ระบบ)',color:'#3b82f6',key:'leave'},
+    {n:d.onTimeList.length,label:'✅ ตรงเวลา',color:'#10b981',key:'ontime'}
   ];
-  cards.forEach(function(c){
-    h+='<div style="background:'+c.color+'0a;border:1px solid '+c.color+'25;border-radius:10px;padding:14px;text-align:center">';
-    h+='<div style="font-size:24px;font-weight:800;color:'+c.color+'">'+c.n+'</div>';
-    h+='<div style="font-size:11px;color:'+c.color+';font-weight:600">'+c.label+'</div></div>';
+  items.forEach(function(c){
+    h+='<button onclick="attShowTab(\''+c.key+'\')" style="flex:1;min-width:120px;background:'+c.color+'0a;border:1.5px solid '+c.color+'30;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .15s;font-family:inherit" id="att-tab-'+c.key+'">';
+    h+='<div style="font-size:28px;font-weight:800;color:'+c.color+';line-height:1">'+c.n+'</div>';
+    h+='<div style="font-size:12px;color:'+c.color+';font-weight:600;margin-top:4px">'+c.label+'</div>';
+    h+='</button>';
   });
   h+='</div>';
   $('att-summary').innerHTML=h;
 
-  // Detail sections
-  var det='';
+  // Show save area
+  if(d.lateList.length||d.absentList.length)$('att-save-area').style.display='block';
+  else $('att-save-area').style.display='none';
 
-  // Late
-  if(d.lateList.length){
-    d.lateList.sort(function(a,b){return b.totalMins-a.totalMins});
-    det+='<div class="cd"><div class="cd-t"><span class="dot" style="background:#f59e0b"></span> ⏰ มาสาย ('+d.lateList.length+' คน)</div>';
-    det+='<div class="tw"><table><thead><tr><th>ชื่อ</th><th style="text-align:center">จำนวนวัน</th><th style="text-align:center">รวมนาที</th><th>รายละเอียด</th></tr></thead><tbody>';
-    d.lateList.forEach(function(e){
-      var details=e.days.map(function(dd){return'วันที่ '+dd.day+' เข้า '+dd.time+' (สาย '+dd.mins+' น.)'}).join(', ');
-      det+='<tr><td style="font-weight:600;font-size:12px">'+esc(e.name)+'</td>';
-      det+='<td style="text-align:center;font-weight:700;color:#f59e0b">'+e.days.length+'</td>';
-      det+='<td style="text-align:center;font-weight:700;color:#f59e0b">'+e.totalMins+'</td>';
-      det+='<td style="font-size:10px;color:var(--muted)">'+esc(details)+'</td></tr>';
-    });
-    det+='</tbody></table></div></div>';
-  }
+  // Default show late
+  attShowTab('late');
+}
 
-  // Absent from file
-  if(d.absentList.length){
-    d.absentList.sort(function(a,b){return b.count-a.count});
-    det+='<div class="cd" style="margin-top:12px"><div class="cd-t"><span class="dot" style="background:#dc2626"></span> ❌ ขาดงาน (ไม่มีบันทึกลงเวลา) ('+d.absentList.length+' คน)</div>';
-    det+='<div class="tw"><table><thead><tr><th>ชื่อ</th><th style="text-align:center">จำนวนวัน</th><th>วันที่ขาด</th></tr></thead><tbody>';
-    d.absentList.forEach(function(e){
-      det+='<tr><td style="font-weight:600;font-size:12px">'+esc(e.name)+'</td>';
-      det+='<td style="text-align:center;font-weight:700;color:#dc2626">'+e.count+'</td>';
-      det+='<td style="font-size:11px;color:var(--muted)">'+e.days.join(', ')+'</td></tr>';
-    });
-    det+='</tbody></table></div></div>';
-  }
-
-  // Leaves from DB
-  var secOrder=['sick','personal','vacation','absent'];
-  secOrder.forEach(function(key){
-    var items=d.leaveByType[key]||[];
-    if(!items.length)return;
-    var label=d.leaveLabels[key]||key;
-    var color=d.leaveColors[key]||'#666';
-    det+='<div class="cd" style="margin-top:12px"><div class="cd-t"><span class="dot" style="background:'+color+'"></span> '+label+' — จากระบบ ('+items.length+' ครั้ง)</div>';
-    det+='<div class="tw"><table><thead><tr><th>วันที่</th><th>ชื่อ</th><th style="text-align:center">จำนวน</th><th>หมายเหตุ</th></tr></thead><tbody>';
-    items.forEach(function(l){
-      det+='<tr><td style="font-size:11px;white-space:nowrap">'+esc(l.date)+'</td>';
-      det+='<td style="font-weight:600;font-size:12px">'+esc(l.name)+(l.nickname?' <span style="color:var(--muted);font-weight:400">('+esc(l.nickname)+')</span>':'')+'</td>';
-      det+='<td style="text-align:center;font-weight:600">'+(l.days===0.5?'ครึ่งวัน':l.days+' วัน')+'</td>';
-      det+='<td style="font-size:11px;color:var(--muted)">'+esc(l.note)+'</td></tr>';
-    });
-    det+='</tbody></table></div></div>';
+function attShowTab(key){
+  var d=ATT_DATA;if(!d)return;
+  // Highlight active tab
+  ['late','absent','leave','ontime'].forEach(function(k){
+    var btn=$('att-tab-'+k);
+    if(btn)btn.style.boxShadow=k===key?'0 0 0 2px var(--pri)':'none';
   });
 
-  // On time
-  if(d.onTimeList.length){
-    det+='<div class="cd" style="margin-top:12px"><div class="cd-t"><span class="dot" style="background:#10b981"></span> ✅ มาตรงเวลาทุกวัน ('+d.onTimeList.length+' คน)</div>';
-    det+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">';
-    d.onTimeList.forEach(function(e){
-      det+='<span style="background:#10b98115;color:#10b981;padding:4px 12px;border-radius:8px;font-size:11px;font-weight:600">'+esc(e.name)+' ('+e.presentDays+' วัน)</span>';
+  var h='';
+  if(key==='late'){
+    if(!d.lateList.length){h='<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">✅ ไม่มีใครมาสาย</div>';}
+    else{
+      d.lateList.sort(function(a,b){return b.days.length-a.days.length});
+      d.lateList.forEach(function(e,i){
+        h+='<div style="padding:12px 16px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;margin-bottom:8px'+(i===0?'':'')+'">';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+        h+='<span style="font-size:14px;font-weight:700;color:var(--pri)">'+esc(e.name)+'</span>';
+        h+='<span style="background:#f59e0b18;color:#f59e0b;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700">สาย '+e.days.length+' วัน / '+e.totalMins+' นาที</span>';
+        h+='</div>';
+        h+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
+        e.days.forEach(function(dd){
+          h+='<span style="background:var(--inp);padding:4px 10px;border-radius:6px;font-size:11px">วันที่ '+dd.day+' <b>'+dd.time+'</b> <span style="color:#f59e0b">('+dd.mins+' น.)</span></span>';
+        });
+        h+='</div></div>';
+      });
+    }
+  }else if(key==='absent'){
+    if(!d.absentList.length){h='<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">✅ ไม่มีใครขาดงาน</div>';}
+    else{
+      d.absentList.sort(function(a,b){return b.count-a.count});
+      d.absentList.forEach(function(e){
+        h+='<div style="padding:12px 16px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;margin-bottom:8px">';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+        h+='<span style="font-size:14px;font-weight:700;color:var(--pri)">'+esc(e.name)+'</span>';
+        h+='<span style="background:#dc262618;color:#dc2626;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700">ขาด '+e.count+' วัน</span>';
+        h+='</div>';
+        h+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
+        e.days.forEach(function(dd){
+          h+='<span style="background:#fee2e2;color:#dc2626;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600">'+dd+'</span>';
+        });
+        h+='</div></div>';
+      });
+    }
+  }else if(key==='leave'){
+    var secOrder=['sick','personal','vacation'];
+    var hasAny=false;
+    secOrder.forEach(function(skey){
+      var items=d.leaveByType[skey]||[];
+      if(!items.length)return;
+      hasAny=true;
+      var label=d.leaveLabels[skey];
+      var color=d.leaveColors[skey];
+      h+='<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:700;color:'+color+';margin-bottom:8px">'+label+' ('+items.length+' ครั้ง)</div>';
+      items.forEach(function(l){
+        h+='<div style="padding:10px 16px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">';
+        h+='<div><span style="font-weight:700;color:var(--pri);font-size:13px">'+esc(l.name)+'</span>';
+        if(l.nickname)h+=' <span style="color:var(--muted);font-size:11px">('+esc(l.nickname)+')</span>';
+        h+='</div>';
+        h+='<div style="display:flex;gap:8px;align-items:center">';
+        h+='<span style="font-size:11px;color:var(--muted)">'+esc(l.date)+'</span>';
+        h+='<span style="background:'+color+'15;color:'+color+';padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600">'+(l.days===0.5?'ครึ่งวัน':l.days+' วัน')+'</span>';
+        if(l.note)h+='<span style="font-size:10px;color:var(--muted)">'+esc(l.note)+'</span>';
+        h+='</div></div>';
+      });
+      h+='</div>';
     });
-    det+='</div></div>';
+    if(!hasAny)h='<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">ไม่มีข้อมูลลาเดือนนี้</div>';
+  }else if(key==='ontime'){
+    if(!d.onTimeList.length){h='<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">ไม่มีข้อมูล</div>';}
+    else{
+      h+='<div style="display:flex;flex-wrap:wrap;gap:8px">';
+      d.onTimeList.forEach(function(e){
+        h+='<div style="background:#10b98110;border:1px solid #10b98130;padding:10px 16px;border-radius:10px;text-align:center;min-width:120px">';
+        h+='<div style="font-size:13px;font-weight:700;color:#059669">'+esc(e.name)+'</div>';
+        h+='<div style="font-size:11px;color:#10b981;margin-top:2px">'+e.presentDays+' วัน ✅</div>';
+        h+='</div>';
+      });
+      h+='</div>';
+    }
   }
+  $('att-detail').innerHTML=h;
+}
 
-  if(!det)det='<div style="text-align:center;padding:20px;color:var(--muted)">ไม่พบข้อมูล</div>';
-  $('att-detail').innerHTML=det;
+function attSaveToDB(){
+  var d=ATT_DATA;if(!d)return;
+  var monthVal=$('att-month').value;
+  if(!monthVal){toast('เลือกเดือน','terr');return}
+  var parts2=monthVal.split('-');
+  var year=parseInt(parts2[0]),month=parseInt(parts2[1]);
+
+  // Find emp IDs by name
+  var empByName={};
+  ALL.forEach(function(a){empByName[a.name.trim()]=a.id});
+
+  var records=[];
+
+  // Save absent records
+  d.absentList.forEach(function(e){
+    var empId=empByName[e.name];if(!empId)return;
+    e.days.forEach(function(day){
+      var dateStr=monthVal+'-'+String(day).padStart(2,'0');
+      records.push({
+        id:'LV-'+Date.now()+'-'+Math.random().toString(36).substr(2,6),
+        emp_id:empId,type:'absent',date:dateStr,days:1,note:'ขาด (จากไฟล์ลงเวลา)'
+      });
+    });
+  });
+
+  // Save late records
+  d.lateList.forEach(function(e){
+    var empId=empByName[e.name];if(!empId)return;
+    e.days.forEach(function(dd){
+      var dateStr=monthVal+'-'+String(dd.day).padStart(2,'0');
+      records.push({
+        id:'LV-'+Date.now()+'-'+Math.random().toString(36).substr(2,6),
+        emp_id:empId,type:'late',date:dateStr,days:0,note:'มาสาย '+dd.mins+' น. (เข้า '+dd.time+')'
+      });
+    });
+  });
+
+  if(!records.length){toast('ไม่มีข้อมูลขาด/มาสายให้บันทึก','terr');return}
+
+  $('att-save-status').textContent='⏳ กำลังบันทึก '+records.length+' รายการ...';
+
+  // Delete existing records for this month first
+  var startDate=monthVal+'-01';
+  var endDay=new Date(year,month,0).getDate();
+  var endDate=monthVal+'-'+String(endDay).padStart(2,'0');
+  var empIds=ALL.filter(function(a){return a.status!=='terminated'}).map(function(a){return a.id});
+
+  sb("leaves","DELETE",null,"?emp_id=in.("+empIds.join(',')+")"+"&type=in.(absent,late)&date=gte."+startDate+"&date=lte."+endDate).then(function(){
+    // Insert in chunks
+    var chunk=30,i=0;
+    function next(){
+      var batch=records.slice(i,i+chunk);
+      if(!batch.length){
+        $('att-save-status').innerHTML='✅ บันทึก <b>'+records.length+'</b> รายการเรียบร้อย';
+        toast('บันทึก ขาด/มาสาย '+records.length+' รายการ','tok');
+        logAct('att_save','บันทึก ขาด/มาสาย เดือน '+monthVal+' — '+records.length+' รายการ');
+        return;
+      }
+      sb("leaves","POST",batch).then(function(){i+=chunk;next()}).catch(function(e){toast('Error: '+e,'terr');$('att-save-status').textContent='❌ Error'});
+    }
+    next();
+  }).catch(function(e){toast('Error: '+e,'terr');$('att-save-status').textContent='❌ Error'});
 }
 
 /* ═══ SCB PAYROLL FILE EXPORT ═══ */

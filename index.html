@@ -298,6 +298,10 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <div class="cd"><div class="cd-t"><span class="dot"></span> 🎂 วันเกิดเดือนนี้</div><div id="dash-birthday"></div></div>
         <div class="cd"><div class="cd-t"><span class="dot"></span> 🎂 วันเกิดเดือนหน้า</div><div id="dash-birthday-next"></div></div>
       </div>
+      <div class="cd" style="margin-top:14px">
+        <div class="cd-t"><span class="dot"></span> 📊 สรุป ขาด / ลา / มาสาย ประจำเดือน</div>
+        <div id="dash-attendance" style="color:var(--muted);font-size:12px">กำลังโหลด...</div>
+      </div>
     </div>
 
     <div id="T-app">
@@ -5109,6 +5113,134 @@ function loadDashboard(){
   }
   $('dash-birthday').innerHTML=renderBdayList(bdayThisMonth,curMonth);
   $('dash-birthday-next').innerHTML=renderBdayList(bdayNextMonth,nextMonth);
+
+  // Attendance summary - ขาด/ลา/มาสาย
+  loadDashAttendance();
+}
+
+function loadDashAttendance(){
+  var now=new Date();
+  var y=now.getFullYear(),m=now.getMonth()+1;
+  var monthStr=y+'-'+String(m).padStart(2,'0');
+  var startDate=monthStr+'-01';
+  var endDay=new Date(y,m,0).getDate();
+  var endDate=monthStr+'-'+String(endDay).padStart(2,'0');
+  var thaiMonths=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var monthLabel=thaiMonths[m]+' '+y;
+
+  var activeEmps=ALL.filter(function(a){return a.status!=='terminated'});
+  var ids=activeEmps.map(function(a){return a.id});
+  if(!ids.length){$('dash-attendance').innerHTML='<div style="color:var(--muted);font-size:12px">ไม่มีข้อมูล</div>';return}
+
+  // Fetch leaves for this month + latest payroll
+  Promise.all([
+    sb("leaves","GET",null,"?emp_id=in.("+ids.join(',')+")"+"&date=gte."+startDate+"&date=lte."+endDate+"&select=emp_id,type,date,days,note&order=date").catch(function(){return[]}),
+    sb("payroll","GET",null,"?month=eq."+encodeURIComponent(monthStr)+"&select=emp_name,late,absent_ded&order=emp_name").catch(function(){return[]})
+  ]).then(function(results){
+    var leaves=Array.isArray(results[0])?results[0]:[];
+    var payroll=Array.isArray(results[1])?results[1]:[];
+
+    // Group leaves by type
+    var byType={personal:[],sick:[],vacation:[],absent:[]};
+    var typeLabels={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน',absent:'ขาดงาน'};
+    var typeColors={personal:'#3b82f6',sick:'#ef4444',vacation:'#10b981',absent:'#dc2626'};
+    var typeIcons={personal:'📋',sick:'🏥',vacation:'🌴',absent:'❌'};
+    var empMap={};
+    activeEmps.forEach(function(a){empMap[a.id]={name:a.name,nickname:a.nickname}});
+
+    leaves.forEach(function(l){
+      var t=l.type||'other';
+      if(!byType[t])byType[t]=[];
+      byType[t].push(l);
+    });
+
+    // Late from payroll
+    var lateEmps=payroll.filter(function(p){return(p.late||0)>0});
+    var absentDeductEmps=payroll.filter(function(p){return(p.absent_ded||0)>0});
+
+    // Summary cards
+    var totalLeave=leaves.length;
+    var totalAbsent=byType.absent.length;
+    var totalLate=lateEmps.length;
+    var totalSick=byType.sick.length;
+    var totalPersonal=byType.personal.length;
+    var totalVacation=byType.vacation.length;
+
+    var h='<div style="font-size:12px;color:var(--muted);margin-bottom:12px">เดือน '+monthLabel+'</div>';
+
+    // Summary stat boxes
+    h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px">';
+    h+='<div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.15);border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#dc2626">'+totalAbsent+'</div><div style="font-size:11px;color:#dc2626;font-weight:600">❌ ขาดงาน</div></div>';
+    h+='<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#ef4444">'+totalSick+'</div><div style="font-size:11px;color:#ef4444;font-weight:600">🏥 ลาป่วย</div></div>';
+    h+='<div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#3b82f6">'+totalPersonal+'</div><div style="font-size:11px;color:#3b82f6;font-weight:600">📋 ลากิจ</div></div>';
+    h+='<div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.15);border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#10b981">'+totalVacation+'</div><div style="font-size:11px;color:#10b981;font-weight:600">🌴 ลาพักร้อน</div></div>';
+    h+='<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#f59e0b">'+totalLate+'</div><div style="font-size:11px;color:#f59e0b;font-weight:600">⏰ มาสาย</div></div>';
+    h+='</div>';
+
+    // Detail lists
+    var sections=[
+      {key:'absent',label:'❌ ขาดงาน',color:'#dc2626'},
+      {key:'sick',label:'🏥 ลาป่วย',color:'#ef4444'},
+      {key:'personal',label:'📋 ลากิจ',color:'#3b82f6'},
+      {key:'vacation',label:'🌴 ลาพักร้อน',color:'#10b981'}
+    ];
+
+    var hasDetail=false;
+    sections.forEach(function(sec){
+      var items=byType[sec.key]||[];
+      if(!items.length)return;
+      hasDetail=true;
+      h+='<div style="margin-bottom:12px">';
+      h+='<div style="font-size:12px;font-weight:700;color:'+sec.color+';margin-bottom:4px">'+sec.label+' ('+items.length+' ครั้ง)</div>';
+      items.forEach(function(l){
+        var emp=empMap[l.emp_id]||{name:l.emp_id,nickname:''};
+        h+='<div style="padding:3px 0;font-size:12px;display:flex;gap:8px;align-items:center">';
+        h+='<span style="color:var(--muted);min-width:65px">'+esc(l.date)+'</span>';
+        h+='<span style="font-weight:600;color:var(--pri)">'+esc(emp.name)+'</span>';
+        if(emp.nickname)h+='<span style="color:var(--muted)">('+esc(emp.nickname)+')</span>';
+        h+='<span style="color:var(--muted);font-size:10px">'+(l.days===0.5?'ครึ่งวัน':l.days+' วัน')+'</span>';
+        if(l.note)h+='<span style="color:var(--muted);font-size:10px">— '+esc(l.note)+'</span>';
+        h+='</div>';
+      });
+      h+='</div>';
+    });
+
+    // Late from payroll
+    if(lateEmps.length){
+      hasDetail=true;
+      h+='<div style="margin-bottom:12px">';
+      h+='<div style="font-size:12px;font-weight:700;color:#f59e0b;margin-bottom:4px">⏰ มาสาย — หักเงินจากเงินเดือน ('+lateEmps.length+' คน)</div>';
+      lateEmps.forEach(function(p){
+        h+='<div style="padding:3px 0;font-size:12px;display:flex;gap:8px;align-items:center">';
+        h+='<span style="font-weight:600;color:var(--pri)">'+esc(p.emp_name)+'</span>';
+        h+='<span style="color:#f59e0b;font-weight:600">-'+payFmt(p.late)+' บาท</span>';
+        h+='</div>';
+      });
+      h+='</div>';
+    }
+
+    // Absent deductions from payroll
+    if(absentDeductEmps.length){
+      hasDetail=true;
+      h+='<div style="margin-bottom:12px">';
+      h+='<div style="font-size:12px;font-weight:700;color:#dc2626;margin-bottom:4px">❌ หักขาดงาน — จากเงินเดือน ('+absentDeductEmps.length+' คน)</div>';
+      absentDeductEmps.forEach(function(p){
+        h+='<div style="padding:3px 0;font-size:12px;display:flex;gap:8px;align-items:center">';
+        h+='<span style="font-weight:600;color:var(--pri)">'+esc(p.emp_name)+'</span>';
+        h+='<span style="color:#dc2626;font-weight:600">-'+payFmt(p.absent_ded)+' บาท</span>';
+        h+='</div>';
+      });
+      h+='</div>';
+    }
+
+    if(!hasDetail&&!totalLeave&&!totalLate){
+      h+='<div style="text-align:center;padding:10px;color:var(--ok);font-size:12px">✅ เดือนนี้ยังไม่มีข้อมูล ขาด/ลา/มาสาย</div>';
+    }
+
+    $('dash-attendance').innerHTML=h;
+  }).catch(function(){
+    $('dash-attendance').innerHTML='<div style="color:var(--err);font-size:12px">โหลดข้อมูลไม่ได้</div>';
+  });
 }
 
 /* ═══ SALARY HISTORY ═══ */

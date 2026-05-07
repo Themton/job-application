@@ -1330,108 +1330,74 @@ function doFilter(){
 
   var stGroupLabels={monthly:'พนักงานประจำ',monthly_daily:'ประจำ(รายวัน)+ปกส.',daily:'พนักงานรายวัน',new:'พนักงานใหม่',resigned_pending:'ลาออก-รอจ่าย',terminated:'พ้นสภาพ'};
   var stGroupColors={monthly:'#28a745',monthly_daily:'#7c3aed',daily:'#f59e0b',new:'#3b82f6',resigned_pending:'#d97706',terminated:'#9ca3af'};
-  var avatarBgs={monthly:'linear-gradient(135deg,#28a745,#20c997)',monthly_daily:'linear-gradient(135deg,#7c3aed,#a78bfa)',daily:'linear-gradient(135deg,#f59e0b,#fbbf24)',new:'linear-gradient(135deg,#3b82f6,#60a5fa)',resigned_pending:'linear-gradient(135deg,#d97706,#f59e0b)',terminated:'linear-gradient(135deg,#9ca3af,#6b7280)'};
 
-  var h='',lastSt='';
+  var allChk=f.length>0&&f.every(function(a){return EMP_SEL[a.id]});
+  var h='<div class="tw"><table><thead><tr>';
+  h+='<th style="width:32px;text-align:center;padding:4px"><button onclick="empToggleAll2()" style="background:'+(allChk?'var(--acc)':'none')+';border:2px solid '+(allChk?'var(--acc)':'#ccc')+';border-radius:4px;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:16px;color:'+(allChk?'#fff':'transparent')+'">✓</button></th>';
+  h+='<th style="min-width:180px">ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>แผนก</th><th>ธนาคาร</th><th>ประเภท</th><th style="min-width:140px">อีเมล</th><th style="text-align:center;width:70px"></th>';
+  h+='</tr></thead><tbody>';
+
+  var lastSt='';
   f.forEach(function(a,idx){
-    // Group header
     if(a.status!==lastSt){
       var grpCnt=f.filter(function(x){return x.status===a.status}).length;
       var grpLabel=stGroupLabels[a.status]||a.status;
       var grpColor=stGroupColors[a.status]||'#666';
-      if(lastSt)h+='</div>'; // close previous grid
-      h+='<div class="emp-group"><div class="emp-group-dot" style="background:'+grpColor+'"></div><span class="emp-group-lbl" style="color:'+grpColor+'">'+grpLabel+'</span><span class="emp-group-cnt">'+grpCnt+' คน</span><div class="emp-group-line"></div></div>';
-      h+='<div class="emp-grid">';
+      h+='<tr><td colspan="8" style="background:var(--inp);border-left:3px solid '+grpColor+';padding:7px 14px;font-weight:700;font-size:12px;color:'+grpColor+'">'+grpLabel+' <span style="font-weight:400;opacity:.6">('+grpCnt+')</span></td></tr>';
       lastSt=a.status;
     }
-
     var sel=EMP_SEL[a.id];
-    var isTerm=a.status==='terminated';
-    var initial=a.name.charAt(0);
-    var avBg=avatarBgs[a.status]||'linear-gradient(135deg,#8b6914,#c6952b)';
+    var typeLabel,typeBg;
+    if(a.status==='daily'){typeLabel='รายวัน';typeBg='background:#fff3cd;color:#856404'}
+    else if(a.status==='monthly'){typeLabel='ประจำ';typeBg='background:#d4edda;color:#155724'}
+    else if(a.status==='monthly_daily'){typeLabel='ประจำ(รว.)';typeBg='background:#ede9fe;color:#7c3aed'}
+    else if(a.status==='resigned_pending'){typeLabel='รอจ่าย';typeBg='background:#fef3c7;color:#d97706'}
+    else if(a.status==='terminated'){typeLabel='พ้นสภาพ';typeBg='background:#f1f1f1;color:#6b7280'}
+    else{typeLabel='ใหม่';typeBg='background:#dbeafe;color:#1e40af'}
 
-    h+='<div class="emp-card'+(sel?' selected':'')+(isTerm?' terminated':'')+'" data-idx="'+idx+'" data-id="'+a.id+'">';
-
-    // Checkbox
-    h+='<div onclick="event.stopPropagation();empCardToggle('+idx+')" style="position:absolute;top:8px;left:8px;width:20px;height:20px;border-radius:4px;border:2px solid '+(sel?'var(--acc)':'var(--bdr)')+';background:'+(sel?'var(--acc)':'transparent')+';display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:#fff;transition:.15s">'+(sel?'✓':'')+'</div>';
-
-    // Avatar
-    h+='<div class="ec-avatar" style="background:'+avBg+';margin-left:16px">'+initial+'</div>';
-
-    // Body
-    h+='<div class="ec-body">';
-    h+='<div class="ec-name">'+esc(a.name)+(a.nickname?' <span class="ec-nick">('+esc(a.nickname)+')</span>':'')+'</div>';
-
-    // Contract warning
+    h+='<tr style="'+(sel?'background:rgba(198,149,43,.08);':'')+(a.status==='terminated'?'opacity:.45':'')+'">';
+    h+='<td style="text-align:center;padding:4px"><button onclick="empToggle2('+idx+',this)" style="background:'+(sel?'var(--acc)':'none')+';border:2px solid '+(sel?'var(--acc)':'#ccc')+';border-radius:4px;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:16px;color:'+(sel?'#fff':'transparent')+'">✓</button></td>';
+    h+='<td class="nm" data-detail="'+idx+'" style="cursor:pointer">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'');
     if(a.contract_period&&a.start_date){
       var _sd=new Date(a.start_date+'T00:00:00'),_ms={'1m':1,'3m':3,'6m':6,'1y':12},_am=_ms[a.contract_period]||0;
       if(_am){var _ed=new Date(_sd);_ed.setMonth(_ed.getMonth()+_am);var _dl=Math.ceil((_ed-new Date())/(864e5));
-        if(_dl<0)h+='<span style="background:#fee2e2;color:#c00;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">หมดสัญญา</span>';
-        else if(_dl<=30)h+='<span style="background:#fef3c7;color:#92400e;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">⏳ '+_dl+' วัน</span>';
+        if(_dl<0)h+=' <span style="background:#fee2e2;color:#c00;font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700">หมดสัญญา</span>';
+        else if(_dl<=30)h+=' <span style="background:#fef3c7;color:#92400e;font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700">⏳'+_dl+'วัน</span>';
       }
     }
-
-    // Meta tags
-    h+='<div class="ec-meta">';
-    if(a.position)h+='<span class="ec-tag" style="background:rgba(92,74,30,.06);color:var(--pri)">'+esc(a.position)+'</span>';
-    if(a.department)h+='<span class="ec-tag" style="background:rgba(92,74,30,.04);color:var(--txt2)">🏢 '+esc(a.department)+'</span>';
+    h+='</td>';
+    h+='<td style="font-size:12px" data-detail="'+idx+'">'+esc(a.position||'—')+'</td>';
+    h+='<td style="font-size:11px" data-detail="'+idx+'">'+(a.department||'<span style="color:var(--muted)">—</span>')+'</td>';
     var isSCB=a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0);
-    if(a.bank)h+='<span class="ec-tag" style="background:'+(isSCB?'rgba(75,0,130,.06);color:#4b0082':'rgba(0,100,0,.06);color:#006400')+'">🏦 '+esc(a.bank)+'</span>';
-    h+='</div>';
-
-    // Email
+    h+='<td style="font-size:11px" data-detail="'+idx+'">'+(a.bank?'<span style="'+(isSCB?'color:#4b0082':'color:#006400')+';font-weight:500">'+esc(a.bank)+'</span>':'<span style="color:var(--muted)">—</span>')+'</td>';
+    h+='<td data-detail="'+idx+'"><span style="'+typeBg+';padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap">'+typeLabel+'</span></td>';
+    h+='<td style="padding:2px">';
     if(a.email&&a.email.indexOf('@')>=0){
-      h+='<div class="ec-email">📧 '+esc(a.email)+'</div>';
-    }else if(!isTerm){
-      h+='<div class="ec-email-inp" onclick="event.stopPropagation()"><input placeholder="📧 เพิ่มอีเมล..." onchange="empSaveEmail('+idx+',this.value)" type="email"></div>';
+      h+='<span style="font-size:11px;color:var(--ok)">'+esc(a.email)+'</span>';
+    }else{
+      h+='<input value="" placeholder="email@..." onchange="empSaveEmail('+idx+',this.value)" style="width:100%;padding:4px 6px;border:1px solid var(--bdr);border-radius:4px;font-size:11px;font-family:inherit;background:var(--inp)" type="email">';
     }
-
-    h+='</div>'; // ec-body
-
-    // Status badge (top right)
-    var typeLabel,typeStyle;
-    if(a.status==='daily'){typeLabel='รายวัน';typeStyle='background:#fff3cd;color:#856404'}
-    else if(a.status==='monthly'){typeLabel='ประจำ';typeStyle='background:#d4edda;color:#155724'}
-    else if(a.status==='monthly_daily'){typeLabel='ประจำ(รายวัน)';typeStyle='background:#ede9fe;color:#7c3aed'}
-    else if(a.status==='resigned_pending'){typeLabel='⏳ รอจ่าย';typeStyle='background:#fef3c7;color:#d97706'}
-    else if(a.status==='terminated'){typeLabel='พ้นสภาพ';typeStyle='background:#f1f1f1;color:#6b7280'}
-    else{typeLabel='ใหม่';typeStyle='background:#dbeafe;color:#1e40af'}
-    h+='<div class="ec-status"><span style="'+typeStyle+';padding:3px 8px;border-radius:8px;font-size:9px;font-weight:700;white-space:nowrap">'+typeLabel+'</span></div>';
-
-    h+='</div>'; // emp-card
+    h+='</td>';
+    h+='<td style="text-align:center;white-space:nowrap">';
+    if(a.status!=='terminated'&&a.status!=='resigned_pending'){
+      h+='<button class="btn btn-d btn-s" style="font-size:10px;padding:3px 8px" onclick="quickTerminate(window._empFiltered['+idx+'].id,window._empFiltered['+idx+'].name)">ลาออก</button>';
+    }else if(a.status==='resigned_pending'){
+      h+='<span style="color:#d97706;font-size:10px">⏳ รอจ่าย</span>';
+    }else{
+      h+='<span style="color:var(--muted);font-size:10px">ลาออกแล้ว</span>';
+    }
+    h+='</td></tr>';
   });
-  if(f.length)h+='</div>'; // close last grid
+  h+='</tbody></table></div>';
   $('A-tbl').innerHTML=h;
 
-  // Click card -> detail
   $('A-tbl').onclick=function(ev){
     var t=ev.target;
-    if(t.tagName==='INPUT'||t.closest('.ec-email-inp'))return;
-    var card=t.closest('.emp-card');
-    if(card){
-      var idx=parseInt(card.getAttribute('data-idx'));
-      if(window._empFiltered[idx])detail(window._empFiltered[idx].id);
-    }
+    if(t.tagName==='BUTTON'||t.tagName==='INPUT')return;
+    var dd=t.closest('[data-detail]');
+    if(dd)detail(window._empFiltered[parseInt(dd.getAttribute('data-detail'))].id);
   };
-  // Update stats highlights
   stats();
-}
-
-function empCardToggle(idx){
-  var a=window._empFiltered[idx];if(!a)return;
-  if(EMP_SEL[a.id])delete EMP_SEL[a.id];else EMP_SEL[a.id]=true;
-  var card=$('A-tbl').querySelector('.emp-card[data-idx="'+idx+'"]');
-  if(card){
-    card.classList.toggle('selected',!!EMP_SEL[a.id]);
-    var chk=card.querySelector('div[onclick*="empCardToggle"]');
-    if(chk){
-      var sel=EMP_SEL[a.id];
-      chk.style.borderColor=sel?'var(--acc)':'var(--bdr)';
-      chk.style.background=sel?'var(--acc)':'transparent';
-      chk.textContent=sel?'✓':'';
-    }
-  }
-  empUpdateSelBar();
 }
 
 /* ═══ DEPARTMENTS ═══ */

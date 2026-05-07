@@ -572,27 +572,27 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
 
     <!-- TAB: Commission -->
     <div id="T-comm" class="hide">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <span class="ttl" style="font-size:18px">⭐ จัดการคอมมิชชั่น</span>
       </div>
       <div class="cd">
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
           <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="comm-month" value="" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
-          <button class="btn btn-a btn-s" onclick="commLoad()">🗄️ ดึงรายชื่อพนักงาน</button>
-          <button class="btn btn-g btn-s" onclick="commLoadPrev()">📋 ดึงจากเดือนก่อน</button>
+          <button class="btn btn-a btn-s" onclick="commLoad()">ดึงข้อมูล</button>
+          <button class="btn btn-g btn-s" onclick="commLoadPrev()">📋 เดือนก่อน</button>
         </div>
-        <div id="comm-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
-        <div id="comm-filters" class="hide" style="display:none;gap:4px;margin-bottom:10px;flex-wrap:wrap"></div>
-        <div style="margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="comm-srch" placeholder="ค้นหาชื่อ..." oninput="debounce(commRender,'cr')"></div></div>
-        <div id="comm-table"></div>
-        <div id="comm-actions" class="hide" style="display:none;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
-          <button class="btn btn-a" onclick="commSave()">💾 บันทึกคอมมิชชั่น</button>
-          <button class="btn btn-a btn-s" onclick="commSendAll()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">📧 ส่งอีเมลทั้งหมด</button>
-          <button class="btn btn-g btn-s" onclick="commExport()">📥 Export</button>
-          <button class="btn btn-d btn-s" onclick="commDelete()">🗑️ ลบข้อมูลเดือนนี้</button>
-          <button class="btn btn-g btn-s" onclick="commClearAll()">🧹 ล้างตัวเลขทั้งหมด</button>
-          <span id="comm-save-status" style="font-size:12px;color:var(--muted)"></span>
-        </div>
+        <div id="comm-status" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
+      </div>
+      <div id="comm-filters" class="hide" style="display:none;gap:4px;margin-top:12px;margin-bottom:10px;flex-wrap:wrap"></div>
+      <div style="margin-top:10px;margin-bottom:8px"><div class="sb" style="max-width:250px"><input id="comm-srch" placeholder="ค้นหาชื่อ..." oninput="debounce(commRender,'cr')"></div></div>
+      <div id="comm-table"></div>
+      <div id="comm-actions" class="hide" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-a" onclick="commSave()">💾 บันทึก</button>
+        <button class="btn btn-a btn-s" onclick="commSendAll()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">📧 ส่งอีเมลทั้งหมด</button>
+        <button class="btn btn-g btn-s" onclick="commExport()">📥 Export</button>
+        <button class="btn btn-d btn-s" onclick="commDelete()">🗑️ ลบ</button>
+        <button class="btn btn-g btn-s" onclick="commClearAll()">🧹 ล้าง</button>
+        <span id="comm-save-status" style="font-size:12px;color:var(--muted)"></span>
       </div>
     </div>
 

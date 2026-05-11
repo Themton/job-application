@@ -6539,7 +6539,7 @@ function laborRender(){
     var stColor=a.status==='terminated'?'var(--err)':'var(--ok)';
     var salary=a.salary||'';
 
-    h+='<tr style="'+(a.status==='terminated'?'background:rgba(220,38,38,.03);':''')+'">';
+    h+='<tr style="'+(a.status==='terminated'?'background:rgba(220,38,38,.03);':'')+'">';
     h+='<td style="text-align:center">'+(i+1)+'</td>';
     h+='<td class="nm">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</td>';
     h+='<td style="text-align:center">'+(a.gender||'-')+'</td>';

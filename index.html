@@ -6693,8 +6693,8 @@ function laborRender(){
   list.forEach(function(a,i){
     var startDate=a.start_date||a.created_at?String(a.start_date||a.created_at).substring(0,10):'';
     var age='';
-    if(a.birth_date){
-      var bd=new Date(a.birth_date);var now=new Date();
+    if(a.birthday){
+      var bd=new Date(a.birthday);var now=new Date();
       age=Math.floor((now-bd)/(365.25*24*60*60*1000));
     }
     var endDate=a.status==='terminated'?(a.terminated_date||a.updated_at?String(a.terminated_date||a.updated_at||'').substring(0,10):'ลาออก'):'';
@@ -6708,9 +6708,9 @@ function laborRender(){
     h+='<td style="text-align:center">'+(i+1)+'</td>';
     h+='<td class="nm">'+esc(a.name)+'</td>';
     h+='<td style="text-align:center">'+(a.gender||'-')+'</td>';
-    h+='<td style="font-size:11px">'+esc(a.id_card_no||'')+'</td>';
+    h+='<td style="font-size:11px">'+esc(a.id_card||'')+'</td>';
     h+='<td style="text-align:center">'+(a.nationality||'ไทย')+'</td>';
-    h+='<td style="font-size:11px">'+(a.birth_date||'')+(age?'<br><span style="color:var(--muted)">('+age+' ปี)</span>':'')+'</td>';
+    h+='<td style="font-size:11px">'+(a.birthday||'')+(age?'<br><span style="color:var(--muted)">('+age+' ปี)</span>':'')+'</td>';
     h+='<td style="font-size:11px">'+esc(a.address||'')+'</td>';
     h+='<td>'+esc(a.position||'')+'</td>';
     h+='<td style="font-size:11px">'+startDate+'</td>';
@@ -6743,7 +6743,7 @@ function laborExport(){
     var startDate=a.start_date||a.created_at?String(a.start_date||a.created_at).substring(0,10):'';
     var endDate=a.status==='terminated'?(a.terminated_date||String(a.updated_at||'').substring(0,10)||'ลาออก'):'ปัจจุบัน';
     var age='';
-    if(a.birth_date){var bd=new Date(a.birth_date);var now=new Date();age=Math.floor((now-bd)/(365.25*24*60*60*1000))+' ปี'}
+    if(a.birthday){var bd=new Date(a.birthday);var now=new Date();age=Math.floor((now-bd)/(365.25*24*60*60*1000))+' ปี'}
     var dailyWage='',monthlyWage='';
     if(a.status==='daily'&&a.salary)dailyWage=payFmt(a.salary);
     else if(a.salary)monthlyWage=payFmt(a.salary);
@@ -6752,9 +6752,9 @@ function laborExport(){
     xls+='<td class="num">'+(i+1)+'</td>';
     xls+='<td>'+esc(a.name)+'</td>';
     xls+='<td class="num">'+(a.gender||'')+'</td>';
-    xls+='<td>'+esc(a.id_card_no||'')+'</td>';
+    xls+='<td>'+esc(a.id_card||'')+'</td>';
     xls+='<td class="num">'+(a.nationality||'ไทย')+'</td>';
-    xls+='<td>'+(a.birth_date||'')+(age?' ('+age+')':'')+'</td>';
+    xls+='<td>'+(a.birthday||'')+(age?' ('+age+')':'')+'</td>';
     xls+='<td>'+esc(a.address||'')+'</td>';
     xls+='<td>'+esc(a.position||'')+'</td>';
     xls+='<td>'+startDate+'</td>';
@@ -6792,10 +6792,10 @@ function laborPrint(){
   tbl+='</tr><tr><th>วันละ</th><th>เดือนละ</th><th>ชั่วโมงละ</th></tr></thead><tbody>';
   list.forEach(function(a,i){
     var startDate=a.start_date||a.created_at?String(a.start_date||a.created_at).substring(0,10):'';
-    var age='';if(a.birth_date){var bd=new Date(a.birth_date);var now=new Date();age=Math.floor((now-bd)/(365.25*24*60*60*1000))+' ปี'}
+    var age='';if(a.birthday){var bd=new Date(a.birthday);var now=new Date();age=Math.floor((now-bd)/(365.25*24*60*60*1000))+' ปี'}
     var endDate=a.status==='terminated'?(a.terminated_date||a.updated_at?String(a.terminated_date||a.updated_at||'').substring(0,10):'ลาออก'):'ปัจจุบัน';
     var dw='',mw='';if(a.status==='daily'&&a.salary)dw=payFmt(a.salary);else if(a.salary)mw=payFmt(a.salary);
-    tbl+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(a.name)+'</td><td style="text-align:center">'+(a.gender||'')+'</td><td>'+esc(a.id_card_no||'')+'</td><td style="text-align:center">'+(a.nationality||'ไทย')+'</td><td>'+(a.birth_date||'')+(age?' ('+age+')':'')+'</td><td>'+esc(a.address||'')+'</td><td>'+esc(a.position||'')+'</td><td>'+startDate+'</td><td style="text-align:right">'+dw+'</td><td style="text-align:right">'+mw+'</td><td></td><td>'+(a.status==='monthly'?'ประกันสังคม':'')+'</td><td>'+endDate+'</td></tr>';
+    tbl+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(a.name)+'</td><td style="text-align:center">'+(a.gender||'')+'</td><td>'+esc(a.id_card||'')+'</td><td style="text-align:center">'+(a.nationality||'ไทย')+'</td><td>'+(a.birthday||'')+(age?' ('+age+')':'')+'</td><td>'+esc(a.address||'')+'</td><td>'+esc(a.position||'')+'</td><td>'+startDate+'</td><td style="text-align:right">'+dw+'</td><td style="text-align:right">'+mw+'</td><td></td><td>'+(a.status==='monthly'?'ประกันสังคม':'')+'</td><td>'+endDate+'</td></tr>';
   });
   tbl+='</tbody></table>';
   var company=$('labor-company').value||'บริษัท เดอะ เอ็มที จำกัด';

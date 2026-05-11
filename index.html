@@ -1694,6 +1694,7 @@ function detail(id){
   var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
   var isTerm=a.status==='terminated';
   var isResigned=a.status==='resigned_pending';
+  var termDateStr=a.terminated_date||a.terminated_at?String(a.terminated_date||a.terminated_at).substring(0,10):'';
   // Contract expiry calculation
   var contractInfo='';
   if(a.contract_period&&a.start_date){
@@ -2236,10 +2237,12 @@ function terminate(id){
   var choice=prompt('เลือกประเภท:\n1 = ลาออก รอจ่ายเงินเดือน\n2 = พ้นสภาพทันที\n\nพิมพ์ 1 หรือ 2:','1');
   if(!choice)return;
   var st=choice.trim()==='2'?'terminated':'resigned_pending';
+  var termDate=prompt('📅 วันที่ออกจากงาน (YYYY-MM-DD):',new Date().toISOString().substring(0,10));
+  if(!termDate)return;
   var now=new Date().toISOString();
-  sb("applications","PATCH",{status:st,terminated_at:now},"?id=eq."+id).then(function(){
-    toast(st==='terminated'?'พ้นสภาพแล้ว':'ลาออก-รอจ่ายเงินเดือน','tok');
-    ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=now}});
+  sb("applications","PATCH",{status:st,terminated_at:now,terminated_date:termDate},"?id=eq."+id).then(function(){
+    toast((st==='terminated'?'พ้นสภาพแล้ว':'ลาออก-รอจ่าย')+' — วันที่ '+termDate,'tok');
+    ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=now;a.terminated_date=termDate}});
     stats();doFilter();detail(id);
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
@@ -2247,18 +2250,22 @@ function quickTerminate(id,name){
   var choice=prompt('⛔ "'+name+'" ลาออก:\n1 = รอจ่ายเงินเดือนก่อน\n2 = พ้นสภาพทันที\n\nพิมพ์ 1 หรือ 2:','1');
   if(!choice)return;
   var st=choice.trim()==='2'?'terminated':'resigned_pending';
+  var termDate=prompt('📅 วันที่ออกจากงาน (YYYY-MM-DD):',new Date().toISOString().substring(0,10));
+  if(!termDate)return;
   var now=new Date().toISOString();
-  sb("applications","PATCH",{status:st,terminated_at:now},"?id=eq."+id).then(function(){
-    toast('⛔ '+name+(st==='terminated'?' พ้นสภาพแล้ว':' ลาออก-รอจ่ายเงินเดือน'),'tok');
-    ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=now}});
+  sb("applications","PATCH",{status:st,terminated_at:now,terminated_date:termDate},"?id=eq."+id).then(function(){
+    toast('⛔ '+name+(st==='terminated'?' พ้นสภาพแล้ว':' ลาออก-รอจ่ายเงินเดือน')+' — วันที่ '+termDate,'tok');
+    ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=now;a.terminated_date=termDate}});
     stats();doFilter();
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
 function confirmPaid(id){
   if(!confirm('ยืนยันจ่ายเงินเดือนแล้ว?\n\nพนักงานจะถูกเปลี่ยนเป็น "พ้นสภาพ"'))return;
-  sb("applications","PATCH",{status:"terminated"},"?id=eq."+id).then(function(){
-    toast('✅ จ่ายเงินเดือนแล้ว → พ้นสภาพ','tok');
-    ALL.forEach(function(a){if(a.id===id)a.status='terminated'});
+  var termDate=prompt('📅 วันที่พ้นสภาพ (YYYY-MM-DD):',new Date().toISOString().substring(0,10));
+  if(!termDate)return;
+  sb("applications","PATCH",{status:"terminated",terminated_date:termDate},"?id=eq."+id).then(function(){
+    toast('✅ จ่ายเงินเดือนแล้ว → พ้นสภาพ วันที่ '+termDate,'tok');
+    ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_date=termDate}});
     stats();doFilter();detail(id);
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
@@ -6707,7 +6714,7 @@ function laborRender(){
       var bd=new Date(a.birthday);var now=new Date();
       age=Math.floor((now-bd)/(365.25*24*60*60*1000));
     }
-    var endDate=a.status==='terminated'?(a.terminated_date||a.updated_at?String(a.terminated_date||a.updated_at||'').substring(0,10):'ลาออก'):'';
+    var endDate=a.status==='terminated'?(a.terminated_date||a.terminated_at?String(a.terminated_date||a.terminated_at).substring(0,10):'ลาออก'):a.status==='resigned_pending'?'รอจ่ายเงิน':'';
     var dailyWage='',monthlyWage='',hourlyWage='';
     if(a.status==='daily'&&a.salary)dailyWage=payFmt(a.salary);
     else if(a.salary)monthlyWage=payFmt(a.salary);
@@ -6803,7 +6810,7 @@ function laborPrint(){
   list.forEach(function(a,i){
     var startDate=a.start_date||a.created_at?String(a.start_date||a.created_at).substring(0,10):'';
     var age='';if(a.birthday){var bd=new Date(a.birthday);var now=new Date();age=Math.floor((now-bd)/(365.25*24*60*60*1000))+' ปี'}
-    var endDate=a.status==='terminated'?(a.terminated_date||a.updated_at?String(a.terminated_date||a.updated_at||'').substring(0,10):'ลาออก'):'ปัจจุบัน';
+    var endDate=a.status==='terminated'?(a.terminated_date||a.terminated_at?String(a.terminated_date||a.terminated_at).substring(0,10):'ลาออก'):a.status==='resigned_pending'?'รอจ่ายเงิน':'ปัจจุบัน';
     var dw='',mw='';if(a.status==='daily'&&a.salary)dw=payFmt(a.salary);else if(a.salary)mw=payFmt(a.salary);
     tbl+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(a.name)+'</td><td style="text-align:center">'+(a.gender||'')+'</td><td>'+esc(a.id_card||'')+'</td><td style="text-align:center">'+(a.nationality||'ไทย')+'</td><td>'+(a.birthday||'')+(age?' ('+age+')':'')+'</td><td>'+esc(a.address||'')+'</td><td>'+esc(a.position||'')+'</td><td>'+startDate+'</td><td style="text-align:right">'+dw+'</td><td style="text-align:right">'+mw+'</td><td></td><td>'+(a.status==='monthly'?'ประกันสังคม':'')+'</td><td>'+endDate+'</td></tr>';
   });

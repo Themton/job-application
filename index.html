@@ -1716,7 +1716,14 @@ function detail(id){
     '<div class="emp-grid"><div class="dc"><h4>💼 ตำแหน่ง</h4><div style="font-size:14px;font-weight:600;color:var(--pri);margin-top:6px">'+esc(a.position||'-')+'</div></div><div class="dc"><h4>📅 วันที่เริ่มทำงาน</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.start_date||'')+'" onchange="setF(\''+a.id+'\',\'start_date\',this.value)"></div><div class="dc"><h4>🎂 วันเกิด</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.birthday||'')+'" onchange="setF(\''+a.id+'\',\'birthday\',this.value)">'+(a.birthday?'<div style="font-size:10px;color:var(--muted);margin-top:4px">อายุ '+Math.floor((new Date()-new Date(a.birthday+'T00:00:00'))/(365.25*864e5))+' ปี</div>':'')+'</div><div class="dc"><h4>👷 สถานะ</h4><div style="margin-top:6px"><span class="bg '+(ST[a.status]||ST.new).c+'" style="padding:4px 12px;font-size:12px">'+(ST[a.status]||ST.new).l+'</span></div></div><div class="dc"><h4>📝 สัญญาจ้าง</h4><select class="ssel" style="width:100%;margin-top:4px;font-size:14px;font-weight:600" onchange="setF(\''+a.id+'\',\'contract_period\',this.value)"><option value="">-- เลือก --</option><option value="1m"'+(a.contract_period==='1m'?' selected':'')+'>1 เดือน</option><option value="3m"'+(a.contract_period==='3m'?' selected':'')+'>3 เดือน</option><option value="6m"'+(a.contract_period==='6m'?' selected':'')+'>6 เดือน</option><option value="1y"'+(a.contract_period==='1y'?' selected':'')+'>1 ปี</option></select>'+contractInfo+'</div><div class="dc" style="border:2px solid var(--acc)"><h4>💰 ฐานเงินเดือน (ประจำ)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:var(--pri)" value="'+(a.salary||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'salary\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.salary?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ล็อคแล้ว — ใช้ในระบบคิดเงินเดือนอัตโนมัติ</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกเงินเดือนเพื่อล็อค ไม่ต้องกรอกซ้ำทุกเดือน</div>')+'</div><div class="dc"><h4>🎓 หัก กยศ. (บาท/เดือน)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:#92400e" value="'+(a.loan||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'loan\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.loan?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ หัก '+payFmt(a.loan)+' ทุกเดือน</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกยอด กยศ. ระบบหักให้อัตโนมัติ</div>')+'</div></div>'+
     '<div class="dg"><div class="dc"><h4>📋 ข้อมูลส่วนตัว</h4><div class="dr"><span class="i">👤</span> ชื่อ-สกุล: '+esc(a.name)+'</div>'+(a.nickname?'<div class="dr"><span class="i">😊</span> ชื่อเล่น: '+esc(a.nickname)+'</div>':'')+'<div class="dr"><span class="i">📱</span> โทรศัพท์: '+esc(a.phone)+'</div>'+(a.email?'<div class="dr"><span class="i">📧</span> อีเมล: '+esc(a.email)+'</div>':'')+(a.birthday?'<div class="dr"><span class="i">🎂</span> วันเกิด: '+esc(a.birthday)+'</div>':'')+(a.id_card?'<div class="dr"><span class="i">🪪</span> บัตร ปชช.: '+esc(a.id_card)+'</div>':'')+'<div class="dr"><span class="i">💼</span> ตำแหน่ง: '+esc(a.position||'-')+'</div></div>'+
     '<div class="dc"><h4>📅 ข้อมูลการทำงาน</h4><div class="dr"><span class="i">📅</span> วันที่สมัคร: '+esc(dt)+'</div>'+(a.start_date?'<div class="dr"><span class="i">🗓️</span> เริ่มงาน: '+esc(a.start_date)+'</div>':'')+'<div class="dr"><span class="i">👷</span> สถานะ: '+(ST[a.status]||ST.new).l+'</div></div></div>'+
-    '<div class="dg"><div class="dc"><h4>🪪 บัตรประชาชน + ที่อยู่</h4><div style="margin-top:6px"><label style="font-size:10px;color:var(--muted)">เลขบัตรประชาชน</label><input class="ssel" style="width:100%;margin-top:2px" value="'+esc(a.id_card||'')+'" placeholder="X-XXXX-XXXXX-XX-X" onchange="setF(\''+a.id+'\',\'id_card\',this.value)"></div><div style="margin-top:8px"><label style="font-size:10px;color:var(--muted)">ที่อยู่</label><input class="ssel" style="width:100%;margin-top:2px" value="'+esc(a.address||'')+'" placeholder="กรอกที่อยู่" onchange="setF(\''+a.id+'\',\'address\',this.value)"></div></div>'+
+    '<div class="dg"><div class="dc"><h4>🪪 บัตรประชาชน + ที่อยู่</h4><div style="margin-top:6px"><label style="font-size:10px;color:var(--muted)">เลขบัตรประชาชน</label><input class="ssel" style="width:100%;margin-top:2px" value="'+esc(a.id_card||'')+'" placeholder="X-XXXX-XXXXX-XX-X" onchange="setF(\''+a.id+'\',\'id_card\',this.value)"></div>'+
+    '<div style="margin-top:8px"><label style="font-size:10px;color:var(--muted)">บ้านเลขที่/ซอย/ถนน</label><input class="ssel" style="width:100%;margin-top:2px" id="det-house-'+a.id+'" value="'+esc(a.house||'')+'" placeholder="บ้านเลขที่ หมู่ ซอย ถนน" onchange="detSaveAddr(\''+a.id+'\')"></div>'+
+    '<div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
+    '<div style="position:relative"><label style="font-size:10px;color:var(--muted)">ตำบล/แขวง</label><input class="ssel" style="width:100%;margin-top:2px" id="det-sub-'+a.id+'" value="'+esc(a.subdistrict||'')+'" placeholder="ค้นหา..." autocomplete="off" oninput="detAddrSearch(this.value,\'sub\',\''+a.id+'\')"><div id="det-sub-dd-'+a.id+'" class="addr-dd"></div></div>'+
+    '<div style="position:relative"><label style="font-size:10px;color:var(--muted)">อำเภอ/เขต</label><input class="ssel" style="width:100%;margin-top:2px" id="det-dist-'+a.id+'" value="'+esc(a.district_name||'')+'" placeholder="ค้นหา..." autocomplete="off" oninput="detAddrSearch(this.value,\'dist\',\''+a.id+'\')"><div id="det-dist-dd-'+a.id+'" class="addr-dd"></div></div>'+
+    '<div style="position:relative"><label style="font-size:10px;color:var(--muted)">จังหวัด</label><input class="ssel" style="width:100%;margin-top:2px" id="det-prov-'+a.id+'" value="'+esc(a.province||'')+'" placeholder="ค้นหา..." autocomplete="off" oninput="detAddrSearch(this.value,\'prov\',\''+a.id+'\')"><div id="det-prov-dd-'+a.id+'" class="addr-dd"></div></div>'+
+    '<div style="position:relative"><label style="font-size:10px;color:var(--muted)">รหัสไปรษณีย์</label><input class="ssel" style="width:100%;margin-top:2px" id="det-zip-'+a.id+'" value="'+esc(a.zipcode||'')+'" placeholder="5 หลัก" maxlength="5" inputmode="numeric" autocomplete="off" oninput="detAddrSearch(this.value,\'zip\',\''+a.id+'\')"><div id="det-zip-dd-'+a.id+'" class="addr-dd"></div></div>'+
+    '</div></div>'+
     '<div class="dc"><h4>📞 ผู้ติดต่อฉุกเฉิน</h4><div style="margin-top:6px"><label style="font-size:10px;color:var(--muted)">ชื่อผู้ติดต่อ</label><input class="ssel" style="width:100%;margin-top:2px" value="'+esc(a.emergency_contact||'')+'" placeholder="ชื่อ-สกุล" onchange="setF(\''+a.id+'\',\'emergency_contact\',this.value)"></div><div style="margin-top:8px"><label style="font-size:10px;color:var(--muted)">เบอร์โทรฉุกเฉิน</label><input class="ssel" style="width:100%;margin-top:2px" value="'+esc(a.emergency_phone||'')+'" placeholder="08XXXXXXXX" onchange="setF(\''+a.id+'\',\'emergency_phone\',this.value)"></div></div></div>'+
     '<div class="dg"><div class="dc"><h4>🎓 คุณสมบัติ</h4><div class="dr"><span class="i">📜</span> วุฒิการศึกษา: '+esc(a.education||'-')+'</div></div>'+
     '<div class="dc"><h4>🏦 ข้อมูลธนาคาร</h4><div class="dr"><span class="i">🏦</span> ธนาคาร: '+esc(a.bank||'-')+'</div><div class="dr"><span class="i">💳</span> เลขบัญชี: '+esc(a.bank_account||'-')+'</div></div></div>'+
@@ -6555,8 +6562,53 @@ function thaiAddrSelect(idx){
   if($('ae-subdistrict')){$('ae-subdistrict').value=d.district||'';$('ae-district').value=d.amphoe||'';$('ae-province').value=d.province||'';$('ae-zipcode').value=d.zipcode||''}
   thaiAddrHideDD();
 }
-function thaiAddrHideDD(){['i-sub-dd','i-dist-dd','i-prov-dd','i-zip-dd','ae-sub-dd','ae-dist-dd','ae-prov-dd','ae-zip-dd'].forEach(function(id){var el=$(id);if(el)el.classList.remove('show')})}
-document.addEventListener('click',function(e){if(!e.target.closest('.addr-dd')&&!e.target.closest('.fld'))thaiAddrHideDD()});
+function thaiAddrHideDD(){['i-sub-dd','i-dist-dd','i-prov-dd','i-zip-dd','ae-sub-dd','ae-dist-dd','ae-prov-dd','ae-zip-dd'].forEach(function(id){var el=$(id);if(el)el.classList.remove('show')});document.querySelectorAll('.addr-dd.show').forEach(function(el){el.classList.remove('show')})}
+document.addEventListener('click',function(e){if(!e.target.closest('.addr-dd')&&!e.target.closest('.fld')&&!e.target.closest('.dc'))thaiAddrHideDD()});
+
+function detAddrSearch(val,type,empId){
+  if(!val||val.length<2){thaiAddrHideDD();return}
+  loadThaiAddr(function(){
+    var q=val.toLowerCase();var results=[];
+    for(var i=0;i<THAI_ADDR.length&&results.length<15;i++){
+      var d=THAI_ADDR[i];var match=false;
+      if(type==='sub'&&d.district&&d.district.indexOf(q)>=0)match=true;
+      if(type==='dist'&&d.amphoe&&d.amphoe.indexOf(q)>=0)match=true;
+      if(type==='prov'&&d.province&&d.province.indexOf(q)>=0)match=true;
+      if(type==='zip'&&String(d.zipcode).indexOf(q)>=0)match=true;
+      if(match)results.push(d);
+    }
+    var seen={};results=results.filter(function(d){var k=d.district+'|'+d.amphoe+'|'+d.province+'|'+d.zipcode;if(seen[k])return false;seen[k]=true;return true});
+    // Show dropdown for detail view
+    var ddId='det-'+type+'-dd-'+empId;
+    var dd=$(ddId);if(!dd||!results.length){if(dd)dd.classList.remove('show');return}
+    var h='';
+    results.forEach(function(d,i){h+='<div onclick="detAddrSelect('+i+',\''+empId+'\')"><b>'+esc(d.district)+'</b> » '+esc(d.amphoe)+' » '+esc(d.province)+' <span style="color:var(--acc)">'+d.zipcode+'</span></div>'});
+    dd.innerHTML=h;dd.classList.add('show');
+    window._thaiAddrResults=results;
+  });
+}
+function detAddrSelect(idx,empId){
+  var d=window._thaiAddrResults[idx];if(!d)return;
+  $('det-sub-'+empId).value=d.district||'';
+  $('det-dist-'+empId).value=d.amphoe||'';
+  $('det-prov-'+empId).value=d.province||'';
+  $('det-zip-'+empId).value=d.zipcode||'';
+  thaiAddrHideDD();
+  detSaveAddr(empId);
+}
+function detSaveAddr(empId){
+  var house=$('det-house-'+empId).value.trim();
+  var sub=$('det-sub-'+empId).value.trim();
+  var dist=$('det-dist-'+empId).value.trim();
+  var prov=$('det-prov-'+empId).value.trim();
+  var zip=$('det-zip-'+empId).value.trim();
+  var addr=[house,sub?'ต.'+sub:'',dist?'อ.'+dist:'',prov?'จ.'+prov:'',zip].filter(Boolean).join(' ');
+  var patch={address:addr,house:house,subdistrict:sub,district_name:dist,province:prov,zipcode:zip};
+  sb("applications","PATCH",patch,"?id=eq."+empId).then(function(){
+    ALL.forEach(function(a){if(a.id===empId){for(var k in patch)a[k]=patch[k]}});
+    toast('บันทึกที่อยู่แล้ว','tok');
+  }).catch(function(e){toast('บันทึกไม่สำเร็จ: '+e,'terr')});
+}
 
 /* ═══ LABOR REGISTRY (ทะเบียนลูกจ้าง พ.ร.บ.คุ้มครองแรงงาน 2541) ═══ */
 var LABOR_SEL={};

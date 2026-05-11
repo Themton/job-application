@@ -6640,6 +6640,16 @@ function laborToggleAll(){
   laborUpdateSelBar();laborRender();
 }
 function laborClearSel(){LABOR_SEL={};laborUpdateSelBar();laborRender()}
+
+function laborSaveIdCard(empId,val,inp){
+  var v=val.trim();if(!v)return;
+  sb("applications","PATCH",{id_card:v},"?id=eq."+empId).then(function(){
+    ALL.forEach(function(a){if(a.id===empId)a.id_card=v});
+    if(window._laborAll)window._laborAll.forEach(function(a){if(a.id===empId)a.id_card=v});
+    inp.parentNode.innerHTML='<span style="color:var(--ok)">'+esc(v)+'</span>';
+    toast('บันทึกเลขบัตร ปชช. แล้ว','tok');
+  }).catch(function(e){toast('บันทึกไม่สำเร็จ: '+e,'terr')});
+}
 function laborUpdateSelBar(){
   var cnt=Object.keys(LABOR_SEL).length;
   var bar=$('labor-sel-bar');
@@ -6708,7 +6718,7 @@ function laborRender(){
     h+='<td style="text-align:center">'+(i+1)+'</td>';
     h+='<td class="nm">'+esc(a.name)+'</td>';
     h+='<td style="text-align:center">'+(a.gender||'-')+'</td>';
-    h+='<td style="font-size:11px">'+esc(a.id_card||'')+'</td>';
+    h+='<td style="font-size:11px">'+(a.id_card?'<span style="color:var(--ok)">'+esc(a.id_card)+'</span>':'<input value="" placeholder="กรอกเลข 13 หลัก" maxlength="17" style="width:100%;padding:3px 4px;border:1px solid var(--bdr);border-radius:4px;font-size:10px;font-family:inherit" onchange="laborSaveIdCard(\''+a.id+'\',this.value,this)">')+'</td>';
     h+='<td style="text-align:center">'+(a.nationality||'ไทย')+'</td>';
     h+='<td style="font-size:11px">'+(a.birthday||'')+(age?'<br><span style="color:var(--muted)">('+age+' ปี)</span>':'')+'</td>';
     h+='<td style="font-size:11px">'+esc(a.address||'')+'</td>';

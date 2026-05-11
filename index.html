@@ -268,6 +268,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <button class="sb-item" id="tab-paydb" onclick="showTab('paydb')"><span class="sb-ic">🗂️</span><span class="sb-tx">รายงานรวม + ส่งสลิป</span></button>
         <div class="sb-sep">เอกสาร</div>
         <button class="sb-item" id="tab-cert" onclick="showTab('cert')"><span class="sb-ic">📜</span><span class="sb-tx">หนังสือรับรองเงินเดือน</span></button>
+        <button class="sb-item" id="tab-labor" onclick="showTab('labor')"><span class="sb-ic">📋</span><span class="sb-tx">ทะเบียนลูกจ้าง</span></button>
         <button class="sb-item" id="tab-tax" onclick="showTab('tax')"><span class="sb-ic">📄</span><span class="sb-tx">รายงานภาษี / ปกส.</span></button>
       </div>
       <div class="sb-foot">
@@ -766,6 +767,29 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       <div id="cert-preview" style="margin-top:20px"></div>
     </div>
 
+    <!-- TAB: Labor Registry -->
+    <div id="T-labor" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span class="ttl" style="font-size:18px">📋 ทะเบียนลูกจ้างตาม พ.ร.บ.คุ้มครองแรงงาน พ.ศ.2541</span>
+      </div>
+      <div class="cd" style="margin-bottom:14px">
+        <div class="cd-t"><span class="dot"></span> ข้อมูลสถานประกอบการ</div>
+        <div class="g2">
+          <div class="fld"><label>ชื่อสถานประกอบการ</label><input id="labor-company" value="บริษัท เดอะ เอ็มที จำกัด"></div>
+          <div class="fld"><label>ทะเบียนนายจ้างเลขที่</label><input id="labor-regid" placeholder="เลขทะเบียน"></div>
+          <div class="fld"><label>ที่ตั้ง</label><input id="labor-addr" placeholder="เลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด"></div>
+          <div class="fld"><label>ประเภทกิจการ</label><input id="labor-biz" placeholder="ประเภทกิจการ"></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
+          <select class="fsel" id="labor-filter" onchange="laborRender()"><option value="">ทุกสถานะ</option><option value="active">ปัจจุบัน (ทำงานอยู่)</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
+          <div class="sb" style="max-width:200px"><input id="labor-srch" placeholder="ค้นหาชื่อ..." oninput="debounce(laborRender,'lr')"></div>
+          <button class="btn btn-a btn-s" onclick="laborPrint()">🖨️ พิมพ์</button>
+          <button class="btn btn-a btn-s" onclick="laborExport()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">📥 Export Excel</button>
+        </div>
+      </div>
+      <div id="labor-table"></div>
+    </div>
+
     <!-- TAB: Payslip Email -->
     <div id="T-slip" class="hide">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -1087,10 +1111,10 @@ function page(p){
   window.scrollTo(0,0);
 }
 
-var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',warn:'⚠️ ใบเตือน',eval:'📝 ประเมินผล',att:'📋 ขาด/ลา/มาสาย',ot:'⏰ OT',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',exp:'🧾 เบิกค่าใช้จ่าย',paydb:'🗂️ รายงานรวม',cert:'📜 หนังสือรับรอง',tax:'📄 ภาษี/ปกส.'};
+var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',warn:'⚠️ ใบเตือน',eval:'📝 ประเมินผล',att:'📋 ขาด/ลา/มาสาย',ot:'⏰ OT',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',exp:'🧾 เบิกค่าใช้จ่าย',paydb:'🗂️ รายงานรวม',cert:'📜 หนังสือรับรอง',tax:'📄 ภาษี/ปกส.',labor:'📋 ทะเบียนลูกจ้าง'};
 
 function showTab(t){
-  ['dash','app','dept','pos','usr','rpt','lv','warn','eval','att','ot','pay','comm','exp','paydb','cert','tax'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
+  ['dash','app','dept','pos','usr','rpt','lv','warn','eval','att','ot','pay','comm','exp','paydb','cert','tax','labor'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   if(t==='lv')loadLeaveRequests();
   if(t==='dash')loadDashboard();
@@ -1105,6 +1129,7 @@ function showTab(t){
   if(t==='ot')otInit();
   if(t==='exp')expInit();
   if(t==='tax'&&!$('tax-month').value){var now=new Date();$('tax-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
+  if(t==='labor')laborLoad();
   // Update mobile topbar label
   if($('sb-active-label'))$('sb-active-label').textContent=TAB_LABELS[t]||t;
   // Close sidebar on mobile
@@ -6493,6 +6518,158 @@ function loadEmpPortal(){
       window._notifPoll=setInterval(loadEmpNotifs,30000);
     });
   }).catch(function(e){prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
+}
+
+/* ═══ LABOR REGISTRY (ทะเบียนลูกจ้าง พ.ร.บ.คุ้มครองแรงงาน 2541) ═══ */
+function laborLoad(){
+  prog(10,'โหลดทะเบียนลูกจ้าง...');
+  sb("applications","GET",null,"?select=*&order=created_at.asc").then(function(r){
+    window._laborAll=Array.isArray(r)?r:[];
+    prog(100,'โหลดทะเบียน ✅ '+window._laborAll.length+' คน');
+    laborRender();
+  }).catch(function(e){prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
+}
+
+function laborRender(){
+  var all=window._laborAll||[];
+  var filter=$('labor-filter').value;
+  var srch=$('labor-srch')?$('labor-srch').value.toLowerCase():'';
+
+  var list=all.filter(function(a){
+    if(filter==='active'&&a.status==='terminated')return false;
+    if(filter==='daily'&&a.status!=='daily')return false;
+    if(filter==='monthly'&&a.status!=='monthly')return false;
+    if(filter==='terminated'&&a.status!=='terminated')return false;
+    if(srch&&(a.name+' '+(a.nickname||'')+' '+(a.position||'')).toLowerCase().indexOf(srch)<0)return false;
+    return true;
+  });
+
+  var company=$('labor-company').value||'บริษัท เดอะ เอ็มที จำกัด';
+  var regid=$('labor-regid').value||'';
+  var addr=$('labor-addr').value||'';
+  var biz=$('labor-biz').value||'';
+
+  var h='<div style="margin-bottom:10px;font-size:12px;color:var(--muted)">แสดง '+list.length+' คน จากทั้งหมด '+all.length+' คน</div>';
+  h+='<div class="tw"><table><thead><tr>';
+  h+='<th style="width:35px">ลำดับ</th>';
+  h+='<th style="min-width:140px">ชื่อ-สกุล</th>';
+  h+='<th>เพศ</th>';
+  h+='<th>สัญชาติ</th>';
+  h+='<th>วันเกิด/อายุ</th>';
+  h+='<th style="min-width:120px">ที่อยู่ปัจจุบัน</th>';
+  h+='<th>วันที่เริ่มทำงาน</th>';
+  h+='<th>ตำแหน่ง/หน้าที่</th>';
+  h+='<th>อัตราค่าจ้าง</th>';
+  h+='<th>สวัสดิการ</th>';
+  h+='<th>วันที่สิ้นสุด</th>';
+  h+='</tr></thead><tbody>';
+
+  list.forEach(function(a,i){
+    var startDate=a.start_date||a.created_at?String(a.start_date||a.created_at).substring(0,10):'';
+    var age='';
+    if(a.birth_date){
+      var bd=new Date(a.birth_date);var now=new Date();
+      age=Math.floor((now-bd)/(365.25*24*60*60*1000))+' ปี';
+    }
+    var endDate=a.status==='terminated'?(a.terminated_date||a.updated_at?String(a.terminated_date||a.updated_at||'').substring(0,10):'ลาออก'):'ปัจจุบัน';
+    var stColor=a.status==='terminated'?'var(--err)':'var(--ok)';
+    var salary=a.salary||'';
+
+    h+='<tr style="'+(a.status==='terminated'?'background:rgba(220,38,38,.03);':''')+'">';
+    h+='<td style="text-align:center">'+(i+1)+'</td>';
+    h+='<td class="nm">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</td>';
+    h+='<td style="text-align:center">'+(a.gender||'-')+'</td>';
+    h+='<td style="text-align:center">'+(a.nationality||'ไทย')+'</td>';
+    h+='<td style="font-size:11px">'+(a.birth_date||'-')+(age?' <span style="color:var(--muted)">('+age+')</span>':'')+'</td>';
+    h+='<td style="font-size:11px">'+esc(a.address||'-')+'</td>';
+    h+='<td style="font-size:11px">'+startDate+'</td>';
+    h+='<td>'+esc(a.position||'-')+(a.department?' <span style="font-size:10px;color:var(--muted)">'+esc(a.department)+'</span>':'')+'</td>';
+    h+='<td style="text-align:right;font-weight:600">'+(salary?payFmt(salary):'–')+'</td>';
+    h+='<td style="font-size:11px">'+(a.status==='monthly'?'ปกส.':'–')+'</td>';
+    h+='<td style="font-size:11px;color:'+stColor+';font-weight:600">'+endDate+'</td>';
+    h+='</tr>';
+  });
+
+  h+='</tbody></table></div>';
+  $('labor-table').innerHTML=h;
+}
+
+function laborExport(){
+  var all=window._laborAll||[];
+  if(!all.length){toast('ไม่มีข้อมูล','terr');return}
+  var company=$('labor-company').value||'บริษัท เดอะ เอ็มที จำกัด';
+
+  var xls='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"><style>td,th{border:1px solid #999;padding:4px 8px;font-size:11px;font-family:sans-serif;vertical-align:top}th{background:#5c4a1e;color:#fff;text-align:center;font-weight:bold}.title{font-size:14px;font-weight:bold;text-align:center;padding:10px}.sub{font-size:11px;text-align:center;padding:4px}.term{background:#ffe0e0}.num{text-align:center}</style></head><body>';
+  xls+='<div class="title">ทะเบียนลูกจ้าง</div>';
+  xls+='<div class="sub">ตามพระราชบัญญัติคุ้มครองแรงงาน พ.ศ.2541</div>';
+  xls+='<div class="sub">'+esc(company)+'</div>';
+  xls+='<table><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>เพศ</th><th>สัญชาติ</th><th>วันเกิด</th><th>ที่อยู่</th><th>วันเริ่มงาน</th><th>ตำแหน่ง</th><th>แผนก</th><th>ประเภท</th><th>อัตราค่าจ้าง</th><th>ธนาคาร</th><th>เลขบัญชี</th><th>เบอร์โทร</th><th>อีเมล</th><th>สวัสดิการ</th><th>สถานะ</th><th>วันสิ้นสุด</th></tr>';
+
+  all.forEach(function(a,i){
+    var startDate=a.start_date||a.created_at?String(a.start_date||a.created_at).substring(0,10):'';
+    var endDate=a.status==='terminated'?(a.terminated_date||String(a.updated_at||'').substring(0,10)||'ลาออก'):'ปัจจุบัน';
+    var stLabel=a.status==='daily'?'รายวัน':a.status==='monthly'?'ประจำ':a.status==='terminated'?'พ้นสภาพ':'ใหม่';
+    xls+='<tr'+(a.status==='terminated'?' class="term"':'')+'>';
+    xls+='<td class="num">'+(i+1)+'</td>';
+    xls+='<td>'+esc(a.name)+'</td>';
+    xls+='<td>'+esc(a.nickname||'')+'</td>';
+    xls+='<td class="num">'+(a.gender||'-')+'</td>';
+    xls+='<td class="num">'+(a.nationality||'ไทย')+'</td>';
+    xls+='<td>'+(a.birth_date||'')+'</td>';
+    xls+='<td>'+esc(a.address||'')+'</td>';
+    xls+='<td>'+startDate+'</td>';
+    xls+='<td>'+esc(a.position||'')+'</td>';
+    xls+='<td>'+esc(a.department||'')+'</td>';
+    xls+='<td>'+stLabel+'</td>';
+    xls+='<td style="text-align:right">'+(a.salary?payFmt(a.salary):'')+'</td>';
+    xls+='<td>'+esc(a.bank||'')+'</td>';
+    xls+='<td>'+esc(a.bank_account||'')+'</td>';
+    xls+='<td>'+esc(a.phone||'')+'</td>';
+    xls+='<td>'+esc(a.email||'')+'</td>';
+    xls+='<td>'+(a.status==='monthly'?'ประกันสังคม':'–')+'</td>';
+    xls+='<td>'+stLabel+'</td>';
+    xls+='<td>'+endDate+'</td>';
+    xls+='</tr>';
+  });
+
+  xls+='</table></body></html>';
+  var blob=new Blob(['\uFEFF'+xls],{type:'application/vnd.ms-excel;charset=utf-8'});
+  var url=URL.createObjectURL(blob);var a2=document.createElement('a');a2.href=url;
+  a2.download='ทะเบียนลูกจ้าง_'+new Date().toISOString().substring(0,10)+'.xls';
+  document.body.appendChild(a2);a2.click();document.body.removeChild(a2);URL.revokeObjectURL(url);
+  toast('Export ทะเบียนลูกจ้าง '+all.length+' คน','tok');
+}
+
+function laborPrint(){
+  var table=$('labor-table').innerHTML;
+  var company=$('labor-company').value||'บริษัท เดอะ เอ็มที จำกัด';
+  var regid=$('labor-regid').value||'';
+  var addr=$('labor-addr').value||'';
+  var biz=$('labor-biz').value||'';
+
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>ทะเบียนลูกจ้าง</title>';
+  html+='<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700&display=swap" rel="stylesheet">';
+  html+='<style>@page{size:A4 landscape;margin:10mm}body{font-family:"Noto Sans Thai",sans-serif;margin:0;padding:20px;font-size:11px}';
+  html+='table{width:100%;border-collapse:collapse}th,td{border:1px solid #999;padding:3px 6px;font-size:10px}th{background:#5c4a1e;color:#fff;font-weight:600}';
+  html+='.nm{font-weight:600}.hdr{text-align:center;margin-bottom:16px}h2{margin:0;font-size:16px}p{margin:2px 0;font-size:11px;color:#666}</style></head>';
+  html+='<body><div class="hdr">';
+  html+='<h2>ทะเบียนลูกจ้าง</h2>';
+  html+='<p>ตามพระราชบัญญัติคุ้มครองแรงงาน พ.ศ.2541</p>';
+  html+='<p style="font-weight:600;color:#000;font-size:13px">'+esc(company)+'</p>';
+  if(regid)html+='<p>ทะเบียนนายจ้างเลขที่ '+esc(regid)+'</p>';
+  if(addr)html+='<p>ที่ตั้ง: '+esc(addr)+'</p>';
+  if(biz)html+='<p>ประเภทกิจการ: '+esc(biz)+'</p>';
+  html+='</div>';
+  html+=table;
+  html+='</body></html>';
+
+  var old=document.getElementById('labor-iframe');if(old)old.remove();
+  var iframe=document.createElement('iframe');iframe.id='labor-iframe';
+  iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1200px;height:900px';
+  document.body.appendChild(iframe);
+  var doc=iframe.contentDocument||iframe.contentWindow.document;
+  doc.open();doc.write(html);doc.close();
+  setTimeout(function(){try{iframe.contentWindow.focus();iframe.contentWindow.print()}catch(e){toast('เปิดหน้าพิมพ์ไม่ได้','terr')}},800);
 }
 
 /* ═══ INIT ═══ */

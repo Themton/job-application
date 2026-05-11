@@ -784,7 +784,14 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
           <select class="fsel" id="labor-filter" onchange="laborRender()"><option value="">ทุกสถานะ</option><option value="active">ปัจจุบัน (ทำงานอยู่)</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
           <div class="sb" style="max-width:200px"><input id="labor-srch" placeholder="ค้นหาชื่อ..." oninput="debounce(laborRender,'lr')"></div>
           <button class="btn btn-a btn-s" onclick="laborPrint()">🖨️ พิมพ์</button>
-          <button class="btn btn-a btn-s" onclick="laborExport()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">📥 Export Excel</button>
+          <button class="btn btn-a btn-s" onclick="laborExport()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">📥 Export</button>
+        </div>
+        <div id="labor-sel-bar" style="display:none;background:linear-gradient(135deg,#5c4a1e,#8b6914);color:#fff;padding:8px 14px;border-radius:8px;margin-top:8px;font-size:13px;display:none;align-items:center;gap:10px;flex-wrap:wrap">
+          <span id="labor-sel-cnt">0</span> คน ที่เลือก
+          <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="laborPrint()">🖨️ พิมพ์ที่เลือก</button>
+          <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="laborExport()">📥 Export ที่เลือก</button>
+          <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="laborClearSel()">✕ ยกเลิก</button>
+        </div>
         </div>
       </div>
       <div id="labor-table"></div>
@@ -6485,13 +6492,40 @@ function loadEmpPortal(){
 }
 
 /* ═══ LABOR REGISTRY (ทะเบียนลูกจ้าง พ.ร.บ.คุ้มครองแรงงาน 2541) ═══ */
+var LABOR_SEL={};
 function laborLoad(){
   prog(10,'โหลดทะเบียนลูกจ้าง...');
+  LABOR_SEL={};
   sb("applications","GET",null,"?select=*&order=created_at.asc").then(function(r){
     window._laborAll=Array.isArray(r)?r:[];
     prog(100,'โหลดทะเบียน ✅ '+window._laborAll.length+' คน');
     laborRender();
   }).catch(function(e){prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
+}
+
+function laborToggle(idx,btn){
+  var list=window._laborFiltered||[];
+  var a=list[idx];if(!a)return;
+  if(LABOR_SEL[a.id])delete LABOR_SEL[a.id];else LABOR_SEL[a.id]=true;
+  var sel=LABOR_SEL[a.id];
+  btn.style.background=sel?'#b8860b':'none';
+  btn.style.borderColor=sel?'#b8860b':'#ccc';
+  btn.style.color=sel?'#fff':'transparent';
+  btn.closest('tr').style.background=sel?'rgba(198,149,43,.1)':'';
+  laborUpdateSelBar();
+}
+function laborToggleAll(){
+  var list=window._laborFiltered||[];
+  var allChk=list.length>0&&list.every(function(a){return LABOR_SEL[a.id]});
+  list.forEach(function(a){if(allChk)delete LABOR_SEL[a.id];else LABOR_SEL[a.id]=true});
+  laborUpdateSelBar();laborRender();
+}
+function laborClearSel(){LABOR_SEL={};laborUpdateSelBar();laborRender()}
+function laborUpdateSelBar(){
+  var cnt=Object.keys(LABOR_SEL).length;
+  var bar=$('labor-sel-bar');
+  if(cnt>0){bar.style.display='flex';$('labor-sel-cnt').textContent=cnt}
+  else{bar.style.display='none'}
 }
 
 function laborRender(){
@@ -6513,8 +6547,12 @@ function laborRender(){
   var addr=$('labor-addr').value||'';
   var biz=$('labor-biz').value||'';
 
-  var h='<div style="margin-bottom:10px;font-size:12px;color:var(--muted)">แสดง '+list.length+' คน จากทั้งหมด '+all.length+' คน</div>';
+  window._laborFiltered=list;
+  var allChk=list.length>0&&list.every(function(a){return LABOR_SEL[a.id]});
+
+  var h='<div style="margin-bottom:10px;font-size:12px;color:var(--muted)">แสดง '+list.length+' คน จากทั้งหมด '+all.length+' คน'+(Object.keys(LABOR_SEL).length?' | <b style="color:var(--acc)">เลือก '+Object.keys(LABOR_SEL).length+' คน</b>':'')+'</div>';
   h+='<div class="tw"><table style="min-width:1000px"><thead><tr>';
+  h+='<th rowspan="2" style="width:36px;text-align:center;padding:4px"><button onclick="laborToggleAll()" style="background:none;border:2px solid '+(allChk?'#b8860b':'#ccc')+';border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:18px;color:#b8860b">'+(allChk?'✓':'')+'</button></th>';
   h+='<th rowspan="2" style="width:35px">ลำดับ<br>ที่</th>';
   h+='<th rowspan="2" style="min-width:130px">ชื่อ-สกุล</th>';
   h+='<th rowspan="2">เพศ</th>';
@@ -6545,7 +6583,9 @@ function laborRender(){
     if(a.status==='daily'&&a.salary)dailyWage=payFmt(a.salary);
     else if(a.salary)monthlyWage=payFmt(a.salary);
 
-    h+='<tr style="'+(a.status==='terminated'?'background:rgba(220,38,38,.03);':'')+'">';
+    h+='<tr style="'+(a.status==='terminated'?'background:rgba(220,38,38,.03);':'')+(LABOR_SEL[a.id]?'background:rgba(198,149,43,.1);':'')+'">';
+    var sel=LABOR_SEL[a.id];
+    h+='<td style="text-align:center;padding:4px"><button onclick="laborToggle('+i+',this)" style="background:'+(sel?'#b8860b':'none')+';border:2px solid '+(sel?'#b8860b':'#ccc')+';border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:18px;color:'+(sel?'#fff':'transparent')+'">✓</button></td>';
     h+='<td style="text-align:center">'+(i+1)+'</td>';
     h+='<td class="nm">'+esc(a.name)+'</td>';
     h+='<td style="text-align:center">'+(a.gender||'-')+'</td>';
@@ -6569,7 +6609,9 @@ function laborRender(){
 
 function laborExport(){
   var all=window._laborAll||[];
-  if(!all.length){toast('ไม่มีข้อมูล','terr');return}
+  var selIds=Object.keys(LABOR_SEL);
+  var data=selIds.length?all.filter(function(a){return LABOR_SEL[a.id]}):all;
+  if(!data.length){toast('ไม่มีข้อมูล','terr');return}
   var company=$('labor-company').value||'บริษัท เดอะ เอ็มที จำกัด';
 
   var xls='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"><style>td,th{border:1px solid #999;padding:4px 8px;font-size:11px;font-family:sans-serif;vertical-align:top}th{background:#5c4a1e;color:#fff;text-align:center;font-weight:bold}.title{font-size:14px;font-weight:bold;text-align:center;padding:10px}.sub{font-size:11px;text-align:center;padding:4px}.term{background:#ffe0e0}.num{text-align:center}</style></head><body>';
@@ -6578,7 +6620,7 @@ function laborExport(){
   xls+='<div class="sub">'+esc(company)+'</div>';
   xls+='<table><tr><th rowspan="2">ลำดับที่</th><th rowspan="2">ชื่อ-สกุล</th><th rowspan="2">เพศ</th><th rowspan="2">เลขบัตรประจำตัวประชาชน</th><th rowspan="2">สัญชาติ</th><th rowspan="2">วัน เดือน ปีเกิด / อายุ</th><th rowspan="2">ที่อยู่ปัจจุบัน</th><th rowspan="2">ตำแหน่งงานในหน้าที่</th><th rowspan="2">วันที่เริ่มจ้าง</th><th colspan="3">ค่าจ้าง</th><th rowspan="2">ประโยชน์อื่น</th><th rowspan="2">วันสิ้นสุดของการจ้าง</th></tr><tr><th>วันละ</th><th>เดือนละ</th><th>ชั่วโมงละ</th></tr>';
 
-  all.forEach(function(a,i){
+  data.forEach(function(a,i){
     var startDate=a.start_date||a.created_at?String(a.start_date||a.created_at).substring(0,10):'';
     var endDate=a.status==='terminated'?(a.terminated_date||String(a.updated_at||'').substring(0,10)||'ลาออก'):'ปัจจุบัน';
     var age='';
@@ -6608,13 +6650,35 @@ function laborExport(){
   xls+='</table></body></html>';
   var blob=new Blob(['\uFEFF'+xls],{type:'application/vnd.ms-excel;charset=utf-8'});
   var url=URL.createObjectURL(blob);var a2=document.createElement('a');a2.href=url;
-  a2.download='ทะเบียนลูกจ้าง_'+new Date().toISOString().substring(0,10)+'.xls';
+  a2.download='ทะเบียนลูกจ้าง'+(selIds.length?'_เลือก'+data.length+'คน':'')+'_'+new Date().toISOString().substring(0,10)+'.xls';
   document.body.appendChild(a2);a2.click();document.body.removeChild(a2);URL.revokeObjectURL(url);
-  toast('Export ทะเบียนลูกจ้าง '+all.length+' คน','tok');
+  toast('Export ทะเบียนลูกจ้าง '+data.length+' คน','tok');
 }
 
 function laborPrint(){
-  var table=$('labor-table').innerHTML;
+  // Build table from selected or all filtered
+  var all=window._laborAll||[];
+  var selIds=Object.keys(LABOR_SEL);
+  var list=selIds.length?all.filter(function(a){return LABOR_SEL[a.id]}):(window._laborFiltered||all);
+  if(!list.length){toast('ไม่มีข้อมูล','terr');return}
+
+  var company=$('labor-company').value||'บริษัท เดอะ เอ็มที จำกัด';
+  var regid=$('labor-regid').value||'';
+  var addr=$('labor-addr').value||'';
+  var biz=$('labor-biz').value||'';
+
+  // Build print table (no checkboxes)
+  var tbl='<table><thead><tr>';
+  tbl+='<th rowspan="2">ลำดับที่</th><th rowspan="2">ชื่อ-สกุล</th><th rowspan="2">เพศ</th><th rowspan="2">เลขบัตรประจำตัวประชาชน</th><th rowspan="2">สัญชาติ</th><th rowspan="2">วัน เดือน ปีเกิด / อายุ</th><th rowspan="2">ที่อยู่ปัจจุบัน</th><th rowspan="2">ตำแหน่งงานในหน้าที่</th><th rowspan="2">วันที่เริ่มจ้าง</th><th colspan="3" style="text-align:center">ค่าจ้าง</th><th rowspan="2">ประโยชน์อื่น</th><th rowspan="2">วันสิ้นสุดของการจ้าง</th>';
+  tbl+='</tr><tr><th>วันละ</th><th>เดือนละ</th><th>ชั่วโมงละ</th></tr></thead><tbody>';
+  list.forEach(function(a,i){
+    var startDate=a.start_date||a.created_at?String(a.start_date||a.created_at).substring(0,10):'';
+    var age='';if(a.birth_date){var bd=new Date(a.birth_date);var now=new Date();age=Math.floor((now-bd)/(365.25*24*60*60*1000))+' ปี'}
+    var endDate=a.status==='terminated'?(a.terminated_date||a.updated_at?String(a.terminated_date||a.updated_at||'').substring(0,10):'ลาออก'):'ปัจจุบัน';
+    var dw='',mw='';if(a.status==='daily'&&a.salary)dw=payFmt(a.salary);else if(a.salary)mw=payFmt(a.salary);
+    tbl+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(a.name)+'</td><td style="text-align:center">'+(a.gender||'')+'</td><td>'+esc(a.id_card_no||'')+'</td><td style="text-align:center">'+(a.nationality||'ไทย')+'</td><td>'+(a.birth_date||'')+(age?' ('+age+')':'')+'</td><td>'+esc(a.address||'')+'</td><td>'+esc(a.position||'')+'</td><td>'+startDate+'</td><td style="text-align:right">'+dw+'</td><td style="text-align:right">'+mw+'</td><td></td><td>'+(a.status==='monthly'?'ประกันสังคม':'')+'</td><td>'+endDate+'</td></tr>';
+  });
+  tbl+='</tbody></table>';
   var company=$('labor-company').value||'บริษัท เดอะ เอ็มที จำกัด';
   var regid=$('labor-regid').value||'';
   var addr=$('labor-addr').value||'';
@@ -6633,7 +6697,7 @@ function laborPrint(){
   if(addr)html+='<p>ที่ตั้ง: '+esc(addr)+'</p>';
   if(biz)html+='<p>ประเภทกิจการ: '+esc(biz)+'</p>';
   html+='</div>';
-  html+=table;
+  html+=tbl;
   html+='</body></html>';
 
   var old=document.getElementById('labor-iframe');if(old)old.remove();

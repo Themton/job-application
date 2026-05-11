@@ -774,12 +774,16 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       </div>
       <div class="cd" style="margin-bottom:14px">
         <div class="cd-t"><span class="dot"></span> ข้อมูลสถานประกอบการ</div>
-        <div class="g2">
-          <div class="fld"><label>ชื่อสถานประกอบการ</label><input id="labor-company" value="บริษัท เดอะ เอ็มที จำกัด"></div>
-          <div class="fld"><label>ทะเบียนนายจ้างเลขที่</label><input id="labor-regid" placeholder="เลขทะเบียน"></div>
-          <div class="fld"><label>ที่ตั้ง</label><input id="labor-addr" placeholder="เลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด"></div>
-          <div class="fld"><label>ประเภทกิจการ</label><input id="labor-biz" placeholder="ประเภทกิจการ"></div>
+        <div class="g2" style="font-size:13px;color:var(--txt2)">
+          <div><span style="color:var(--muted)">ชื่อ:</span> <b>บริษัท เดอะ เอ็มที จำกัด</b></div>
+          <div><span style="color:var(--muted)">ทะเบียนนายจ้างเลขที่:</span> <b>6520023400</b></div>
+          <div><span style="color:var(--muted)">ที่ตั้ง:</span> 888/11 ม.6 ต.วังทอง อ.วังทอง พิษณุโลก 65130</div>
+          <div><span style="color:var(--muted)">ประเภทกิจการ:</span> –</div>
         </div>
+        <input type="hidden" id="labor-company" value="บริษัท เดอะ เอ็มที จำกัด">
+        <input type="hidden" id="labor-regid" value="6520023400">
+        <input type="hidden" id="labor-addr" value="888/11 ม.6 ต.วังทอง อ.วังทอง พิษณุโลก 65130">
+        <input type="hidden" id="labor-biz" value="">
         <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
           <select class="fsel" id="labor-filter" onchange="laborRender()"><option value="">ทุกสถานะ</option><option value="active">ปัจจุบัน (ทำงานอยู่)</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="terminated">พ้นสภาพ</option></select>
           <div class="sb" style="max-width:200px"><input id="labor-srch" placeholder="ค้นหาชื่อ..." oninput="debounce(laborRender,'lr')"></div>

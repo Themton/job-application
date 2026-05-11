@@ -1223,26 +1223,14 @@ function resetForm(){['i-name','i-nickname','i-phone','i-email','i-baccount','i-
 function doLogin(){
   var u=$('i-user').value.trim(),p=$('i-pass').value;$('l-err').classList.add('hide');
   if(!u||!p){$('l-err').textContent='กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';$('l-err').classList.remove('hide');return}
-  sbRpc('auth_login',{p_username:u,p_password:p,p_login_type:'admin',
-    p_ua:(navigator.userAgent||'').substr(0,120)})
-  .then(function(r){
-    if(!r||!r.ok){
-      var msg=r&&r.message?r.message:
-        (r&&r.error==='invalid_credentials'?'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง':
-         r&&r.error==='rate_limited'?'ลองผิดหลายครั้งเกินไป กรุณารออีก 5 นาที':
-         'เข้าสู่ระบบไม่สำเร็จ');
-      $('l-err').textContent=msg;$('l-err').classList.remove('hide');return;
-    }
-    setTOK(r.token);
-    setSES({username:r.username,role:r.role,display_name:r.display_name,
-            login_type:'admin',expires_at:r.expires_at});
-    if(r.role==='hr')document.body.classList.add('hr-mode');
-    else document.body.classList.remove('hr-mode');
-    startSecPoll('admin');
+  sb("users","GET",null,"?username=eq."+encodeURIComponent(u)+"&select=*").then(function(r){
+    if(!Array.isArray(r)||!r.length){$('l-err').textContent='ไม่พบผู้ใช้';$('l-err').classList.remove('hide');return}
+    var user=r[0];
+    if(user.password&&user.password!==p){$('l-err').textContent='รหัสผ่านไม่ถูกต้อง';$('l-err').classList.remove('hide');return}
+    sessionStorage.setItem('mt_logged','1');
+    sessionStorage.setItem('mt_role',user.role||'admin');
     page('admin');
-  }).catch(function(e){
-    $('l-err').textContent='เชื่อมต่อไม่ได้: '+e;$('l-err').classList.remove('hide');
-  });
+  }).catch(function(e){$('l-err').textContent='เชื่อมต่อไม่ได้: '+e;$('l-err').classList.remove('hide')});
 }
 
 /* ═══ ADMIN LOAD ═══ */
@@ -1256,13 +1244,13 @@ function loadAdmin(){
   Promise.all([
     sb("applications","GET",null,"?select=*&order=created_at.desc"),
     sb("positions","GET",null,"?select=*&order=title"),
-    sbRpc("admin_list_users",{p_token:TOK()}),
+    sb("users","GET",null,"?select=id,username,display_name,role,created_at"),
     sb("departments","GET",null,"?select=*&order=title").catch(function(){return[]})
   ]).then(function(r){
     prog(80,'ประมวลผลข้อมูล...');
     ALL=Array.isArray(r[0])?r[0]:[];
     POS=Array.isArray(r[1])?r[1]:[];
-    USR=(r[2]&&r[2].ok&&Array.isArray(r[2].rows))?r[2].rows:[];
+    USR=Array.isArray(r[2])?r[2]:[];
     DEPT=Array.isArray(r[3])?r[3]:[];
     $('A-ld').classList.add('hide');$('A-main').classList.remove('hide');emailSyncFromAll();stats();doFilter();renderPos();renderUsr();renderDept();
     prog(100,'โหลดเสร็จ ✅ '+ALL.length+' คน');
@@ -6217,31 +6205,18 @@ var ACC_ST={new:{l:'ใหม่',c:'b-new'},daily:{l:'รายวัน',c:'b-
 function doAccLogin(){
   var u=$('acc-user').value.trim(),p=$('acc-pass').value;$('acc-err').classList.add('hide');
   if(!u||!p){$('acc-err').textContent='กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';$('acc-err').classList.remove('hide');return}
-  sbRpc('auth_login',{p_username:u,p_password:p,p_login_type:'acc',
-    p_ua:(navigator.userAgent||'').substr(0,120)})
-  .then(function(r){
-    if(!r||!r.ok){
-      var msg=r&&r.message?r.message:
-        (r&&r.error==='invalid_credentials'?'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง':
-         r&&r.error==='rate_limited'?'ลองผิดหลายครั้งเกินไป กรุณารออีก 5 นาที':
-         r&&r.error==='wrong_role'?'บัญชีนี้ไม่มีสิทธิ์เข้าระบบบัญชี':
-         'เข้าสู่ระบบไม่สำเร็จ');
-      $('acc-err').textContent=msg;$('acc-err').classList.remove('hide');return;
-    }
-    setTOK(r.token);
-    setSES({username:r.username,role:r.role,display_name:r.display_name,
-            login_type:'acc',expires_at:r.expires_at});
-    startSecPoll('acc');
+  sb("users","GET",null,"?username=eq."+encodeURIComponent(u)+"&select=*").then(function(r){
+    if(!Array.isArray(r)||!r.length){$('acc-err').textContent='ไม่พบผู้ใช้';$('acc-err').classList.remove('hide');return}
+    var user=r[0];
+    if(user.password&&user.password!==p){$('acc-err').textContent='รหัสผ่านไม่ถูกต้อง';$('acc-err').classList.remove('hide');return}
+    if(user.role!=='accounting'&&user.role!=='admin'){$('acc-err').textContent='บัญชีนี้ไม่มีสิทธิ์เข้าระบบบัญชี';$('acc-err').classList.remove('hide');return}
+    sessionStorage.setItem('mt_acc_logged','1');
     page('acc');
-  }).catch(function(e){
-    $('acc-err').textContent='เชื่อมต่อไม่ได้: '+e;$('acc-err').classList.remove('hide');
-  });
+  }).catch(function(e){$('acc-err').textContent='เชื่อมต่อไม่ได้: '+e;$('acc-err').classList.remove('hide')});
 }
 
 function accLogout(){
-  var t=TOK();if(t){sbRpc('auth_logout',{p_token:t}).catch(function(){});}
-  if(_secPoll)clearInterval(_secPoll);
-  clearTOK();
+  sessionStorage.removeItem('mt_acc_logged');
   page('acc-login');
 }
 
@@ -6662,50 +6637,22 @@ function laborPrint(){
 }
 
 /* ═══ INIT ═══ */
-function _bootAuth(needType,okPage,failPage){
-  var t=TOK();
-  if(!t){page(failPage);return}
-  sbRpc('auth_check',{p_token:t,p_required_type:needType}).then(function(r){
-    if(r&&r.ok){
-      startSecPoll(needType);
-      page(okPage);
-    }else{
-      clearTOK();page(failPage);
-    }
-  }).catch(function(){clearTOK();page(failPage);});
-}
-function _bootEmp(){
-  document.getElementById('P-form').style.display='none';
-  var t=TOK();
-  if(!t){
-    document.getElementById('P-emp').style.display='none';
-    document.getElementById('P-emp-login').style.display='block';
-    return;
-  }
-  sbRpc('auth_check',{p_token:t,p_required_type:'emp'}).then(function(r){
-    if(r&&r.ok&&sessionStorage.getItem('emp_data')){
-      startSecPoll('emp');
-      document.getElementById('P-emp-login').style.display='none';
-      document.getElementById('P-emp').style.display='block';
-      loadEmpPortal();
-    }else{
-      clearTOK();
-      document.getElementById('P-emp').style.display='none';
-      document.getElementById('P-emp-login').style.display='block';
-    }
-  }).catch(function(){
-    clearTOK();
-    document.getElementById('P-emp').style.display='none';
-    document.getElementById('P-emp-login').style.display='block';
-  });
-}
-
 if(MODE==='admin'){
-  _bootAuth('admin','admin','login');
+  if(sessionStorage.getItem('mt_logged')==='1'){page('admin')}
+  else{page('login')}
 }else if(MODE==='acc'){
-  _bootAuth('acc','acc','acc-login');
+  if(sessionStorage.getItem('mt_acc_logged')==='1'){page('acc')}
+  else{page('acc-login')}
 }else if(MODE==='emp'){
-  _bootEmp();
+  document.getElementById('P-form').style.display='none';
+  if(sessionStorage.getItem('emp_data')){
+    document.getElementById('P-emp-login').style.display='none';
+    document.getElementById('P-emp').style.display='block';
+    loadEmpPortal();
+  }else{
+    document.getElementById('P-emp').style.display='none';
+    document.getElementById('P-emp-login').style.display='block';
+  }
 }else{
   page('form');
 }

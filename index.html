@@ -6596,8 +6596,10 @@ function tgNotify(type,data){
     msg='🆕 <b>พนักงานใหม่สมัคร</b>\n\n👤 ชื่อ: <b>'+(data.name||'')+'</b>\n📱 โทร: '+(data.phone||'-')+'\n💼 ตำแหน่ง: '+(data.position||'-')+'\n📅 วันที่: '+new Date().toLocaleDateString('th-TH');
     btns=[[{text:'📋 ดูในระบบ',url:adminUrl}]];
   }else if(type==='leave_request'){
+    var approveUrl=adminUrl+'&tg_action=approve_leave&leave_id='+encodeURIComponent(data.leaveId||'');
+    var rejectUrl=adminUrl+'&tg_action=reject_leave&leave_id='+encodeURIComponent(data.leaveId||'');
     msg='🗓️ <b>พนักงานขอลา</b>\n\n👤 ชื่อ: <b>'+(data.name||'')+'</b>\n📋 ประเภท: '+(data.leaveType||'')+'\n📅 วันที่: '+(data.date||'')+'\n📝 เหตุผล: '+(data.reason||'-');
-    btns=[[{text:'✅ อนุมัติในระบบ',url:adminUrl}]];
+    btns=[[{text:'✅ อนุมัติ',url:approveUrl},{text:'❌ ไม่อนุมัติ',url:rejectUrl}],[{text:'📋 ดูในระบบ',url:adminUrl}]];
   }else if(type==='terminate'){
     msg='⛔ <b>พนักงานลาออก</b>\n\n👤 ชื่อ: <b>'+(data.name||'')+'</b>\n💼 ตำแหน่ง: '+(data.position||'-')+'\n📅 วันที่ออก: '+(data.date||'')+'\n📋 สถานะ: '+(data.status||'');
     btns=[[{text:'📋 ดูในระบบ',url:adminUrl}]];
@@ -6935,9 +6937,63 @@ function laborPrint(){
 }
 
 /* ═══ INIT ═══ */
+
+// Handle Telegram approve/reject actions from URL
+function handleTgAction(){
+  var params=new URLSearchParams(location.search);
+  var action=params.get('tg_action');
+  if(!action)return;
+  var leaveId=params.get('leave_id')||'';
+
+  if(action==='approve_leave'&&leaveId){
+    // Wait for admin login, then approve
+    var checkLogin=setInterval(function(){
+      if(sessionStorage.getItem('mt_logged')==='1'){
+        clearInterval(checkLogin);
+        sb("leaves","PATCH",{status:'approved',approved_at:new Date().toISOString()},"?id=eq."+encodeURIComponent(leaveId)).then(function(){
+          toast('✅ อนุมัติการลาแล้ว','tok');
+          // Get leave details for Telegram confirmation
+          sb("leaves","GET",null,"?id=eq."+encodeURIComponent(leaveId)+"&select=*").then(function(r){
+            if(Array.isArray(r)&&r.length){
+              var lv=r[0];
+              var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',absent:'ขาดงาน'};
+              tgNotify('leave_approved',{name:lv.emp_name||'',leaveType:lvLabels[lv.type]||lv.type,date:lv.date||''});
+            }
+          });
+          // Clean URL
+          history.replaceState(null,'',location.pathname+'?admin');
+          setTimeout(function(){showTab('lv')},1000);
+        }).catch(function(e){toast('อนุมัติไม่สำเร็จ: '+e,'terr')});
+      }
+    },500);
+    setTimeout(function(){clearInterval(checkLogin)},30000); // timeout 30s
+  }
+
+  if(action==='reject_leave'&&leaveId){
+    var checkLogin2=setInterval(function(){
+      if(sessionStorage.getItem('mt_logged')==='1'){
+        clearInterval(checkLogin2);
+        var reason=prompt('เหตุผลที่ไม่อนุมัติ:','');
+        sb("leaves","PATCH",{status:'rejected',reject_reason:reason||'',approved_at:new Date().toISOString()},"?id=eq."+encodeURIComponent(leaveId)).then(function(){
+          toast('❌ ไม่อนุมัติการลา','tok');
+          sb("leaves","GET",null,"?id=eq."+encodeURIComponent(leaveId)+"&select=*").then(function(r){
+            if(Array.isArray(r)&&r.length){
+              var lv=r[0];
+              tgSend('❌ <b>ไม่อนุมัติการลา</b>\n\n👤 '+esc(lv.emp_name||'')+'\n📅 '+esc(lv.date||'')+'\n📝 เหตุผล: '+(reason||'-')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+            }
+          });
+          history.replaceState(null,'',location.pathname+'?admin');
+          setTimeout(function(){showTab('lv')},1000);
+        }).catch(function(e){toast('ไม่สำเร็จ: '+e,'terr')});
+      }
+    },500);
+    setTimeout(function(){clearInterval(checkLogin2)},30000);
+  }
+}
+
 if(MODE==='admin'){
-  if(sessionStorage.getItem('mt_logged')==='1'){page('admin')}
-  else{page('login')}
+  if(sessionStorage.getItem('mt_logged')==='1'){page('admin');handleTgAction()}
+  else{page('login');handleTgAction()}
 }else if(MODE==='acc'){
   if(sessionStorage.getItem('mt_acc_logged')==='1'){page('acc')}
   else{page('acc-login')}

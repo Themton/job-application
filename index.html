@@ -409,6 +409,27 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="ttl" style="font-size:18px">จัดการผู้ใช้</span><button class="btn btn-a btn-s" onclick="showUF()">➕ เพิ่ม</button></div>
       <div id="uf-box" class="cd hide" style="margin-bottom:14px"><div class="g2"><div class="fld"><label>ชื่อผู้ใช้ <span class="rq">*</span></label><input id="uf-user"></div><div class="fld"><label>ชื่อแสดง</label><input id="uf-name"></div><div class="fld"><label id="uf-pw-label">รหัสผ่าน <span class="rq">*</span></label><input id="uf-pass" type="text"></div><div class="fld"><label>สิทธิ์การใช้งาน</label><select id="uf-role"><option value="admin">แอดมิน (เต็มระบบ)</option><option value="hr">HR (ดู/สร้าง/แก้ไข ห้ามลบ)</option><option value="accounting">บัญชี (ดูข้อมูล+Export)</option></select></div></div><div class="brow" style="margin-top:8px"><button class="btn btn-g btn-s" onclick="pf('uf-box').classList.add('hide')">ยกเลิก</button><button class="btn btn-a btn-s" id="uf-btn" onclick="saveU()">เพิ่ม</button></div></div>
       <div id="usr-list"></div>
+
+      <!-- Telegram Settings -->
+      <div class="cd" style="margin-top:20px;border:2px solid #0088cc">
+        <div class="cd-t" style="color:#0088cc"><span class="dot" style="background:#0088cc"></span> 📲 ตั้งค่า Telegram แจ้งเตือน</div>
+        <div class="g2">
+          <div class="fld"><label>Bot Token</label><input id="tg-token" placeholder="123456:ABC-DEF..." style="font-family:monospace;font-size:12px"></div>
+          <div class="fld"><label>Chat ID (กลุ่ม/บุคคล)</label><input id="tg-chatid" placeholder="-100xxxxxxxxxx" style="font-family:monospace;font-size:12px"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin:8px 0;line-height:1.6">
+          <b>วิธีตั้งค่า:</b> 1) สร้าง Bot ที่ <a href="https://t.me/BotFather" target="_blank" style="color:#0088cc">@BotFather</a> → ได้ Token &nbsp;
+          2) เพิ่ม Bot เข้ากลุ่ม &nbsp; 3) ส่งข้อความในกลุ่ม → ดู Chat ID จาก <a href="https://t.me/getidsbot" target="_blank" style="color:#0088cc">@getidsbot</a>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <button class="btn btn-a btn-s" onclick="tgSave()" style="background:#0088cc">💾 บันทึก</button>
+          <button class="btn btn-g btn-s" onclick="tgTest()">📲 ทดสอบส่ง</button>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--muted)">
+          <b>แจ้งเตือนอัตโนมัติเมื่อ:</b> พนักงานลาออก ⛔ / ขอลา 🗓️ / พนักงานใหม่สมัคร 🆕 / อนุมัติการลา ✅
+        </div>
+        <div id="tg-status" style="font-size:12px;margin-top:6px"></div>
+      </div>
     </div>
 
     <!-- TAB: Report -->
@@ -1145,6 +1166,7 @@ function showTab(t){
   if(t==='rpt'&&!$('rpt-exp-month').value){var now=new Date();$('rpt-exp-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='rpt')loadHolidays();
   if(t==='cert')certInit();
+  if(t==='usr')tgLoad();
   if(t==='eval')evalInit();
   if(t==='att'&&!$('att-month').value){var now=new Date();$('att-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='ot')otInit();
@@ -2243,6 +2265,8 @@ function terminate(id){
   sb("applications","PATCH",{status:st,terminated_at:now,terminated_date:termDate},"?id=eq."+id).then(function(){
     toast((st==='terminated'?'พ้นสภาพแล้ว':'ลาออก-รอจ่าย')+' — วันที่ '+termDate,'tok');
     ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=now;a.terminated_date=termDate}});
+    var empName='';ALL.forEach(function(a){if(a.id===id)empName=a.name});
+    tgNotify('terminate',{name:empName,date:termDate,status:st==='terminated'?'พ้นสภาพ':'ลาออก-รอจ่ายเงินเดือน'});
     stats();doFilter();detail(id);
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
@@ -2256,6 +2280,7 @@ function quickTerminate(id,name){
   sb("applications","PATCH",{status:st,terminated_at:now,terminated_date:termDate},"?id=eq."+id).then(function(){
     toast('⛔ '+name+(st==='terminated'?' พ้นสภาพแล้ว':' ลาออก-รอจ่ายเงินเดือน')+' — วันที่ '+termDate,'tok');
     ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=now;a.terminated_date=termDate}});
+    tgNotify('terminate',{name:name,date:termDate,status:st==='terminated'?'พ้นสภาพ':'ลาออก-รอจ่ายเงินเดือน'});
     stats();doFilter();
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
@@ -4578,6 +4603,8 @@ function payDBSave(){
     sb("payroll","POST",records).then(function(){
       prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');
       $('paydb2-save-status').innerHTML='<span style="color:var(--ok)">✅ บันทึก '+valid.length+' คน เดือน '+month+'</span>';
+      var totalNet=0;valid.forEach(function(e){totalNet+=e.net});
+      tgNotify('payroll_saved',{month:month,count:valid.length,total:payFmt(totalNet)});
       toast('บันทึกเรียบร้อย','tok');
     }).catch(function(e){prog(-1);$('paydb2-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
   }).catch(function(e){prog(-1);$('paydb2-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
@@ -6521,6 +6548,68 @@ function loadEmpPortal(){
       window._notifPoll=setInterval(loadEmpNotifs,30000);
     });
   }).catch(function(e){prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
+}
+
+/* ═══ TELEGRAM NOTIFICATIONS ═══ */
+function tgSave(){
+  var token=$('tg-token').value.trim(),chatid=$('tg-chatid').value.trim();
+  if(!token||!chatid){toast('กรุณากรอก Bot Token และ Chat ID','terr');return}
+  localStorage.setItem('tg_token',token);localStorage.setItem('tg_chatid',chatid);
+  $('tg-status').innerHTML='<span style="color:var(--ok)">✅ บันทึกแล้ว</span>';
+  toast('บันทึกค่า Telegram แล้ว','tok');
+}
+function tgLoad(){
+  var token=localStorage.getItem('tg_token')||'',chatid=localStorage.getItem('tg_chatid')||'';
+  if($('tg-token'))$('tg-token').value=token;
+  if($('tg-chatid'))$('tg-chatid').value=chatid;
+}
+function tgSend(text,buttons){
+  var token=localStorage.getItem('tg_token'),chatid=localStorage.getItem('tg_chatid');
+  if(!token||!chatid)return Promise.resolve(false);
+  var body={chat_id:chatid,text:text,parse_mode:'HTML'};
+  if(buttons&&buttons.length){
+    body.reply_markup=JSON.stringify({inline_keyboard:buttons.map(function(row){
+      return row.map(function(b){return{text:b.text,url:b.url}});
+    })});
+  }
+  return fetch('https://api.telegram.org/bot'+token+'/sendMessage',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+  }).then(function(r){return r.json()}).then(function(d){return d.ok}).catch(function(){return false});
+}
+function tgTest(){
+  var token=$('tg-token').value.trim(),chatid=$('tg-chatid').value.trim();
+  if(!token||!chatid){toast('กรอก Token + Chat ID ก่อน','terr');return}
+  localStorage.setItem('tg_token',token);localStorage.setItem('tg_chatid',chatid);
+  $('tg-status').innerHTML='<span style="color:var(--acc)">⏳ กำลังส่ง...</span>';
+  var body={chat_id:chatid,text:'✅ <b>ทดสอบแจ้งเตือน</b>\n\n🏢 บริษัท เดอะ เอ็มที จำกัด\n📲 ระบบ HR แจ้งเตือนผ่าน Telegram ใช้งานได้แล้ว!',parse_mode:'HTML'};
+  fetch('https://api.telegram.org/bot'+token+'/sendMessage',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+  }).then(function(r){return r.json()}).then(function(d){
+    if(d.ok){$('tg-status').innerHTML='<span style="color:var(--ok)">✅ ส่งสำเร็จ! ตรวจสอบ Telegram</span>';toast('ส่งข้อความทดสอบสำเร็จ','tok')}
+    else{$('tg-status').innerHTML='<span style="color:var(--err)">❌ ส่งไม่สำเร็จ: '+(d.description||'ตรวจสอบ Token/Chat ID')+'</span>';toast('ส่งไม่สำเร็จ','terr')}
+  }).catch(function(e){$('tg-status').innerHTML='<span style="color:var(--err)">❌ เชื่อมต่อไม่ได้</span>';toast('เชื่อมต่อไม่ได้','terr')});
+}
+function tgNotify(type,data){
+  var adminUrl=location.origin+location.pathname+'?admin';
+  var msg='',btns=[];
+  if(type==='new_employee'){
+    msg='🆕 <b>พนักงานใหม่สมัคร</b>\n\n👤 ชื่อ: <b>'+(data.name||'')+'</b>\n📱 โทร: '+(data.phone||'-')+'\n💼 ตำแหน่ง: '+(data.position||'-')+'\n📅 วันที่: '+new Date().toLocaleDateString('th-TH');
+    btns=[[{text:'📋 ดูในระบบ',url:adminUrl}]];
+  }else if(type==='leave_request'){
+    msg='🗓️ <b>พนักงานขอลา</b>\n\n👤 ชื่อ: <b>'+(data.name||'')+'</b>\n📋 ประเภท: '+(data.leaveType||'')+'\n📅 วันที่: '+(data.date||'')+'\n📝 เหตุผล: '+(data.reason||'-');
+    btns=[[{text:'✅ อนุมัติในระบบ',url:adminUrl}]];
+  }else if(type==='terminate'){
+    msg='⛔ <b>พนักงานลาออก</b>\n\n👤 ชื่อ: <b>'+(data.name||'')+'</b>\n💼 ตำแหน่ง: '+(data.position||'-')+'\n📅 วันที่ออก: '+(data.date||'')+'\n📋 สถานะ: '+(data.status||'');
+    btns=[[{text:'📋 ดูในระบบ',url:adminUrl}]];
+  }else if(type==='leave_approved'){
+    msg='✅ <b>อนุมัติการลา</b>\n\n👤 ชื่อ: <b>'+(data.name||'')+'</b>\n📋 ประเภท: '+(data.leaveType||'')+'\n📅 วันที่: '+(data.date||'');
+  }else if(type==='payroll_saved'){
+    msg='💰 <b>บันทึกเงินเดือน</b>\n\n📅 เดือน: '+(data.month||'')+'\n👥 จำนวน: '+(data.count||0)+' คน\n💵 รวมจ่ายสุทธิ: '+(data.total||'0')+' บาท';
+  }else{
+    msg='📢 <b>แจ้งเตือน</b>\n\n'+(data.message||'');
+  }
+  msg+='\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>';
+  tgSend(msg,btns);
 }
 
 /* ═══ THAI ADDRESS AUTOCOMPLETE ═══ */

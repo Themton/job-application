@@ -6240,15 +6240,16 @@ function renderWarnings(){
 
   if(!list.length){$('warn-list').innerHTML='<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">📭 ไม่พบข้อมูล</div>';return}
 
-  var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>พนักงาน</th><th>ประเภท</th><th style="min-width:200px">รายละเอียด</th><th>ผู้บันทึก</th><th></th></tr></thead><tbody>';
+  var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>พนักงาน</th><th>ประเภท</th><th style="min-width:200px">รายละเอียด</th><th>📎 ไฟล์</th><th>ผู้บันทึก</th><th></th></tr></thead><tbody>';
   list.forEach(function(w){
     var color=WARN_TYPE_COLOR[w.warn_type]||'#888';
     var label=WARN_TYPE_LABEL[w.warn_type]||w.warn_type;
     h+='<tr>';
-    h+='<td style="font-size:11px;white-space:nowrap">'+esc(String(w.created_at||'').substring(0,10))+'</td>';
+    h+='<td style="font-size:11px;white-space:nowrap">'+esc(String(w.warn_date||w.created_at||'').substring(0,10))+'</td>';
     h+='<td><b>'+esc(w.emp_name||'')+'</b></td>';
     h+='<td><span style="background:'+color+'18;color:'+color+';padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">'+label+'</span></td>';
     h+='<td style="font-size:12px;max-width:300px">'+esc(w.detail||'')+'</td>';
+    h+='<td style="text-align:center">'+(w.file_link?'<a href="'+esc(w.file_link)+'" target="_blank" style="color:var(--pri);font-size:11px;font-weight:600">📎 ดูไฟล์</a>':'<span style="color:var(--muted);font-size:10px">-</span>')+'</td>';
     h+='<td style="font-size:11px;color:var(--muted)">'+esc(w.created_by||'')+'</td>';
     h+='<td><button class="lv-del hr-hide" onclick="delWarning(\''+w.id+'\')">✕</button></td>';
     h+='</tr>';
@@ -6268,7 +6269,8 @@ function addWarning(){
     +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">พนักงาน *</label><select id="wf-emp" class="ssel" style="width:100%;margin-top:4px"><option value="">-- เลือก --</option>'+opts+'</select></div>'
     +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">ประเภท *</label><select id="wf-type" class="ssel" style="width:100%;margin-top:4px"><option value="verbal">ตักเตือนด้วยวาจา</option><option value="written_1">ใบเตือนครั้งที่ 1</option><option value="written_2">ใบเตือนครั้งที่ 2</option><option value="written_3">ใบเตือนครั้งที่ 3 (สุดท้าย)</option><option value="note">บันทึกพฤติกรรม</option></select></div>'
     +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">รายละเอียด *</label><textarea id="wf-detail" rows="3" style="width:100%;margin-top:4px;padding:8px 12px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:13px;background:var(--inp)" placeholder="ระบุพฤติกรรม เหตุผล รายละเอียด..."></textarea></div>'
-    +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:600">วันที่</label><input type="date" id="wf-date" class="ssel" style="width:100%;margin-top:4px" value="'+new Date().toISOString().substring(0,10)+'"></div>'
+    +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">วันที่</label><input type="date" id="wf-date" class="ssel" style="width:100%;margin-top:4px" value="'+new Date().toISOString().substring(0,10)+'"></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:600">📎 แนบไฟล์ใบเตือน (รูปภาพ/PDF)</label><input type="file" id="wf-file" accept="image/*,.pdf" onchange="wfPickFile(this)" style="width:100%;margin-top:4px;font-size:12px"><div id="wf-file-status" style="font-size:10px;margin-top:2px;color:var(--muted)"></div></div>'
     +'<div style="display:flex;gap:8px"><button class="btn btn-a" style="flex:1" onclick="saveWarning()">💾 บันทึก</button><button class="btn btn-g" style="flex:1" onclick="this.closest(\'div[style*=fixed]\').remove()">ยกเลิก</button></div>'
     +'</div></div>';
   var d=document.createElement('div');d.innerHTML=html;document.body.appendChild(d.firstChild);
@@ -6280,13 +6282,64 @@ function saveWarning(){
   if(!detail){toast('กรอกรายละเอียด','terr');return}
   var ses=getSES();
   var id='WRN-'+Date.now();
-  sb("warnings","POST",{id:id,emp_name:emp,warn_type:type,detail:detail,warn_date:date||null,created_by:ses?ses.username:'admin'}).then(function(r){
-    if(Array.isArray(r)&&r.length){
-      toast('บันทึกใบเตือนแล้ว','tok');
-      document.querySelector('div[style*="position:fixed"][style*="z-index:9999"]').remove();
-      loadWarnings();
-    }else{toast('บันทึกไม่สำเร็จ','terr')}
-  }).catch(function(e){toast('Error: '+e,'terr')});
+  var data={id:id,emp_name:emp,warn_type:type,detail:detail,warn_date:date||null,created_by:ses?ses.username:'admin'};
+
+  prog(20,'กำลังบันทึกใบเตือน...');
+
+  // Check if file is attached
+  var fileData=window._wfFile;
+  if(fileData){
+    prog(40,'อัปโหลดไฟล์...');
+    var body=JSON.stringify({
+      action:'upload_warning',id:id,
+      fileData:fileData.d,fileType:fileData.t,fileName:fileData.n
+    });
+    fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body})
+    .then(function(r){return r.json()}).then(function(r2){
+      if(r2&&r2.ok&&r2.link)data.file_link=r2.link;
+      prog(70,'บันทึกข้อมูล...');
+      sb("warnings","POST",data).then(function(r){
+        if(Array.isArray(r)&&r.length){
+          prog(100,'บันทึกใบเตือน ✅');
+          toast('บันทึกใบเตือนแล้ว'+(data.file_link?' + อัปโหลดไฟล์':''),'tok');
+          document.querySelector('div[style*="position:fixed"][style*="z-index:9999"]').remove();
+          window._wfFile=null;
+          loadWarnings();
+          tgNotify('custom',{message:'⚠️ <b>ใบเตือนใหม่</b>\n\n👤 '+esc(emp)+'\n📋 '+(WARN_TYPE_LABEL[type]||type)+'\n📝 '+esc(detail)+'\n📅 '+esc(date||'')});
+        }else{prog(-1);toast('บันทึกไม่สำเร็จ','terr')}
+      }).catch(function(e){prog(-1);toast('Error: '+e,'terr')});
+    }).catch(function(){
+      // Upload failed, save without file
+      prog(70,'บันทึกข้อมูล (ไม่มีไฟล์)...');
+      sb("warnings","POST",data).then(function(r){
+        if(Array.isArray(r)&&r.length){
+          prog(100,'บันทึกใบเตือน ✅ (อัปโหลดไฟล์ไม่สำเร็จ)');
+          toast('บันทึกใบเตือนแล้ว แต่อัปโหลดไฟล์ไม่สำเร็จ','terr');
+          document.querySelector('div[style*="position:fixed"][style*="z-index:9999"]').remove();
+          window._wfFile=null;loadWarnings();
+        }else{prog(-1);toast('บันทึกไม่สำเร็จ','terr')}
+      }).catch(function(e){prog(-1);toast('Error: '+e,'terr')});
+    });
+  }else{
+    sb("warnings","POST",data).then(function(r){
+      if(Array.isArray(r)&&r.length){
+        prog(100,'บันทึกใบเตือน ✅');
+        toast('บันทึกใบเตือนแล้ว','tok');
+        document.querySelector('div[style*="position:fixed"][style*="z-index:9999"]').remove();
+        loadWarnings();
+        tgNotify('custom',{message:'⚠️ <b>ใบเตือนใหม่</b>\n\n👤 '+esc(emp)+'\n📋 '+(WARN_TYPE_LABEL[type]||type)+'\n📝 '+esc(detail)+'\n📅 '+esc(date||'')});
+      }else{prog(-1);toast('บันทึกไม่สำเร็จ','terr')}
+    }).catch(function(e){prog(-1);toast('Error: '+e,'terr')});
+  }
+}
+
+function wfPickFile(inp){
+  var f=inp.files[0];if(!f)return;
+  if(f.size>10*1024*1024){toast('ไฟล์ใหญ่เกิน 10MB','terr');inp.value='';return}
+  var r=new FileReader();r.onload=function(e){
+    window._wfFile={n:f.name,t:f.type,d:e.target.result.split(',')[1]};
+    $('wf-file-status').innerHTML='<span style="color:var(--ok)">✅ '+esc(f.name)+' ('+Math.round(f.size/1024)+' KB)</span>';
+  };r.readAsDataURL(f);
 }
 
 function delWarning(id){

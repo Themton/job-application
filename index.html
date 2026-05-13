@@ -490,7 +490,11 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <span class="ttl" style="font-size:18px">🗓️ อนุมัติการลา</span>
         <div style="display:flex;gap:6px;align-items:center">
           <select id="lv-filter-status" onchange="loadLeaveRequests()" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;background:var(--inp);font-family:inherit">
-            <option value="pending">รออนุมัติ</option>
+            <option value="pending">🟡 รออนุมัติ (HR)</option>
+            <option value="hr_approved">🔵 HR อนุมัติแล้ว — รอหัวหน้า</option>
+            <option value="approved">🟢 อนุมัติสมบูรณ์</option>
+            <option value="rejected">🔴 ไม่อนุมัติ</option>
+            <option value="">ทั้งหมด</option>
             <option value="approved">อนุมัติแล้ว</option>
             <option value="rejected">ปฏิเสธ</option>
             <option value="cancelled">ยกเลิก</option>
@@ -1956,8 +1960,8 @@ function viewAuditLog(){
 /* ═══ LEAVE REQUEST SYSTEM ═══ */
 var LR_TYPE_LABEL={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน',other:'อื่นๆ'};
 var LR_TYPE_COLOR={personal:'#3b82f6',sick:'#f59e0b',vacation:'#10b981',other:'#6b7280'};
-var LR_STATUS_LABEL={pending:'⏳ รออนุมัติ',approved:'✅ อนุมัติ',rejected:'❌ ปฏิเสธ',cancelled:'🚫 ยกเลิก'};
-var LR_STATUS_COLOR={pending:'#f59e0b',approved:'var(--ok)',rejected:'var(--err)',cancelled:'#6b7280'};
+var LR_STATUS_LABEL={pending:'🟡 รออนุมัติ',hr_approved:'🔵 HR อนุมัติ — รอหัวหน้า',approved:'✅ อนุมัติสมบูรณ์',rejected:'❌ ไม่อนุมัติ',cancelled:'🚫 ยกเลิก'};
+var LR_STATUS_COLOR={pending:'#f59e0b',hr_approved:'#3b82f6',approved:'var(--ok)',rejected:'var(--err)',cancelled:'#6b7280'};
 
 /* === ADMIN: list + approve/reject === */
 function loadLeaveRequests(){
@@ -2006,10 +2010,14 @@ function renderLeaveRequestsAdmin(rows){
       +'<td style="text-align:right;white-space:nowrap">';
 
     if(r.status==='pending'){
-      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">✅ อนุมัติ</button> '
+      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">✅ HR อนุมัติ</button> '
         +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">❌ ปฏิเสธ</button> ';
       if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 ดูหลักฐาน</a> ';
       h+='<button class="btn btn-d btn-s hr-hide" onclick="deleteLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px;background:rgba(220,38,38,.08);color:var(--err)">🗑️ ลบ</button>';
+    }else if(r.status==='hr_approved'){
+      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px;background:linear-gradient(135deg,#2563eb,#3b82f6)">✅ หัวหน้าอนุมัติ</button> '
+        +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">❌ ไม่อนุมัติ</button> ';
+      h+='<button class="btn btn-g btn-s" onclick="revertLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">↩️ คืนค่า</button> ';
     }else{
       if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 หลักฐาน</a> ';
       h+='<button class="btn btn-g btn-s" onclick="revertLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">↩️ คืนค่า</button> ';

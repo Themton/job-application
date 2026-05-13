@@ -1077,7 +1077,27 @@ function sbRpc(fn,params){
   }
   if(fn==='leave_submit'){
     var id='LV-'+Date.now()+'-'+Math.random().toString(36).substr(2,4);
-    return sb("leaves","POST",{id:id,emp_id:params.p_emp_id||'',emp_name:params.p_emp_name||'',type:params.p_type||'',date:params.p_date||'',days:params.p_days||1,note:params.p_note||'',status:'pending',created_at:new Date().toISOString()}).then(function(){return{ok:true,id:id}}).catch(function(e){return{ok:false,error:String(e)}});
+    var empData={};try{empData=JSON.parse(localStorage.getItem('emp_data')||'{}')}catch(e){}
+    var empName='';var empEl=document.getElementById('emp-p-name');if(empEl)empName=empEl.textContent.split(' (')[0];
+    return sb("leaves","POST",{
+      id:id,
+      emp_id:empData.id||params.p_emp_id||'',
+      emp_name:empName||params.p_emp_name||'',
+      type:params.p_leave_type||params.p_type||'personal',
+      date:params.p_start_date||params.p_date||'',
+      end_date:params.p_end_date||'',
+      days:params.p_days||1,
+      half_day:params.p_half_day||false,
+      note:params.p_reason||params.p_note||'',
+      evidence_link:params.p_evidence_link||'',
+      status:'pending',
+      created_at:new Date().toISOString()
+    }).then(function(){
+      // Send Telegram notification
+      var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',maternity:'ลาคลอด'};
+      tgNotify('leave_request',{name:empName,leaveType:lvLabels[params.p_leave_type]||params.p_leave_type,date:(params.p_start_date||'')+(params.p_end_date?' ถึง '+params.p_end_date:''),reason:params.p_reason||'',leaveId:id});
+      return{ok:true,id:id};
+    }).catch(function(e){return{ok:false,error:String(e)}});
   }
   if(fn==='leave_cancel'){
     return sb("leaves","PATCH",{status:'cancelled'},"?id=eq."+encodeURIComponent(params.p_id)).then(function(){return{ok:true}}).catch(function(e){return{ok:false,error:String(e)}});

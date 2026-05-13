@@ -1060,7 +1060,7 @@ function sb(t,m,b,q){
   if(m==='DELETE'&&isHR()){toast('⛔ HR ไม่มีสิทธิ์ลบข้อมูล','terr');return Promise.reject('HR cannot delete')}
   var u=SB+"/rest/v1/"+t+(q||"");
   var h={"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Prefer":"return=representation"};
-  var tk=sessionStorage.getItem('mt_tok');
+  var tk=localStorage.getItem('mt_tok');
   if(tk)h["X-Session-Token"]=tk;
   var o={method:m||"GET",headers:h};
   if(b)o.body=JSON.stringify(b);
@@ -1078,17 +1078,17 @@ function sbRpc(fn,params){
     return r.json();
   });
 }
-function TOK(){return sessionStorage.getItem('mt_tok')||''}
-function setTOK(t){sessionStorage.setItem('mt_tok',t)}
+function TOK(){return localStorage.getItem('mt_tok')||''}
+function setTOK(t){localStorage.setItem('mt_tok',t)}
 function clearTOK(){
-  sessionStorage.removeItem('mt_tok');
-  sessionStorage.removeItem('mt_session');
-  sessionStorage.removeItem('mt_logged');
-  sessionStorage.removeItem('mt_acc_logged');
-  sessionStorage.removeItem('emp_data');
+  localStorage.removeItem('mt_tok');
+  localStorage.removeItem('mt_session');
+  localStorage.removeItem('mt_logged');
+  localStorage.removeItem('mt_acc_logged');
+  localStorage.removeItem('emp_data');
 }
-function setSES(s){sessionStorage.setItem('mt_session',JSON.stringify(s))}
-function getSES(){try{return JSON.parse(sessionStorage.getItem('mt_session')||'null')}catch(e){return null}}
+function setSES(s){localStorage.setItem('mt_session',JSON.stringify(s))}
+function getSES(){try{return JSON.parse(localStorage.getItem('mt_session')||'null')}catch(e){return null}}
 function audit(action,targetType,targetId,details){
   var t=TOK();if(!t)return;
   sbRpc('audit_write',{p_token:t,p_action:action,
@@ -1178,7 +1178,7 @@ function showTab(t){
   // Close sidebar on mobile
   if(window.innerWidth<=900)sbClose();
   // จำ tab ที่เปิดอยู่ — รีเฟรชแล้วกลับมาหน้าเดิม
-  try{sessionStorage.setItem('mt_tab',t)}catch(e){}
+  try{localStorage.setItem('mt_tab',t)}catch(e){}
 }
 
 function sbToggle(){
@@ -1272,8 +1272,8 @@ function doLogin(){
     if(!Array.isArray(r)||!r.length){$('l-err').textContent='ไม่พบผู้ใช้';$('l-err').classList.remove('hide');return}
     var user=r[0];
     if(user.password&&user.password!==p){$('l-err').textContent='รหัสผ่านไม่ถูกต้อง';$('l-err').classList.remove('hide');return}
-    sessionStorage.setItem('mt_logged','1');
-    sessionStorage.setItem('mt_role',user.role||'admin');
+    localStorage.setItem('mt_logged','1');
+    localStorage.setItem('mt_role',user.role||'admin');
     page('admin');
   }).catch(function(e){$('l-err').textContent='เชื่อมต่อไม่ได้: '+e;$('l-err').classList.remove('hide')});
 }
@@ -1300,7 +1300,7 @@ function loadAdmin(){
     $('A-ld').classList.add('hide');$('A-main').classList.remove('hide');emailSyncFromAll();stats();doFilter();renderPos();renderUsr();renderDept();
     prog(100,'โหลดเสร็จ ✅ '+ALL.length+' คน');
     // กลับไปหน้าเดิมที่เปิดอยู่ก่อนรีเฟรช
-    var savedTab=sessionStorage.getItem('mt_tab');
+    var savedTab=localStorage.getItem('mt_tab');
     if(savedTab&&$('tab-'+savedTab))showTab(savedTab);
     updateLeavePendingBadge();
     if(window._admPendingPoll)clearInterval(window._admPendingPoll);
@@ -2108,7 +2108,7 @@ function submitLeaveRequest(){
   // ถ้ามีไฟล์ → อัปโหลดก่อน แล้วค่อย submit request
   var uploadPromise;
   if(LR_FILE){
-    var ed=sessionStorage.getItem('emp_data');
+    var ed=localStorage.getItem('emp_data');
     var emp={};try{emp=JSON.parse(ed||'{}')}catch(e){}
     uploadPromise=fetch(DA,{
       method:'POST',
@@ -6276,13 +6276,13 @@ function doAccLogin(){
     var user=r[0];
     if(user.password&&user.password!==p){$('acc-err').textContent='รหัสผ่านไม่ถูกต้อง';$('acc-err').classList.remove('hide');return}
     if(user.role!=='accounting'&&user.role!=='admin'){$('acc-err').textContent='บัญชีนี้ไม่มีสิทธิ์เข้าระบบบัญชี';$('acc-err').classList.remove('hide');return}
-    sessionStorage.setItem('mt_acc_logged','1');
+    localStorage.setItem('mt_acc_logged','1');
     page('acc');
   }).catch(function(e){$('acc-err').textContent='เชื่อมต่อไม่ได้: '+e;$('acc-err').classList.remove('hide')});
 }
 
 function accLogout(){
-  sessionStorage.removeItem('mt_acc_logged');
+  localStorage.removeItem('mt_acc_logged');
   page('acc-login');
 }
 
@@ -6462,7 +6462,7 @@ function empLogin(){
     });
     if(!emp){prog(-1);errEl.textContent='ไม่พบอีเมลนี้ในระบบ — ติดต่อฝ่ายบุคคล';errEl.style.display='block';return}
     prog(100,'เข้าสู่ระบบ ✅ '+emp.name);
-    sessionStorage.setItem('emp_data',JSON.stringify({id:emp.id,email:email}));
+    localStorage.setItem('emp_data',JSON.stringify({id:emp.id,email:email}));
     document.getElementById('P-emp-login').style.display='none';
     document.getElementById('P-emp').style.display='block';
     loadEmpPortal();
@@ -6470,7 +6470,7 @@ function empLogin(){
 }
 
 function loadEmpPortal(){
-  var raw=sessionStorage.getItem('emp_data');
+  var raw=localStorage.getItem('emp_data');
   if(!raw){document.getElementById('P-emp').style.display='none';document.getElementById('P-emp-login').style.display='block';return}
   var d;try{d=JSON.parse(raw)}catch(e){document.getElementById('P-emp').style.display='none';document.getElementById('P-emp-login').style.display='block';return}
   prog(10,'กำลังโหลดข้อมูล...');
@@ -6948,7 +6948,7 @@ function handleTgAction(){
   if(action==='approve_leave'&&leaveId){
     // Wait for admin login, then approve
     var checkLogin=setInterval(function(){
-      if(sessionStorage.getItem('mt_logged')==='1'){
+      if(localStorage.getItem('mt_logged')==='1'){
         clearInterval(checkLogin);
         sb("leaves","PATCH",{status:'approved',approved_at:new Date().toISOString()},"?id=eq."+encodeURIComponent(leaveId)).then(function(){
           toast('✅ อนุมัติการลาแล้ว','tok');
@@ -6971,7 +6971,7 @@ function handleTgAction(){
 
   if(action==='reject_leave'&&leaveId){
     var checkLogin2=setInterval(function(){
-      if(sessionStorage.getItem('mt_logged')==='1'){
+      if(localStorage.getItem('mt_logged')==='1'){
         clearInterval(checkLogin2);
         var reason=prompt('เหตุผลที่ไม่อนุมัติ:','');
         sb("leaves","PATCH",{status:'rejected',reject_reason:reason||'',approved_at:new Date().toISOString()},"?id=eq."+encodeURIComponent(leaveId)).then(function(){
@@ -6992,14 +6992,14 @@ function handleTgAction(){
 }
 
 if(MODE==='admin'){
-  if(sessionStorage.getItem('mt_logged')==='1'){page('admin');handleTgAction()}
+  if(localStorage.getItem('mt_logged')==='1'){page('admin');handleTgAction()}
   else{page('login');handleTgAction()}
 }else if(MODE==='acc'){
-  if(sessionStorage.getItem('mt_acc_logged')==='1'){page('acc')}
+  if(localStorage.getItem('mt_acc_logged')==='1'){page('acc')}
   else{page('acc-login')}
 }else if(MODE==='emp'){
   document.getElementById('P-form').style.display='none';
-  if(sessionStorage.getItem('emp_data')){
+  if(localStorage.getItem('emp_data')){
     document.getElementById('P-emp-login').style.display='none';
     document.getElementById('P-emp').style.display='block';
     loadEmpPortal();

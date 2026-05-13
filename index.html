@@ -1073,7 +1073,28 @@ function sbRpc(fn,params){
   if(fn==='leave_list'){
     var q='?select=*&order=created_at.desc&limit='+(params.p_limit||200);
     if(params.p_status)q+='&status=eq.'+params.p_status;
-    return sb("leaves","GET",null,q).then(function(r){return{ok:true,rows:Array.isArray(r)?r:[]}}).catch(function(){return{ok:false,rows:[]}});
+    // Filter by employee if in emp mode
+    var empD;try{empD=JSON.parse(localStorage.getItem('emp_data')||'null')}catch(e){}
+    if(empD&&empD.id&&!params.p_status)q+='&emp_id=eq.'+encodeURIComponent(empD.id);
+    return sb("leaves","GET",null,q).then(function(r){
+      var rows=(Array.isArray(r)?r:[]).map(function(x){
+        return{
+          id:x.id,emp_id:x.emp_id,emp_name:x.emp_name,
+          leave_type:x.type||x.leave_type||'personal',
+          start_date:x.date||x.start_date||'',
+          end_date:x.end_date||x.date||'',
+          days:x.days||1,
+          half_day:x.half_day||false,
+          reason:x.note||x.reason||'',
+          status:x.status||'pending',
+          submitted_at:x.created_at||'',
+          review_note:x.hr_note||x.mgr_note||x.reject_reason||'',
+          evidence_link:x.evidence_link||'',
+          reviewed_by:x.hr_approved_by||x.mgr_approved_by||x.rejected_by||''
+        };
+      });
+      return{ok:true,rows:rows};
+    }).catch(function(){return{ok:false,rows:[]}});
   }
   if(fn==='leave_submit'){
     var id='LV-'+Date.now()+'-'+Math.random().toString(36).substr(2,4);

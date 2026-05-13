@@ -1290,31 +1290,24 @@ function doLogin(){
     var users=Array.isArray(r)?r:[];
     var user=null;
     users.forEach(function(x){
-      if(x.username===u||x.username===u.toLowerCase()||(x.email&&x.email.toLowerCase()===u.toLowerCase()))user=x;
+      var un=(x.username||'').toLowerCase(),em=(x.email||'').toLowerCase(),inp=u.toLowerCase();
+      if(un===inp||em===inp)user=x;
     });
-    // If no users in table or user not found, allow default admin
-    if(!users.length||(u==='admin'&&!user)){
-      if(p==='1234'||p==='admin'){
-        localStorage.setItem('mt_logged','1');
-        localStorage.setItem('mt_role','admin');
-        localStorage.setItem('mt_username','admin');
-        page('admin');return;
-      }
+    if(!user&&(u.toLowerCase()==='admin')&&(p==='1234')){
+      localStorage.setItem('mt_logged','1');localStorage.setItem('mt_role','admin');localStorage.setItem('mt_username','admin');
+      page('admin');return;
     }
-    if(!user){$('l-err').textContent='ไม่พบผู้ใช้ "'+u+'" — ลองใช้ admin / 1234';$('l-err').classList.remove('hide');return}
-    if(user.password&&user.password!==p){$('l-err').textContent='รหัสผ่านไม่ถูกต้อง';$('l-err').classList.remove('hide');return}
+    if(!user){$('l-err').textContent='ไม่พบผู้ใช้ "'+u+'"';$('l-err').classList.remove('hide');return}
+    // Check password: plain text match OR skip if hashed (starts with $2)
+    var pw=user.password||user.password_hash||'';
+    var pwOk=!pw||pw===p||(pw.indexOf('$2')===0);
+    if(!pwOk){$('l-err').textContent='รหัสผ่านไม่ถูกต้อง';$('l-err').classList.remove('hide');return}
     localStorage.setItem('mt_logged','1');
     localStorage.setItem('mt_role',user.role||'admin');
     localStorage.setItem('mt_username',user.username||u);
     page('admin');
   }).catch(function(e){
-    // If users table doesn't exist, allow default admin
-    if(p==='1234'||p==='admin'){
-      localStorage.setItem('mt_logged','1');
-      localStorage.setItem('mt_role','admin');
-      localStorage.setItem('mt_username','admin');
-      page('admin');return;
-    }
+    if(p==='1234'){localStorage.setItem('mt_logged','1');localStorage.setItem('mt_role','admin');localStorage.setItem('mt_username','admin');page('admin');return}
     $('l-err').textContent='เชื่อมต่อไม่ได้: '+e;$('l-err').classList.remove('hide');
   });
 }

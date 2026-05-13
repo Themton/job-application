@@ -1286,12 +1286,17 @@ function resetForm(){['i-name','i-nickname','i-phone','i-email','i-baccount','i-
 function doLogin(){
   var u=$('i-user').value.trim(),p=$('i-pass').value;$('l-err').classList.add('hide');
   if(!u||!p){$('l-err').textContent='กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';$('l-err').classList.remove('hide');return}
-  sb("users","GET",null,"?username=eq."+encodeURIComponent(u)+"&select=*").then(function(r){
-    if(!Array.isArray(r)||!r.length){$('l-err').textContent='ไม่พบผู้ใช้';$('l-err').classList.remove('hide');return}
-    var user=r[0];
+  sb("users","GET",null,"?select=*").then(function(r){
+    if(!Array.isArray(r)||!r.length){$('l-err').textContent='ไม่พบผู้ใช้ในระบบ';$('l-err').classList.remove('hide');return}
+    var user=null;
+    r.forEach(function(x){
+      if(x.username===u||x.username===u.toLowerCase()||(x.email&&x.email.toLowerCase()===u.toLowerCase()))user=x;
+    });
+    if(!user){$('l-err').textContent='ไม่พบผู้ใช้ "'+u+'"';$('l-err').classList.remove('hide');return}
     if(user.password&&user.password!==p){$('l-err').textContent='รหัสผ่านไม่ถูกต้อง';$('l-err').classList.remove('hide');return}
     localStorage.setItem('mt_logged','1');
     localStorage.setItem('mt_role',user.role||'admin');
+    localStorage.setItem('mt_username',user.username||u);
     page('admin');
   }).catch(function(e){$('l-err').textContent='เชื่อมต่อไม่ได้: '+e;$('l-err').classList.remove('hide')});
 }

@@ -1997,33 +1997,63 @@ function showEvidence(url){
 }
 
 function approveLeaveReq(id){
-  var note=prompt('หมายเหตุ (ไม่บังคับ):','');
-  if(note===null)return; // user cancelled
-  sbRpc('leave_approve',{p_token:TOK(),p_id:id,p_note:note||null}).then(function(r){
-    if(!r||!r.ok){
-      var msg=r&&r.message?r.message:(r&&r.error==='already_reviewed'?'ใบลานี้ถูกตรวจแล้ว':'อนุมัติไม่สำเร็จ');
-      toast(msg,'terr');return;
+  // Check current status to determine approval level
+  sb("leaves","GET",null,"?id=eq."+encodeURIComponent(id)+"&select=*").then(function(r){
+    if(!Array.isArray(r)||!r.length){toast('ไม่พบใบลา','terr');return}
+    var lv=r[0];
+    var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',absent:'ขาดงาน'};
+    
+    if(lv.status==='pending'){
+      // Level 1: HR approves → forward to manager
+      var note=prompt('HR อนุมัติ — หมายเหตุ (ไม่บังคับ):','');
+      if(note===null)return;
+      sb("leaves","PATCH",{status:'hr_approved',hr_approved_by:localStorage.getItem('mt_username')||'HR',hr_approved_at:new Date().toISOString(),hr_note:note||''},"?id=eq."+encodeURIComponent(id)).then(function(){
+        toast('✅ HR อนุมัติแล้ว — ส่งต่อหัวหน้ารออนุมัติ','tok');
+        // Send Telegram to manager
+        var adminUrl=location.origin+location.pathname+'?admin';
+        var approveUrl=adminUrl+'&tg_action=approve_leave&leave_id='+encodeURIComponent(id);
+        var rejectUrl=adminUrl+'&tg_action=reject_leave&leave_id='+encodeURIComponent(id);
+        tgSend('📤 <b>ส่งต่ออนุมัติ → หัวหน้า</b>\n\n👤 ชื่อ: <b>'+esc(lv.emp_name||'')+'</b>\n📋 ประเภท: '+(lvLabels[lv.type]||lv.type)+'\n📅 วันที่: '+esc(lv.date||'')+'\n📝 เหตุผล: '+esc(lv.note||'-')+'\n\n✅ <i>HR อนุมัติแล้ว — รอหัวหน้าอนุมัติ</i>\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>',
+          [[{text:'✅ หัวหน้าอนุมัติ',url:approveUrl},{text:'❌ ไม่อนุมัติ',url:rejectUrl}]]);
+        loadLeaveRequests();
+      }).catch(function(e){toast('Error: '+e,'terr')});
+
+    }else if(lv.status==='hr_approved'){
+      // Level 2: Manager final approve
+      var note2=prompt('หัวหน้าอนุมัติขั้นสุดท้าย — หมายเหตุ (ไม่บังคับ):','');
+      if(note2===null)return;
+      sb("leaves","PATCH",{status:'approved',mgr_approved_by:localStorage.getItem('mt_username')||'Manager',mgr_approved_at:new Date().toISOString(),mgr_note:note2||''},"?id=eq."+encodeURIComponent(id)).then(function(){
+        toast('✅ หัวหน้าอนุมัติแล้ว — การลาได้รับอนุมัติสมบูรณ์','tok');
+        tgSend('✅ <b>อนุมัติการลาสมบูรณ์</b>\n\n👤 '+esc(lv.emp_name||'')+'\n📋 '+(lvLabels[lv.type]||lv.type)+'\n📅 '+esc(lv.date||'')+'\n\n✅ HR อนุมัติแล้ว\n✅ หัวหน้าอนุมัติแล้ว\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+        loadLeaveRequests();
+      }).catch(function(e){toast('Error: '+e,'terr')});
+
+    }else{
+      toast('ใบลานี้ถูกตรวจแล้ว (สถานะ: '+lv.status+')','terr');
     }
-    toast('✅ อนุมัติแล้ว','tok');
-    loadLeaveRequests();
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
 
 function rejectLeaveReq(id){
-  var note=prompt('เหตุผลที่ปฏิเสธ:','');
+  var note=prompt('เหตุผลที่ไม่อนุมัติ:','');
   if(note===null)return;
   if(!note||!note.trim()){toast('กรุณาระบุเหตุผล','terr');return}
-  sbRpc('leave_reject',{p_token:TOK(),p_id:id,p_note:note}).then(function(r){
-    if(!r||!r.ok){toast(r&&r.message?r.message:'ปฏิเสธไม่สำเร็จ','terr');return}
-    toast('ปฏิเสธแล้ว','tok');
+  sb("leaves","PATCH",{status:'rejected',reject_reason:note,rejected_by:localStorage.getItem('mt_username')||'',rejected_at:new Date().toISOString()},"?id=eq."+encodeURIComponent(id)).then(function(){
+    toast('❌ ไม่อนุมัติ','tok');
+    sb("leaves","GET",null,"?id=eq."+encodeURIComponent(id)+"&select=*").then(function(r){
+      if(Array.isArray(r)&&r.length){
+        var lv=r[0];
+        var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน'};
+        tgSend('❌ <b>ไม่อนุมัติการลา</b>\n\n👤 '+esc(lv.emp_name||'')+'\n📋 '+(lvLabels[lv.type]||lv.type)+'\n📅 '+esc(lv.date||'')+'\n📝 เหตุผล: '+esc(note)+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+      }
+    });
     loadLeaveRequests();
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
 
 function revertLeaveReq(id){
-  if(!confirm('คืนค่าใบลานี้กลับเป็น "รออนุมัติ" ?\n\n(ถ้าเคยอนุมัติแล้ว วันลาที่หักไปจะถูกคืนกลับ)'))return;
-  sbRpc('leave_revert',{p_token:TOK(),p_id:id}).then(function(r){
-    if(!r||!r.ok){toast(r&&r.message?r.message:'คืนค่าไม่สำเร็จ','terr');return}
+  if(!confirm('คืนค่าใบลานี้กลับเป็น "รออนุมัติ" ?\n\n(สถานะจะกลับเป็น pending)'))return;
+  sb("leaves","PATCH",{status:'pending',hr_approved_by:'',hr_approved_at:'',mgr_approved_by:'',mgr_approved_at:'',reject_reason:'',rejected_by:''},"?id=eq."+encodeURIComponent(id)).then(function(){
     toast('↩️ คืนค่าเป็นรออนุมัติแล้ว','tok');
     loadLeaveRequests();
   }).catch(function(e){toast('Error: '+e,'terr')});
@@ -6946,27 +6976,36 @@ function handleTgAction(){
   var leaveId=params.get('leave_id')||'';
 
   if(action==='approve_leave'&&leaveId){
-    // Wait for admin login, then approve
     var checkLogin=setInterval(function(){
       if(localStorage.getItem('mt_logged')==='1'){
         clearInterval(checkLogin);
-        sb("leaves","PATCH",{status:'approved',approved_at:new Date().toISOString()},"?id=eq."+encodeURIComponent(leaveId)).then(function(){
-          toast('✅ อนุมัติการลาแล้ว','tok');
-          // Get leave details for Telegram confirmation
-          sb("leaves","GET",null,"?id=eq."+encodeURIComponent(leaveId)+"&select=*").then(function(r){
-            if(Array.isArray(r)&&r.length){
-              var lv=r[0];
-              var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',absent:'ขาดงาน'};
-              tgNotify('leave_approved',{name:lv.emp_name||'',leaveType:lvLabels[lv.type]||lv.type,date:lv.date||''});
-            }
-          });
-          // Clean URL
-          history.replaceState(null,'',location.pathname+'?admin');
-          setTimeout(function(){showTab('lv')},1000);
-        }).catch(function(e){toast('อนุมัติไม่สำเร็จ: '+e,'terr')});
+        // Check current status first
+        sb("leaves","GET",null,"?id=eq."+encodeURIComponent(leaveId)+"&select=*").then(function(r){
+          if(!Array.isArray(r)||!r.length){toast('ไม่พบใบลา','terr');return}
+          var lv=r[0];
+          var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน'};
+          
+          if(lv.status==='pending'){
+            // HR approve → forward to manager
+            sb("leaves","PATCH",{status:'hr_approved',hr_approved_by:'Telegram',hr_approved_at:new Date().toISOString()},"?id=eq."+encodeURIComponent(leaveId)).then(function(){
+              toast('✅ HR อนุมัติแล้ว — ส่งต่อหัวหน้า','tok');
+              var adminUrl2=location.origin+location.pathname+'?admin';
+              tgSend('✅ <b>HR อนุมัติแล้ว — รอหัวหน้า</b>\n\n👤 '+esc(lv.emp_name||'')+'\n📋 '+(lvLabels[lv.type]||lv.type)+'\n📅 '+esc(lv.date||'')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>',
+                [[{text:'✅ หัวหน้าอนุมัติ',url:adminUrl2+'&tg_action=approve_leave&leave_id='+encodeURIComponent(leaveId)},{text:'❌ ไม่อนุมัติ',url:adminUrl2+'&tg_action=reject_leave&leave_id='+encodeURIComponent(leaveId)}]]);
+            });
+          }else if(lv.status==='hr_approved'){
+            // Manager final approve
+            sb("leaves","PATCH",{status:'approved',mgr_approved_by:'Telegram',mgr_approved_at:new Date().toISOString()},"?id=eq."+encodeURIComponent(leaveId)).then(function(){
+              toast('✅ อนุมัติสมบูรณ์','tok');
+              tgSend('✅ <b>อนุมัติการลาสมบูรณ์</b>\n\n👤 '+esc(lv.emp_name||'')+'\n📋 '+(lvLabels[lv.type]||lv.type)+'\n📅 '+esc(lv.date||'')+'\n\n✅ HR อนุมัติ\n✅ หัวหน้าอนุมัติ\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+            });
+          }else{toast('ใบลานี้ถูกตรวจแล้ว','terr')}
+        });
+        history.replaceState(null,'',location.pathname+'?admin');
+        setTimeout(function(){showTab('lv')},1000);
       }
     },500);
-    setTimeout(function(){clearInterval(checkLogin)},30000); // timeout 30s
+    setTimeout(function(){clearInterval(checkLogin)},30000);
   }
 
   if(action==='reject_leave'&&leaveId){

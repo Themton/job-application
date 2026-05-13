@@ -6577,7 +6577,7 @@ function empLogin(){
   var pass=document.getElementById('emp-l-pass').value;
   var errEl=document.getElementById('emp-l-err');
   if(!email||email.indexOf('@')<0){errEl.textContent='กรุณากรอกอีเมล';errEl.style.display='block';return}
-  if(pass!=='1234'){errEl.textContent='รหัสผ่านไม่ถูกต้อง';errEl.style.display='block';return}
+  if(!pass){errEl.textContent='กรุณากรอกรหัสผ่าน';errEl.style.display='block';return}
   errEl.style.display='none';
   prog(20,'กำลังตรวจสอบ...');
   sb("applications","GET",null,"?select=*&status=neq.terminated").then(function(r){
@@ -6587,6 +6587,10 @@ function empLogin(){
       if(a.email&&a.email.trim().toLowerCase()===email.toLowerCase())emp=a;
     });
     if(!emp){prog(-1);errEl.textContent='ไม่พบอีเมลนี้ในระบบ — ติดต่อฝ่ายบุคคล';errEl.style.display='block';return}
+    // Check password: last 4 digits of phone OR "1234"
+    var phone=emp.phone||'';
+    var last4=phone.length>=4?phone.slice(-4):'1234';
+    if(pass!==last4&&pass!=='1234'){prog(-1);errEl.textContent='รหัสผ่านไม่ถูกต้อง — ใช้เบอร์โทร 4 ตัวท้าย';errEl.style.display='block';return}
     prog(100,'เข้าสู่ระบบ ✅ '+emp.name);
     localStorage.setItem('emp_data',JSON.stringify({id:emp.id,email:email}));
     document.getElementById('P-emp-login').style.display='none';

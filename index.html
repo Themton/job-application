@@ -1371,6 +1371,14 @@ function loadAdmin(){
   if(ses&&ses.role==='hr'){$('sb-role-badge').innerHTML='<span class="hr-badge">HR</span>'}
   else if(localStorage.getItem('mt_role')==='manager'){$('sb-role-badge').innerHTML='<span class="hr-badge" style="background:#2563eb">หัวหน้า</span>'}
   else $('sb-role-badge').innerHTML='';
+
+  // Manager: show only leave approval + logout
+  if(localStorage.getItem('mt_role')==='manager'){
+    document.querySelectorAll('.sb-item').forEach(function(el){if(!el.classList.contains('sb-logout'))el.style.display='none'});
+    document.querySelectorAll('.sb-sep').forEach(function(el){el.style.display='none'});
+    $('tab-lv').style.display='';
+    showTab('lv');
+  }
   prog(10,'กำลังโหลดข้อมูลพนักงาน...');
   Promise.all([
     sb("applications","GET",null,"?select=*&order=created_at.desc"),

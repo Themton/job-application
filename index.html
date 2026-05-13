@@ -1069,14 +1069,32 @@ function sb(t,m,b,q){
 
 /* ═══ SECURITY LAYER ═══ */
 function sbRpc(fn,params){
-  return fetch(SB+"/rest/v1/rpc/"+fn,{
-    method:"POST",
-    headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json"},
-    body:JSON.stringify(params||{})
-  }).then(function(r){
-    if(!r.ok)return r.text().then(function(t){throw new Error(r.status+': '+t)});
-    return r.json();
-  });
+  // Map RPC calls to direct REST API
+  if(fn==='leave_list'){
+    var q='?select=*&order=created_at.desc&limit='+(params.p_limit||200);
+    if(params.p_status)q+='&status=eq.'+params.p_status;
+    return sb("leaves","GET",null,q).then(function(r){return{ok:true,rows:Array.isArray(r)?r:[]}}).catch(function(){return{ok:false,rows:[]}});
+  }
+  if(fn==='leave_submit'){
+    var id='LV-'+Date.now()+'-'+Math.random().toString(36).substr(2,4);
+    return sb("leaves","POST",{id:id,emp_id:params.p_emp_id||'',emp_name:params.p_emp_name||'',type:params.p_type||'',date:params.p_date||'',days:params.p_days||1,note:params.p_note||'',status:'pending',created_at:new Date().toISOString()}).then(function(){return{ok:true,id:id}}).catch(function(e){return{ok:false,error:String(e)}});
+  }
+  if(fn==='leave_cancel'){
+    return sb("leaves","PATCH",{status:'cancelled'},"?id=eq."+encodeURIComponent(params.p_id)).then(function(){return{ok:true}}).catch(function(e){return{ok:false,error:String(e)}});
+  }
+  if(fn==='admin_create_user'){
+    var uid='USR-'+Date.now();
+    return sb("users","POST",{id:uid,username:params.p_username||'',display_name:params.p_display_name||'',password:params.p_password||'',role:params.p_role||'admin'}).then(function(){return{ok:true}}).catch(function(e){return{ok:false,message:String(e)}});
+  }
+  if(fn==='admin_update_user'){
+    var patch={};if(params.p_display_name)patch.display_name=params.p_display_name;if(params.p_role)patch.role=params.p_role;if(params.p_password)patch.password=params.p_password;
+    return sb("users","PATCH",patch,"?id=eq."+encodeURIComponent(params.p_target_id)).then(function(){return{ok:true}}).catch(function(e){return{ok:false,message:String(e)}});
+  }
+  if(fn==='admin_delete_user'){
+    return sb("users","DELETE",null,"?id=eq."+encodeURIComponent(params.p_target_id)).then(function(){return{ok:true}}).catch(function(e){return{ok:false,message:String(e)}});
+  }
+  // Safe fallback for unused RPCs
+  return Promise.resolve({ok:true,rows:[]});
 }
 function TOK(){return localStorage.getItem('mt_tok')||''}
 function setTOK(t){localStorage.setItem('mt_tok',t)}

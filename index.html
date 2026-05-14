@@ -262,6 +262,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <button class="sb-item hr-hide" id="tab-usr" onclick="showTab('usr')"><span class="sb-ic">👤</span><span class="sb-tx">ผู้ใช้ / สิทธิ์</span></button>
         <button class="sb-item" id="tab-rpt" onclick="showTab('rpt')"><span class="sb-ic">📊</span><span class="sb-tx">รายงาน / ตรวจสอบ</span></button>
         <button class="sb-item" id="tab-lv" onclick="showTab('lv')"><span class="sb-ic">🗓️</span><span class="sb-tx">อนุมัติการลา <span id="lv-pending-dot" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;margin-left:4px"></span></span></button>
+        <button class="sb-item" id="tab-interview" onclick="showTab('interview')"><span class="sb-ic">📅</span><span class="sb-tx">นัดสัมภาษณ์</span></button>
         <button class="sb-item" id="tab-warn" onclick="showTab('warn')"><span class="sb-ic">⚠️</span><span class="sb-tx">ใบเตือน / บันทึก</span></button>
         <button class="sb-item" id="tab-eval" onclick="showTab('eval')"><span class="sb-ic">📝</span><span class="sb-tx">ประเมินผลพนักงาน</span></button>
         <button class="sb-item" id="tab-att" onclick="showTab('att')"><span class="sb-ic">📋</span><span class="sb-tx">ขาด / ลา / มาสาย</span></button>
@@ -504,6 +505,45 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         </div>
       </div>
       <div id="lv-admin-list"><div style="text-align:center;padding:30px;color:var(--muted)">กำลังโหลด...</div></div>
+    </div>
+
+    <!-- TAB: Interview Schedule -->
+    <div id="T-interview" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span class="ttl" style="font-size:18px">📅 ตารางนัดสัมภาษณ์</span>
+        <button class="btn btn-a btn-s" onclick="showAddInterview()">➕ เพิ่มนัดสัมภาษณ์</button>
+      </div>
+      <div id="iv-form" class="cd hide" style="margin-bottom:14px;border:2px solid var(--acc)">
+        <div class="cd-t"><span class="dot"></span> <span id="iv-form-title">เพิ่มนัดสัมภาษณ์</span></div>
+        <div class="g2">
+          <div class="fld"><label>ชื่อผู้สมัคร *</label><input id="iv-name" placeholder="ชื่อ-สกุล"></div>
+          <div class="fld"><label>ตำแหน่งที่สมัคร</label><input id="iv-position" placeholder="ตำแหน่ง"></div>
+          <div class="fld"><label>เบอร์โทร</label><input id="iv-phone" placeholder="08XXXXXXXX" maxlength="10" inputmode="tel"></div>
+          <div class="fld"><label>อีเมล</label><input id="iv-email" placeholder="email@gmail.com"></div>
+          <div class="fld"><label>วันที่สัมภาษณ์ *</label><input id="iv-date" type="date"></div>
+          <div class="fld"><label>เวลา *</label><input id="iv-time" type="time" value="10:00"></div>
+          <div class="fld"><label>สถานที่</label><input id="iv-location" placeholder="ห้องประชุม / ออนไลน์"></div>
+          <div class="fld"><label>ผู้สัมภาษณ์</label><input id="iv-interviewer" placeholder="ชื่อผู้สัมภาษณ์"></div>
+        </div>
+        <div class="fld" style="margin-top:8px"><label>หมายเหตุ</label><textarea id="iv-note" rows="2" style="width:100%;padding:8px 12px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:13px;background:var(--inp)" placeholder="หมายเหตุเพิ่มเติม..."></textarea></div>
+        <div class="brow" style="margin-top:10px">
+          <button class="btn btn-a" id="iv-save-btn" onclick="saveInterview()">💾 บันทึก</button>
+          <button class="btn btn-g btn-s" onclick="$('iv-form').classList.add('hide')">ยกเลิก</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <select class="fsel" id="iv-filter" onchange="renderInterviews()">
+          <option value="">ทั้งหมด</option>
+          <option value="scheduled">📅 รอสัมภาษณ์</option>
+          <option value="completed">✅ สัมภาษณ์แล้ว</option>
+          <option value="passed">🟢 ผ่าน</option>
+          <option value="failed">🔴 ไม่ผ่าน</option>
+          <option value="cancelled">⚫ ยกเลิก</option>
+        </select>
+        <div class="sb" style="max-width:200px"><input id="iv-search" placeholder="ค้นหาชื่อ..." oninput="debounce(renderInterviews,'ivr')"></div>
+      </div>
+      <div id="iv-stats" class="sts" style="margin-bottom:12px"></div>
+      <div id="iv-table"></div>
     </div>
 
     <!-- TAB: Warnings -->
@@ -1216,10 +1256,10 @@ function page(p){
   window.scrollTo(0,0);
 }
 
-var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',warn:'⚠️ ใบเตือน',eval:'📝 ประเมินผล',att:'📋 ขาด/ลา/มาสาย',ot:'⏰ OT',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',exp:'🧾 เบิกค่าใช้จ่าย',paydb:'🗂️ รายงานรวม',cert:'📜 หนังสือรับรอง',tax:'📄 ภาษี/ปกส.',labor:'📋 ทะเบียนลูกจ้าง'};
+var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',interview:'📅 นัดสัมภาษณ์',warn:'⚠️ ใบเตือน',eval:'📝 ประเมินผล',att:'📋 ขาด/ลา/มาสาย',ot:'⏰ OT',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',exp:'🧾 เบิกค่าใช้จ่าย',paydb:'🗂️ รายงานรวม',cert:'📜 หนังสือรับรอง',tax:'📄 ภาษี/ปกส.',labor:'📋 ทะเบียนลูกจ้าง'};
 
 function showTab(t){
-  ['dash','app','dept','pos','usr','rpt','lv','warn','eval','att','ot','pay','comm','exp','paydb','cert','tax','labor'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
+  ['dash','app','dept','pos','usr','rpt','lv','interview','warn','eval','att','ot','pay','comm','exp','paydb','cert','tax','labor'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   if(t==='lv'){
     // Auto-select filter based on role
@@ -1242,6 +1282,7 @@ function showTab(t){
   if(t==='exp')expInit();
   if(t==='tax'&&!$('tax-month').value){var now=new Date();$('tax-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='labor')laborLoad();
+  if(t==='interview')loadInterviews();
   // Update mobile topbar label
   if($('sb-active-label'))$('sb-active-label').textContent=TAB_LABELS[t]||t;
   // Close sidebar on mobile
@@ -6806,6 +6847,138 @@ function tgNotify(type,data){
   }
   msg+='\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>';
   tgSend(msg,btns);
+}
+
+/* ═══ INTERVIEW SCHEDULE (ตารางนัดสัมภาษณ์) ═══ */
+var IV_ALL=[];
+var IV_STATUS={scheduled:{l:'📅 รอสัมภาษณ์',c:'#f59e0b'},completed:{l:'✅ สัมภาษณ์แล้ว',c:'#3b82f6'},passed:{l:'🟢 ผ่าน',c:'var(--ok)'},failed:{l:'🔴 ไม่ผ่าน',c:'var(--err)'},cancelled:{l:'⚫ ยกเลิก',c:'#6b7280'}};
+
+function loadInterviews(){
+  prog(10,'โหลดตารางสัมภาษณ์...');
+  sb("interviews","GET",null,"?select=*&order=interview_date.desc,interview_time.desc").then(function(r){
+    IV_ALL=Array.isArray(r)?r:[];
+    prog(100,'โหลดตารางสัมภาษณ์ ✅ '+IV_ALL.length+' รายการ');
+    renderInterviews();
+  }).catch(function(e){prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
+}
+
+function renderInterviews(){
+  var filter=$('iv-filter')?$('iv-filter').value:'';
+  var srch=$('iv-search')?$('iv-search').value.toLowerCase():'';
+  var list=IV_ALL.filter(function(iv){
+    if(filter&&iv.status!==filter)return false;
+    if(srch&&(iv.name+' '+iv.position+' '+iv.phone).toLowerCase().indexOf(srch)<0)return false;
+    return true;
+  });
+
+  // Stats
+  var cnt={scheduled:0,completed:0,passed:0,failed:0,cancelled:0};
+  IV_ALL.forEach(function(iv){cnt[iv.status]=(cnt[iv.status]||0)+1});
+  $('iv-stats').innerHTML=[
+    {l:'รอสัมภาษณ์',v:cnt.scheduled,c:'#f59e0b',ic:'📅'},
+    {l:'สัมภาษณ์แล้ว',v:cnt.completed,c:'#3b82f6',ic:'✅'},
+    {l:'ผ่าน',v:cnt.passed,c:'var(--ok)',ic:'🟢'},
+    {l:'ไม่ผ่าน',v:cnt.failed,c:'var(--err)',ic:'🔴'},
+    {l:'ทั้งหมด',v:IV_ALL.length,c:'var(--muted)',ic:'📊'}
+  ].map(function(s){return'<div class="st"><div class="ic">'+s.ic+'</div><div class="l">'+s.l+'</div><div class="v" style="color:'+s.c+'">'+s.v+'</div></div>'}).join('');
+
+  var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>เวลา</th><th style="min-width:120px">ชื่อผู้สมัคร</th><th>ตำแหน่ง</th><th>เบอร์โทร</th><th>สถานที่</th><th>ผู้สัมภาษณ์</th><th>สถานะ</th><th>หมายเหตุ</th><th style="min-width:160px">จัดการ</th></tr></thead><tbody>';
+
+  if(!list.length)h+='<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted)">📭 ไม่มีข้อมูล</td></tr>';
+
+  list.forEach(function(iv){
+    var st=IV_STATUS[iv.status]||IV_STATUS.scheduled;
+    var isToday=iv.interview_date===new Date().toISOString().substring(0,10);
+    h+='<tr style="'+(isToday?'background:rgba(198,149,43,.08);':'')+(iv.status==='cancelled'?'opacity:.5;':'')+'">';
+    h+='<td style="font-size:12px;white-space:nowrap'+(isToday?';font-weight:700;color:var(--acc)':'')+'">'+esc(iv.interview_date||'')+(isToday?' <span style="font-size:9px;background:var(--acc);color:#fff;padding:1px 5px;border-radius:8px">วันนี้</span>':'')+'</td>';
+    h+='<td style="font-weight:600">'+esc(iv.interview_time||'')+'</td>';
+    h+='<td class="nm">'+esc(iv.name||'')+'</td>';
+    h+='<td>'+esc(iv.position||'')+'</td>';
+    h+='<td style="font-size:12px">'+(iv.phone?'<a href="tel:'+esc(iv.phone)+'">'+esc(iv.phone)+'</a>':'')+'</td>';
+    h+='<td style="font-size:12px">'+esc(iv.location||'')+'</td>';
+    h+='<td style="font-size:12px">'+esc(iv.interviewer||'')+'</td>';
+    h+='<td><span style="color:'+st.c+';font-weight:600;font-size:12px">'+st.l+'</span></td>';
+    h+='<td style="font-size:11px;color:var(--muted)">'+esc(iv.note||'')+'</td>';
+    h+='<td style="white-space:nowrap">';
+    if(iv.status==='scheduled'){
+      h+='<button class="btn btn-a btn-s" onclick="ivUpdateStatus(\''+iv.id+'\',\'passed\')" style="padding:2px 6px;font-size:10px">🟢 ผ่าน</button> ';
+      h+='<button class="btn btn-d btn-s" onclick="ivUpdateStatus(\''+iv.id+'\',\'failed\')" style="padding:2px 6px;font-size:10px">🔴 ไม่ผ่าน</button> ';
+    }
+    if(iv.status==='passed'){
+      h+='<button class="btn btn-a btn-s" onclick="ivHire(\''+iv.id+'\')" style="padding:2px 6px;font-size:10px;background:var(--ok)">🎉 รับเข้าทำงาน</button> ';
+    }
+    h+='<button class="btn btn-g btn-s" onclick="ivDelete(\''+iv.id+'\')" style="padding:2px 6px;font-size:10px">🗑️</button>';
+    h+='</td></tr>';
+  });
+
+  h+='</tbody></table></div>';
+  $('iv-table').innerHTML=h;
+}
+
+function showAddInterview(){
+  $('iv-form').classList.remove('hide');
+  $('iv-form-title').textContent='เพิ่มนัดสัมภาษณ์';
+  ['iv-name','iv-position','iv-phone','iv-email','iv-location','iv-interviewer','iv-note'].forEach(function(x){$(x).value=''});
+  $('iv-date').value=new Date().toISOString().substring(0,10);
+  $('iv-time').value='10:00';
+  $('iv-save-btn').onclick=function(){saveInterview()};
+  $('iv-name').focus();
+}
+
+function saveInterview(){
+  var name=$('iv-name').value.trim(),pos=$('iv-position').value.trim();
+  var phone=$('iv-phone').value.trim(),email=$('iv-email').value.trim();
+  var date=$('iv-date').value,time=$('iv-time').value;
+  var loc=$('iv-location').value.trim(),interviewer=$('iv-interviewer').value.trim();
+  var note=$('iv-note').value.trim();
+  if(!name){toast('กรอกชื่อผู้สมัคร','terr');return}
+  if(!date){toast('เลือกวันที่สัมภาษณ์','terr');return}
+
+  var id='IV-'+Date.now();
+  var data={id:id,name:name,position:pos,phone:phone,email:email,interview_date:date,interview_time:time||'10:00',location:loc,interviewer:interviewer,note:note,status:'scheduled',created_at:new Date().toISOString()};
+
+  prog(20,'บันทึกนัดสัมภาษณ์...');
+  sb("interviews","POST",data).then(function(r){
+    prog(100,'บันทึกนัดสัมภาษณ์ ✅');
+    toast('📅 เพิ่มนัดสัมภาษณ์ '+name+' วันที่ '+date+' '+time,'tok');
+    $('iv-form').classList.add('hide');
+    tgSend('📅 <b>นัดสัมภาษณ์ใหม่</b>\n\n👤 ชื่อ: <b>'+esc(name)+'</b>\n💼 ตำแหน่ง: '+esc(pos||'-')+'\n📅 วันที่: '+date+' เวลา '+time+'\n📍 สถานที่: '+esc(loc||'-')+'\n👔 ผู้สัมภาษณ์: '+esc(interviewer||'-')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+    loadInterviews();
+  }).catch(function(e){prog(-1);toast('บันทึกไม่สำเร็จ: '+e,'terr')});
+}
+
+function ivUpdateStatus(id,st){
+  var note='';
+  if(st==='failed')note=prompt('เหตุผลที่ไม่ผ่าน:','');
+  if(st==='failed'&&note===null)return;
+  sb("interviews","PATCH",{status:st,note:note||undefined},"?id=eq."+id).then(function(){
+    toast(st==='passed'?'🟢 ผ่านการสัมภาษณ์':'🔴 ไม่ผ่านการสัมภาษณ์','tok');
+    IV_ALL.forEach(function(iv){if(iv.id===id){iv.status=st;if(note)iv.note=note}});
+    renderInterviews();
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function ivHire(id){
+  if(!confirm('🎉 รับเข้าทำงาน?\n\nจะเพิ่มเป็นพนักงานใหม่ในระบบ'))return;
+  var iv=null;IV_ALL.forEach(function(x){if(x.id===id)iv=x});
+  if(!iv){toast('ไม่พบข้อมูล','terr');return}
+  var empId='EMP-'+Date.now();
+  var data={id:empId,name:iv.name,phone:iv.phone||'',email:iv.email||'',position:iv.position||'',status:'new',created_at:new Date().toISOString()};
+  prog(20,'เพิ่มพนักงานใหม่...');
+  sb("applications","POST",data).then(function(){
+    sb("interviews","PATCH",{status:'completed',note:(iv.note||'')+' → รับเข้าทำงานแล้ว'},"?id=eq."+id);
+    prog(100,'เพิ่มพนักงาน ✅ '+iv.name);
+    toast('🎉 รับ '+iv.name+' เข้าทำงานแล้ว','tok');
+    tgSend('🎉 <b>รับพนักงานใหม่</b>\n\n👤 '+esc(iv.name)+'\n💼 '+esc(iv.position||'-')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+    loadInterviews();
+  }).catch(function(e){prog(-1);toast('Error: '+e,'terr')});
+}
+
+function ivDelete(id){
+  if(!confirm('ลบนัดสัมภาษณ์นี้?'))return;
+  sb("interviews","DELETE",null,"?id=eq."+id).then(function(){
+    toast('ลบแล้ว','tok');loadInterviews();
+  }).catch(function(e){toast('Error: '+e,'terr')});
 }
 
 /* ═══ THAI ADDRESS AUTOCOMPLETE ═══ */

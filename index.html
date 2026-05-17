@@ -271,7 +271,6 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <button class="sb-item hr-hide" onclick="viewAuditLog()"><span class="sb-ic">🔐</span><span class="sb-tx">Audit Log</span></button>
         <div class="sb-sep">เงินเดือน</div>
         <button class="sb-item" id="tab-pay" onclick="showTab('pay')"><span class="sb-ic">💰</span><span class="sb-tx">คิดเงินเดือน</span></button>
-        <button class="sb-item" id="tab-ot" onclick="showTab('ot')"><span class="sb-ic">⏰</span><span class="sb-tx">OT ค่าล่วงเวลา</span></button>
         <button class="sb-item" id="tab-comm" onclick="showTab('comm')"><span class="sb-ic">⭐</span><span class="sb-tx">คอมมิชชั่น</span></button>
         <button class="sb-item" id="tab-exp" onclick="showTab('exp')"><span class="sb-ic">🧾</span><span class="sb-tx">เบิกค่าใช้จ่าย</span></button>
         <button class="sb-item" id="tab-paydb" onclick="showTab('paydb')"><span class="sb-ic">🗂️</span><span class="sb-tx">รายงานรวม + ส่งสลิป</span></button>
@@ -1267,10 +1266,10 @@ function page(p){
   window.scrollTo(0,0);
 }
 
-var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',interview:'📅 นัดสัมภาษณ์',warn:'⚠️ ใบเตือน',eval:'📝 ประเมินผล',att:'📋 ขาด/ลา/มาสาย',ot:'⏰ OT',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',exp:'🧾 เบิกค่าใช้จ่าย',paydb:'🗂️ รายงานรวม',cert:'📜 หนังสือรับรอง',tax:'📄 ภาษี/ปกส.',labor:'📋 ทะเบียนลูกจ้าง'};
+var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',interview:'📅 นัดสัมภาษณ์',warn:'⚠️ ใบเตือน',eval:'📝 ประเมินผล',att:'📋 ขาด/ลา/มาสาย',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',exp:'🧾 เบิกค่าใช้จ่าย',paydb:'🗂️ รายงานรวม',cert:'📜 หนังสือรับรอง',tax:'📄 ภาษี/ปกส.',labor:'📋 ทะเบียนลูกจ้าง'};
 
 function showTab(t){
-  ['dash','app','dept','pos','usr','rpt','lv','interview','warn','eval','att','ot','pay','comm','exp','paydb','cert','tax','labor'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
+  ['dash','app','dept','pos','usr','rpt','lv','interview','warn','eval','att','pay','comm','exp','paydb','cert','tax','labor'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   if(t==='lv'){
     // Auto-select filter based on role
@@ -1289,7 +1288,6 @@ function showTab(t){
   if(t==='usr')tgLoad();
   if(t==='eval')evalInit();
   if(t==='att'&&!$('att-month').value){var now=new Date();$('att-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
-  if(t==='ot')otInit();
   if(t==='exp')expInit();
   if(t==='tax'&&!$('tax-month').value){var now=new Date();$('tax-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='labor')laborLoad();

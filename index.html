@@ -711,6 +711,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
           <div class="fld"><label>ประเภท <span class="rq">*</span></label><select id="exp-type"><option value="travel">🚗 ค่าเดินทาง</option><option value="food">🍽️ ค่าอาหาร</option><option value="supply">📦 วัสดุอุปกรณ์</option><option value="medical">🏥 ค่ารักษาพยาบาล</option><option value="other">📋 อื่นๆ</option></select></div>
           <div class="fld"><label>จำนวนเงิน (บาท) <span class="rq">*</span></label><input type="number" id="exp-amount" placeholder="0" inputmode="decimal"></div>
           <div class="fld" style="grid-column:1/-1"><label>รายละเอียด</label><input id="exp-desc" placeholder="อธิบายรายการเบิก"></div>
+          <div class="fld" style="grid-column:1/-1"><label>📎 แนบเอกสาร (ใบเสร็จ/ใบกำกับภาษี)</label><input type="file" id="exp-file" accept="image/*,.pdf" onchange="expPickFile(this)" style="font-size:12px"><div id="exp-file-status" style="font-size:10px;margin-top:2px;color:var(--muted)"></div></div>
         </div>
         <div style="margin-top:10px;display:flex;gap:8px">
           <button class="btn btn-a btn-s" onclick="expSave()">💾 บันทึก</button>
@@ -4124,6 +4125,15 @@ function expInit(){
 
 function expShowAdd(){$('exp-add-form').classList.toggle('hide')}
 
+function expPickFile(inp){
+  var f=inp.files[0];if(!f)return;
+  if(f.size>10*1024*1024){toast('ไฟล์ใหญ่เกิน 10MB','terr');inp.value='';return}
+  var r=new FileReader();r.onload=function(e){
+    window._expFile={n:f.name,t:f.type,d:e.target.result.split(',')[1]};
+    $('exp-file-status').innerHTML='<span style="color:var(--ok)">✅ '+esc(f.name)+' ('+Math.round(f.size/1024)+' KB)</span>';
+  };r.readAsDataURL(f);
+}
+
 function expSave(){
   var empId=$('exp-emp').value;if(!empId){toast('เลือกพนักงาน','terr');return}
   var date=$('exp-date').value;if(!date){toast('เลือกวันที่','terr');return}
@@ -4131,19 +4141,44 @@ function expSave(){
   var amount=parseFloat($('exp-amount').value)||0;if(!amount){toast('กรอกจำนวนเงิน','terr');return}
   var desc=$('exp-desc').value.trim();
   var emp;ALL.forEach(function(a){if(a.id===empId)emp=a});
+  var id='EXP-'+Date.now()+'-'+Math.random().toString(36).substr(2,4);
 
-  var data={
-    id:'EXP-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),
-    emp_id:empId,emp_name:emp?emp.name:'',
-    date:date,type:type,amount:amount,description:desc,status:'pending'
-  };
-  sb("expenses","POST",data).then(function(){
-    toast('บันทึกใบเบิกเรียบร้อย','tok');
-    audit('exp_create','expense','','เบิกค่าใช้จ่าย '+emp.name+' '+payFmt(amount)+' บาท');
-    $('exp-amount').value='';$('exp-desc').value='';
-    $('exp-add-form').classList.add('hide');
-    expLoad();
-  }).catch(function(e){toast('Error: '+e,'terr')});
+  var data={id:id,emp_id:empId,emp_name:emp?emp.name:'',date:date,type:type,amount:amount,description:desc,status:'pending'};
+
+  prog(20,'บันทึกใบเบิก...');
+  var fileData=window._expFile;
+  if(fileData){
+    prog(40,'อัปโหลดเอกสาร...');
+    fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({
+      action:'upload_expense',id:id,fileData:fileData.d,fileType:fileData.t,fileName:fileData.n
+    })}).then(function(r){return r.json()}).then(function(r2){
+      if(r2&&r2.ok&&r2.link)data.file_link=r2.link;
+      prog(70,'บันทึกข้อมูล...');
+      sb("expenses","POST",data).then(function(){
+        prog(100,'บันทึกใบเบิก ✅');
+        toast('📎 บันทึกใบเบิก'+(data.file_link?' + แนบเอกสาร':''),'tok');
+        tgSend('🧾 <b>ใบเบิกค่าใช้จ่ายใหม่</b>\n\n👤 '+esc(emp?emp.name:'')+'\n📋 ประเภท: '+esc({travel:'ค่าเดินทาง',food:'ค่าอาหาร',supply:'วัสดุอุปกรณ์',medical:'ค่ารักษาพยาบาล',other:'อื่นๆ'}[type]||type)+'\n💰 จำนวน: '+payFmt(amount)+' บาท\n📝 '+esc(desc||'-')+(data.file_link?'\n📎 <a href="'+esc(data.file_link)+'">ดูเอกสาร</a>':'')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+        expClear();expLoad();
+      }).catch(function(e){prog(-1);toast('Error: '+e,'terr')});
+    }).catch(function(){
+      prog(70,'บันทึกข้อมูล (ไม่มีไฟล์)...');
+      sb("expenses","POST",data).then(function(){
+        prog(100,'บันทึกใบเบิก ✅');toast('บันทึกใบเบิกแล้ว (อัปโหลดไม่สำเร็จ)','terr');expClear();expLoad();
+      }).catch(function(e){prog(-1);toast('Error: '+e,'terr')});
+    });
+  }else{
+    sb("expenses","POST",data).then(function(){
+      prog(100,'บันทึกใบเบิก ✅');
+      toast('บันทึกใบเบิกเรียบร้อย','tok');
+      tgSend('🧾 <b>ใบเบิกค่าใช้จ่ายใหม่</b>\n\n👤 '+esc(emp?emp.name:'')+'\n📋 '+esc({travel:'ค่าเดินทาง',food:'ค่าอาหาร',supply:'วัสดุอุปกรณ์',medical:'ค่ารักษาพยาบาล',other:'อื่นๆ'}[type]||type)+'\n💰 '+payFmt(amount)+' บาท\n📝 '+esc(desc||'-')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+      expClear();expLoad();
+    }).catch(function(e){prog(-1);toast('Error: '+e,'terr')});
+  }
+}
+function expClear(){
+  $('exp-amount').value='';$('exp-desc').value='';$('exp-add-form').classList.add('hide');
+  window._expFile=null;if($('exp-file'))$('exp-file').value='';
+  if($('exp-file-status'))$('exp-file-status').innerHTML='';
 }
 
 function expLoad(){
@@ -4159,7 +4194,7 @@ function expLoad(){
 
     $('exp-summary').innerHTML='<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#f59e0b0a;border:1px solid #f59e0b25;border-radius:10px;padding:12px 20px;text-align:center"><div style="font-size:18px;font-weight:800;color:#f59e0b">'+payFmt(totalPending)+'</div><div style="font-size:11px;color:#f59e0b">⏳ รออนุมัติ</div></div><div style="background:#10b9810a;border:1px solid #10b98125;border-radius:10px;padding:12px 20px;text-align:center"><div style="font-size:18px;font-weight:800;color:#10b981">'+payFmt(totalApproved)+'</div><div style="font-size:11px;color:#10b981">✅ อนุมัติแล้ว</div></div></div>';
 
-    var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>พนักงาน</th><th>ประเภท</th><th>รายละเอียด</th><th style="text-align:right">จำนวน</th><th style="text-align:center">สถานะ</th><th></th></tr></thead><tbody>';
+    var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>พนักงาน</th><th>ประเภท</th><th>รายละเอียด</th><th style="text-align:right">จำนวน</th><th>📎</th><th style="text-align:center">สถานะ</th><th></th></tr></thead><tbody>';
     r.forEach(function(e){
       var st=e.status||'pending';
       h+='<tr><td style="font-size:11px;white-space:nowrap">'+esc(e.date)+'</td>';
@@ -4167,6 +4202,7 @@ function expLoad(){
       h+='<td style="font-size:11px">'+(typeLabels[e.type]||e.type)+'</td>';
       h+='<td style="font-size:11px;color:var(--muted)">'+esc(e.description||'-')+'</td>';
       h+='<td style="text-align:right;font-weight:700">'+payFmt(e.amount)+'</td>';
+      h+='<td style="text-align:center">'+(e.file_link?'<a href="'+esc(e.file_link)+'" target="_blank" style="color:var(--pri);font-weight:600;font-size:11px">📎 ดู</a>':'<span style="color:var(--muted);font-size:10px">-</span>')+'</td>';
       h+='<td style="text-align:center"><span style="background:'+stColors[st]+'18;color:'+stColors[st]+';padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700">'+stLabels[st]+'</span></td>';
       h+='<td style="white-space:nowrap">';
       if(st==='pending'){

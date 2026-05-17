@@ -708,7 +708,8 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       <div id="exp-add-form" class="cd hide" style="margin-bottom:14px">
         <div class="cd-t"><span class="dot"></span> สร้างใบเบิกใหม่</div>
         <div class="g2">
-          <div class="fld"><label>พนักงาน <span class="rq">*</span></label><select id="exp-emp"><option value="">-- เลือก --</option></select></div>
+          <div class="fld"><label>ผู้เบิก</label><input id="exp-emp-name" readonly style="background:#f5f0e0;font-weight:600"></div>
+          <input type="hidden" id="exp-emp" value="">
           <div class="fld"><label>วันที่ <span class="rq">*</span></label><input type="date" id="exp-date"></div>
           <div class="fld"><label>ประเภท <span class="rq">*</span></label><select id="exp-type"><option value="travel">🚗 ค่าเดินทาง</option><option value="food">🍽️ ค่าอาหาร</option><option value="supply">📦 วัสดุอุปกรณ์</option><option value="medical">🏥 ค่ารักษาพยาบาล</option><option value="other">📋 อื่นๆ</option></select></div>
           <div class="fld"><label>จำนวนเงิน (บาท) <span class="rq">*</span></label><input type="number" id="exp-amount" placeholder="0" inputmode="decimal"></div>
@@ -4129,13 +4130,11 @@ function otExport(){
 function expInit(){
   var role=localStorage.getItem('mt_role')||'admin';
   var canCreate=(role==='hr'||role==='manager'||role==='admin');
-  var sel=$('exp-emp');
-  sel.innerHTML='<option value="">-- เลือก --</option>';
-  ALL.filter(function(a){return a.status!=='terminated'}).forEach(function(a){
-    sel.innerHTML+='<option value="'+a.id+'">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</option>';
-  });
+  var username=localStorage.getItem('mt_username')||'admin';
+  // Auto-fill with logged-in user
+  if($('exp-emp-name'))$('exp-emp-name').value=username;
+  if($('exp-emp'))$('exp-emp').value=username;
   if(!$('exp-date').value)$('exp-date').value=new Date().toISOString().substring(0,10);
-  // Show add button only for HR / Manager / Admin
   var addBtn=document.querySelector('[onclick="expShowAdd()"]');
   if(addBtn)addBtn.style.display=canCreate?'':'none';
   if(!canCreate)$('exp-add-form').classList.add('hide');
@@ -4154,15 +4153,16 @@ function expPickFile(inp){
 }
 
 function expSave(){
-  var empId=$('exp-emp').value;if(!empId){toast('เลือกพนักงาน','terr');return}
+  var empId=$('exp-emp').value||localStorage.getItem('mt_username')||'admin';
+  if(!empId){toast('ไม่พบผู้ใช้','terr');return}
   var date=$('exp-date').value;if(!date){toast('เลือกวันที่','terr');return}
   var type=$('exp-type').value;
   var amount=parseFloat($('exp-amount').value)||0;if(!amount){toast('กรอกจำนวนเงิน','terr');return}
   var desc=$('exp-desc').value.trim();
-  var emp;ALL.forEach(function(a){if(a.id===empId)emp=a});
+  var empName=empId;
   var id='EXP-'+Date.now()+'-'+Math.random().toString(36).substr(2,4);
 
-  var data={id:id,emp_id:empId,emp_name:emp?emp.name:'',date:date,type:type,amount:amount,description:desc,status:'approved'};
+  var data={id:id,emp_id:empId,emp_name:empName,date:date,type:type,amount:amount,description:desc,status:'approved'};
 
   prog(20,'บันทึกใบเบิก...');
   var fileData=window._expFile;
@@ -4176,7 +4176,7 @@ function expSave(){
       sb("expenses","POST",data).then(function(){
         prog(100,'บันทึกใบเบิก ✅');
         toast('📎 บันทึกใบเบิก'+(data.file_link?' + แนบเอกสาร':''),'tok');
-        tgSend('🧾 <b>ใบเบิกค่าใช้จ่ายใหม่</b>\n\n👤 '+esc(emp?emp.name:'')+'\n📋 ประเภท: '+esc({travel:'ค่าเดินทาง',food:'ค่าอาหาร',supply:'วัสดุอุปกรณ์',medical:'ค่ารักษาพยาบาล',other:'อื่นๆ'}[type]||type)+'\n💰 จำนวน: '+payFmt(amount)+' บาท\n📝 '+esc(desc||'-')+(data.file_link?'\n📎 <a href="'+esc(data.file_link)+'">ดูเอกสาร</a>':'')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+        tgSend('🧾 <b>ใบเบิกค่าใช้จ่ายใหม่</b>\n\n👤 '+esc(empName)+'\n📋 ประเภท: '+esc({travel:'ค่าเดินทาง',food:'ค่าอาหาร',supply:'วัสดุอุปกรณ์',medical:'ค่ารักษาพยาบาล',other:'อื่นๆ'}[type]||type)+'\n💰 จำนวน: '+payFmt(amount)+' บาท\n📝 '+esc(desc||'-')+(data.file_link?'\n📎 <a href="'+esc(data.file_link)+'">ดูเอกสาร</a>':'')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
         expClear();expLoad();
       }).catch(function(e){prog(-1);toast('Error: '+e,'terr')});
     }).catch(function(){
@@ -4189,7 +4189,7 @@ function expSave(){
     sb("expenses","POST",data).then(function(){
       prog(100,'บันทึกใบเบิก ✅');
       toast('บันทึกใบเบิกเรียบร้อย','tok');
-      tgSend('🧾 <b>ใบเบิกค่าใช้จ่ายใหม่</b>\n\n👤 '+esc(emp?emp.name:'')+'\n📋 '+esc({travel:'ค่าเดินทาง',food:'ค่าอาหาร',supply:'วัสดุอุปกรณ์',medical:'ค่ารักษาพยาบาล',other:'อื่นๆ'}[type]||type)+'\n💰 '+payFmt(amount)+' บาท\n📝 '+esc(desc||'-')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+      tgSend('🧾 <b>ใบเบิกค่าใช้จ่ายใหม่</b>\n\n👤 '+esc(empName)+'\n📋 '+esc({travel:'ค่าเดินทาง',food:'ค่าอาหาร',supply:'วัสดุอุปกรณ์',medical:'ค่ารักษาพยาบาล',other:'อื่นๆ'}[type]||type)+'\n💰 '+payFmt(amount)+' บาท\n📝 '+esc(desc||'-')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
       expClear();expLoad();
     }).catch(function(e){prog(-1);toast('Error: '+e,'terr')});
   }

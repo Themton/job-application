@@ -1425,10 +1425,14 @@ function loadAdmin(){
 
   // Manager: show only leave approval + logout
   if(localStorage.getItem('mt_role')==='manager'){
-    document.querySelectorAll('.sb-item').forEach(function(el){if(!el.classList.contains('sb-logout'))el.style.display='none'});
+    document.querySelectorAll('.sb-item').forEach(function(el){if(!el.classList.contains('sb-logout')&&el.id!=='tab-lv'&&el.id!=='tab-exp')el.style.display='none'});
     document.querySelectorAll('.sb-sep').forEach(function(el){el.style.display='none'});
-    $('tab-lv').style.display='';
     showTab('lv');
+  }
+  // Expense: only HR / Manager / Admin
+  var role=localStorage.getItem('mt_role')||'admin';
+  if(role==='accounting'){
+    if($('tab-exp'))$('tab-exp').style.display='none';
   }
   prog(10,'กำลังโหลดข้อมูลพนักงาน...');
   Promise.all([

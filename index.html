@@ -69,7 +69,7 @@
 .dg{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px}.dc{background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,.03)}.dc h4{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
 .dr{padding:5px 0;font-size:13px;color:var(--txt);display:flex;align-items:center;gap:7px}.dr .i{font-size:15px;opacity:.4;flex-shrink:0}
 .ssel{padding:7px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;outline:none;background:var(--card)}
-.sts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}.st{background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:16px}.st .l{font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}.st .v{font-size:24px;font-weight:700;color:var(--pri)}
+.sts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}.st{background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:16px;cursor:pointer;transition:box-shadow .2s,transform .2s}.st:hover{box-shadow:0 0 0 2px var(--acc);transform:translateY(-1px)}.st .l{font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}.st .v{font-size:24px;font-weight:700;color:var(--pri)}
 /* Employee page chips & info */
 .emp-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .emp-chip{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;border:1.5px solid var(--bdr);background:var(--card);cursor:pointer;font-family:inherit;font-size:12px;font-weight:500;color:var(--txt2);transition:all .2s;box-shadow:0 1px 2px rgba(0,0,0,.04)}
@@ -1468,6 +1468,7 @@ function updateLeavePendingBadge(){
 
 /* ═══ STATS ═══ */
 function stats(){
+  window._statFilter='';
   var t=ALL.length,dy=0,mt=0,md=0,nw=0,rp=0,tm=0,posMap={},scbCnt=0,otherCnt=0,hasEmail=0;
   ALL.forEach(function(a){
     if(a.status==='daily')dy++;
@@ -1479,7 +1480,15 @@ function stats(){
     if(a.position)posMap[a.position]=(posMap[a.position]||0)+1;
     if(a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))scbCnt++;else if(a.bank)otherCnt++;
     if(a.email&&a.email.indexOf('@')>=0)hasEmail++});
-  $('A-sts').innerHTML='<div class="st"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div><div class="st"><div class="l">ประจำ</div><div class="v" style="color:#28a745">'+mt+'</div></div><div class="st"><div class="l">ประจำ(รายวัน)</div><div class="v" style="color:#7c3aed">'+md+'</div></div><div class="st"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div><div class="st"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div><div class="st"><div class="l">SCB</div><div class="v" style="color:#4b0082">'+scbCnt+'</div></div><div class="st"><div class="l">ธ.อื่น</div><div class="v" style="color:#006400">'+otherCnt+'</div></div><div class="st"><div class="l">มีอีเมล</div><div class="v" style="color:#2d5080">'+hasEmail+'</div></div>';
+  $('A-sts').innerHTML=
+    '<div class="st" onclick="statClick(\'\')" style="cursor:pointer"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div>'+
+    '<div class="st" onclick="statClick(\'monthly\')" style="cursor:pointer"><div class="l">ประจำ</div><div class="v" style="color:#28a745">'+mt+'</div></div>'+
+    '<div class="st" onclick="statClick(\'monthly_daily\')" style="cursor:pointer"><div class="l">ประจำ(รายวัน)</div><div class="v" style="color:#7c3aed">'+md+'</div></div>'+
+    '<div class="st" onclick="statClick(\'daily\')" style="cursor:pointer"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div>'+
+    '<div class="st" onclick="statClick(\'terminated\')" style="cursor:pointer"><div class="l">พ้นสภาพ</div><div class="v" style="color:#6b7280">'+tm+'</div></div>'+
+    '<div class="st" onclick="statClick(\'scb\')" style="cursor:pointer"><div class="l">SCB</div><div class="v" style="color:#4b0082">'+scbCnt+'</div></div>'+
+    '<div class="st" onclick="statClick(\'other_bank\')" style="cursor:pointer"><div class="l">ธ.อื่น</div><div class="v" style="color:#006400">'+otherCnt+'</div></div>'+
+    '<div class="st" onclick="statClick(\'has_email\')" style="cursor:pointer"><div class="l">มีอีเมล</div><div class="v" style="color:#2d5080">'+hasEmail+'</div></div>';
   var sel=$('f-pos'),cur=sel.value;
   sel.innerHTML='<option value="">ทุกตำแหน่ง ('+t+')</option>';
   Object.keys(posMap).sort().forEach(function(p){sel.innerHTML+='<option value="'+esc(p)+'"'+(cur===p?' selected':'')+'>'+esc(p)+' ('+posMap[p]+')</option>'});
@@ -1621,8 +1630,22 @@ function empBulkSetStatus(){
   });
 }
 
+function statClick(filter){
+  window._statFilter=filter;
+  // Set dropdown for standard status filters
+  if(!filter||filter==='daily'||filter==='monthly'||filter==='monthly_daily'||filter==='terminated'||filter==='resigned_pending'||filter==='new'){
+    $('f-st').value=filter;
+    window._statFilter='';
+  }
+  // Highlight active card
+  document.querySelectorAll('#A-sts .st').forEach(function(el){el.style.boxShadow='';el.style.border=''});
+  if(filter)event.currentTarget.style.boxShadow='0 0 0 2px var(--acc)';
+  doFilter();
+}
+
 function doFilter(){
   var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value,bank=$('f-bank').value,em=$('f-email').value;
+  var sf=window._statFilter||'';
   var f=ALL.filter(function(a){
     if(q&&[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)<0)return false;
     if(st&&a.status!==st)return false;
@@ -1632,6 +1655,10 @@ function doFilter(){
     if(bank==='other'&&a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))return false;
     if(em==='has'&&(!a.email||a.email.indexOf('@')<0))return false;
     if(em==='no'&&a.email&&a.email.indexOf('@')>=0)return false;
+    // Special stat filters
+    if(sf==='scb'&&(!a.bank||a.bank.indexOf('SCB')<0&&a.bank.indexOf('ไทยพาณิชย์')<0))return false;
+    if(sf==='other_bank'){var isSCB=a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0);if(!a.bank||isSCB)return false}
+    if(sf==='has_email'&&(!a.email||a.email.indexOf('@')<0))return false;
     return true;
   });
   window._empFiltered=f;

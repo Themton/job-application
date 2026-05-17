@@ -4114,12 +4114,18 @@ function otExport(){
 
 /* ═══ EXPENSE CLAIMS ═══ */
 function expInit(){
+  var role=localStorage.getItem('mt_role')||'admin';
+  var canCreate=(role==='hr'||role==='manager'||role==='admin');
   var sel=$('exp-emp');
   sel.innerHTML='<option value="">-- เลือก --</option>';
   ALL.filter(function(a){return a.status!=='terminated'}).forEach(function(a){
     sel.innerHTML+='<option value="'+a.id+'">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</option>';
   });
   if(!$('exp-date').value)$('exp-date').value=new Date().toISOString().substring(0,10);
+  // Show add button only for HR / Manager / Admin
+  var addBtn=document.querySelector('[onclick="expShowAdd()"]');
+  if(addBtn)addBtn.style.display=canCreate?'':'none';
+  if(!canCreate)$('exp-add-form').classList.add('hide');
   expLoad();
 }
 
@@ -4205,9 +4211,12 @@ function expLoad(){
       h+='<td style="text-align:center">'+(e.file_link?'<a href="'+esc(e.file_link)+'" target="_blank" style="color:var(--pri);font-weight:600;font-size:11px">📎 ดู</a>':'<span style="color:var(--muted);font-size:10px">-</span>')+'</td>';
       h+='<td style="text-align:center"><span style="background:'+stColors[st]+'18;color:'+stColors[st]+';padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700">'+stLabels[st]+'</span></td>';
       h+='<td style="white-space:nowrap">';
-      if(st==='pending'){
-        h+='<button class="btn btn-s" style="font-size:10px;padding:3px 8px;background:#10b981;color:#fff;border:none" onclick="expApprove(\''+e.id+'\',\'approved\')">✅</button> ';
-        h+='<button class="btn btn-s" style="font-size:10px;padding:3px 8px;background:#dc2626;color:#fff;border:none" onclick="expApprove(\''+e.id+'\',\'rejected\')">❌</button>';
+      var expRole=localStorage.getItem('mt_role')||'admin';
+      if(st==='pending'&&expRole==='admin'){
+        h+='<button class="btn btn-s" style="font-size:10px;padding:3px 8px;background:#10b981;color:#fff;border:none" onclick="expApprove(\''+e.id+'\',\'approved\')">✅ อนุมัติ</button> ';
+        h+='<button class="btn btn-s" style="font-size:10px;padding:3px 8px;background:#dc2626;color:#fff;border:none" onclick="expApprove(\''+e.id+'\',\'rejected\')">❌ ไม่อนุมัติ</button>';
+      }else if(st==='pending'){
+        h+='<span style="font-size:10px;color:var(--muted)">รอ Admin อนุมัติ</span>';
       }
       h+=' <button class="btn btn-d btn-s" style="font-size:10px;padding:3px 6px" onclick="expDel(\''+e.id+'\')">🗑️</button>';
       h+='</td></tr>';

@@ -328,7 +328,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <div class="emp-filters">
           <select class="fsel" id="f-dept" onchange="doFilter()"><option value="">ทุกแผนก</option></select>
           <select class="fsel" id="f-pos" onchange="doFilter()"><option value="">ทุกตำแหน่ง</option></select>
-          <select class="fsel" id="f-st" onchange="doFilter()"><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="monthly_daily">ประจำ(รายวัน)</option><option value="resigned_pending">ลาออก-รอจ่าย</option><option value="terminated">พ้นสภาพ</option></select>
+          <select class="fsel" id="f-st" onchange="window._statFilter='';doFilter()"><option value="active">ทำงานอยู่ (ซ่อนพ้นสภาพ)</option><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="monthly_daily">ประจำ(รายวัน)</option><option value="resigned_pending">ลาออก-รอจ่าย</option><option value="terminated">พ้นสภาพ</option></select>
           <select class="fsel" id="f-bank" onchange="doFilter()"><option value="">ทุกธนาคาร</option><option value="scb">ไทยพาณิชย์ (SCB)</option><option value="other">ธนาคารอื่น</option></select>
           <select class="fsel" id="f-email" onchange="doFilter()"><option value="">ทุกอีเมล</option><option value="has">มีอีเมล</option><option value="no">ไม่มีอีเมล</option></select>
           <div class="emp-actions">
@@ -1480,8 +1480,9 @@ function stats(){
     if(a.position)posMap[a.position]=(posMap[a.position]||0)+1;
     if(a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))scbCnt++;else if(a.bank)otherCnt++;
     if(a.email&&a.email.indexOf('@')>=0)hasEmail++});
+  var active=t-tm-rp;
   $('A-sts').innerHTML=
-    '<div class="st" onclick="statClick(\'\')" style="cursor:pointer"><div class="l">ทั้งหมด</div><div class="v">'+t+'</div></div>'+
+    '<div class="st" onclick="statClick(\'\')" style="cursor:pointer"><div class="l">ทำงานอยู่</div><div class="v" style="color:var(--pri)">'+active+'</div></div>'+
     '<div class="st" onclick="statClick(\'monthly\')" style="cursor:pointer"><div class="l">ประจำ</div><div class="v" style="color:#28a745">'+mt+'</div></div>'+
     '<div class="st" onclick="statClick(\'monthly_daily\')" style="cursor:pointer"><div class="l">ประจำ(รายวัน)</div><div class="v" style="color:#7c3aed">'+md+'</div></div>'+
     '<div class="st" onclick="statClick(\'daily\')" style="cursor:pointer"><div class="l">รายวัน</div><div class="v" style="color:#f59e0b">'+dy+'</div></div>'+
@@ -1632,14 +1633,11 @@ function empBulkSetStatus(){
 
 function statClick(filter){
   window._statFilter=filter;
-  // Set dropdown for standard status filters
-  if(!filter||filter==='daily'||filter==='monthly'||filter==='monthly_daily'||filter==='terminated'||filter==='resigned_pending'||filter==='new'){
-    $('f-st').value=filter;
-    window._statFilter='';
+  if(!filter){
+    $('f-st').value='active';window._statFilter='';
+  }else if(filter==='daily'||filter==='monthly'||filter==='monthly_daily'||filter==='terminated'||filter==='resigned_pending'||filter==='new'){
+    $('f-st').value=filter;window._statFilter='';
   }
-  // Highlight active card
-  document.querySelectorAll('#A-sts .st').forEach(function(el){el.style.boxShadow='';el.style.border=''});
-  if(filter)event.currentTarget.style.boxShadow='0 0 0 2px var(--acc)';
   doFilter();
 }
 
@@ -1648,7 +1646,8 @@ function doFilter(){
   var sf=window._statFilter||'';
   var f=ALL.filter(function(a){
     if(q&&[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)<0)return false;
-    if(st&&a.status!==st)return false;
+    if(st==='active'&&(a.status==='terminated'||a.status==='resigned_pending'))return false;
+    if(st&&st!=='active'&&a.status!==st)return false;
     if(pos&&a.position!==pos)return false;
     if(dept&&a.department!==dept)return false;
     if(bank==='scb'&&(!a.bank||a.bank.indexOf('SCB')<0&&a.bank.indexOf('ไทยพาณิชย์')<0))return false;

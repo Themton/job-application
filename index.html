@@ -1477,9 +1477,12 @@ function stats(){
     else if(a.status==='new')nw++;
     else if(a.status==='resigned_pending')rp++;
     if(a.status==='terminated')tm++;
-    if(a.position)posMap[a.position]=(posMap[a.position]||0)+1;
-    if(a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))scbCnt++;else if(a.bank)otherCnt++;
-    if(a.email&&a.email.indexOf('@')>=0)hasEmail++});
+    if(a.status!=='terminated'&&a.status!=='resigned_pending'){
+      if(a.position)posMap[a.position]=(posMap[a.position]||0)+1;
+      if(a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))scbCnt++;else if(a.bank)otherCnt++;
+      if(a.email&&a.email.indexOf('@')>=0)hasEmail++;
+    }
+  });
   var active=t-tm-rp;
   $('A-sts').innerHTML=
     '<div class="st" onclick="statClick(\'\')" style="cursor:pointer"><div class="l">ทำงานอยู่</div><div class="v" style="color:var(--pri)">'+active+'</div></div>'+

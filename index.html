@@ -161,10 +161,12 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
 <div class="hdr"><div class="hdr-in">
   <div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><div><h1>ระบบข้อมูลพนักงาน</h1><small>บริษัทเดอะเอ็มที</small></div></div>
   <div id="nav-btns" style="display:flex;gap:5px;flex-wrap:wrap">
-    <a href="." class="nbtn" style="text-decoration:none">📝 กรอกข้อมูลพนักงาน</a>
-    <a href="?emp" class="nbtn" style="text-decoration:none">🔑 พนักงานเข้าสู่ระบบ</a>
-    <a href="?admin" class="nbtn" style="text-decoration:none">👤 สำหรับเจ้าหน้าที่</a>
-    <a href="?acc" class="nbtn" style="text-decoration:none">📊 บัญชี</a>
+    <!-- Employee links -->
+    <a href="." class="nbtn nav-emp nav-pub" style="text-decoration:none">📝 กรอกข้อมูล</a>
+    <a href="?emp" class="nbtn nav-emp nav-pub" style="text-decoration:none">🔑 พนักงาน</a>
+    <!-- Staff links -->
+    <a href="?admin" class="nbtn nav-staff nav-pub" style="text-decoration:none">👤 เจ้าหน้าที่</a>
+    <a href="?acc" class="nbtn nav-staff nav-pub" style="text-decoration:none">📊 บัญชี</a>
   </div>
 </div></div>
 
@@ -985,7 +987,14 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
 </div>
 
 <!-- PAGE: EMPLOYEE LOGIN -->
-<script>if(location.search.indexOf('emp')>-1){document.getElementById('P-form').style.display='none'}</script>
+<script>
+if(location.search.indexOf('emp')>-1){
+  document.getElementById('P-form').style.display='none';
+  document.querySelectorAll('.nav-staff').forEach(function(el){el.style.display='none'});
+}else if(location.search.indexOf('admin')>-1||location.search.indexOf('acc')>-1){
+  document.querySelectorAll('.nav-emp').forEach(function(el){el.style.display='none'});
+}
+</script>
 <div id="P-emp-login" style="display:none">
 <div class="wrap"><div class="lw"><div class="lb">
 <div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>พนักงานเข้าสู่ระบบ</h2><p class="s">ดูข้อมูลส่วนตัว / ตรวจสอบวันลา</p>

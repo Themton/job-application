@@ -6289,7 +6289,8 @@ function loadDashboard(){
   var thaiMonths=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   var bdayThisMonth=[],bdayNextMonth=[];
   ALL.forEach(function(a){
-    if(!a.birthday||a.status==='terminated')return;
+    if(!a.birthday||a.status==='terminated'||a.status==='resigned_pending')return;
+    if(a.status!=='monthly'&&a.status!=='monthly_daily')return;
     var parts=a.birthday.split('-');
     var bMonth=parseInt(parts[1]);
     var bDay=parseInt(parts[2]);

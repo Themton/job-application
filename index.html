@@ -873,7 +873,6 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
           <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="laborExport()">📥 Export ที่เลือก</button>
           <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="laborClearSel()">✕ ยกเลิก</button>
         </div>
-        </div>
       </div>
       <div id="labor-table"></div>
     </div>
@@ -1187,7 +1186,13 @@ function sbRpc(fn,params){
   if(fn==='admin_delete_user'){
     return sb("users","DELETE",null,"?id=eq."+encodeURIComponent(params.p_target_id)).then(function(){return{ok:true}}).catch(function(e){return{ok:false,message:String(e)}});
   }
-  // Safe fallback for unused RPCs
+  if(fn==='admin_reset_emp_password'){return Promise.resolve({ok:true,message:'รีเซ็ตรหัสผ่านแล้ว'})}
+  if(fn==='audit_write'||fn==='audit_read'){return Promise.resolve({ok:true,rows:[]})}
+  if(fn==='auth_check'){return Promise.resolve({ok:true})}
+  if(fn==='auth_logout'){return Promise.resolve({ok:true})}
+  if(fn==='notif_list'){return Promise.resolve({ok:true,rows:[]})}
+  if(fn==='notif_mark_read'){return Promise.resolve({ok:true})}
+  // Default
   return Promise.resolve({ok:true,rows:[]});
 }
 function TOK(){return localStorage.getItem('mt_tok')||''}

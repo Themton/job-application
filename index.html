@@ -4162,7 +4162,7 @@ function expSave(){
   var emp;ALL.forEach(function(a){if(a.id===empId)emp=a});
   var id='EXP-'+Date.now()+'-'+Math.random().toString(36).substr(2,4);
 
-  var data={id:id,emp_id:empId,emp_name:emp?emp.name:'',date:date,type:type,amount:amount,description:desc,status:'pending'};
+  var data={id:id,emp_id:empId,emp_name:emp?emp.name:'',date:date,type:type,amount:amount,description:desc,status:'approved'};
 
   prog(20,'บันทึกใบเบิก...');
   var fileData=window._expFile;
@@ -4208,29 +4208,20 @@ function expLoad(){
     var stColors={pending:'#f59e0b',approved:'#10b981',rejected:'#dc2626'};
     var stLabels={pending:'⏳ รออนุมัติ',approved:'✅ อนุมัติ',rejected:'❌ ไม่อนุมัติ'};
 
-    var totalPending=0,totalApproved=0;
-    r.forEach(function(e){if(e.status==='pending')totalPending+=e.amount;if(e.status==='approved')totalApproved+=e.amount});
+    var total=0;
+    r.forEach(function(e){total+=e.amount||0});
 
-    $('exp-summary').innerHTML='<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#f59e0b0a;border:1px solid #f59e0b25;border-radius:10px;padding:12px 20px;text-align:center"><div style="font-size:18px;font-weight:800;color:#f59e0b">'+payFmt(totalPending)+'</div><div style="font-size:11px;color:#f59e0b">⏳ รออนุมัติ</div></div><div style="background:#10b9810a;border:1px solid #10b98125;border-radius:10px;padding:12px 20px;text-align:center"><div style="font-size:18px;font-weight:800;color:#10b981">'+payFmt(totalApproved)+'</div><div style="font-size:11px;color:#10b981">✅ อนุมัติแล้ว</div></div></div>';
+    $('exp-summary').innerHTML='<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#10b9810a;border:1px solid #10b98125;border-radius:10px;padding:12px 20px;text-align:center"><div style="font-size:18px;font-weight:800;color:#10b981">'+payFmt(total)+'</div><div style="font-size:11px;color:#10b981">💰 ยอดเบิกทั้งหมด</div></div><div style="background:var(--acc)0a;border:1px solid var(--acc)25;border-radius:10px;padding:12px 20px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--acc)">'+r.length+'</div><div style="font-size:11px;color:var(--acc)">📋 รายการ</div></div></div>';
 
-    var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>พนักงาน</th><th>ประเภท</th><th>รายละเอียด</th><th style="text-align:right">จำนวน</th><th>📎</th><th style="text-align:center">สถานะ</th><th></th></tr></thead><tbody>';
+    var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>พนักงาน</th><th>ประเภท</th><th>รายละเอียด</th><th style="text-align:right">จำนวน</th><th>📎</th><th></th></tr></thead><tbody>';
     r.forEach(function(e){
-      var st=e.status||'pending';
       h+='<tr><td style="font-size:11px;white-space:nowrap">'+esc(e.date)+'</td>';
       h+='<td style="font-weight:600;font-size:12px">'+esc(e.emp_name)+'</td>';
       h+='<td style="font-size:11px">'+(typeLabels[e.type]||e.type)+'</td>';
       h+='<td style="font-size:11px;color:var(--muted)">'+esc(e.description||'-')+'</td>';
       h+='<td style="text-align:right;font-weight:700">'+payFmt(e.amount)+'</td>';
       h+='<td style="text-align:center">'+(e.file_link?'<a href="'+esc(e.file_link)+'" target="_blank" style="color:var(--pri);font-weight:600;font-size:11px">📎 ดู</a>':'<span style="color:var(--muted);font-size:10px">-</span>')+'</td>';
-      h+='<td style="text-align:center"><span style="background:'+stColors[st]+'18;color:'+stColors[st]+';padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700">'+stLabels[st]+'</span></td>';
       h+='<td style="white-space:nowrap">';
-      var expRole=localStorage.getItem('mt_role')||'admin';
-      if(st==='pending'&&expRole==='admin'){
-        h+='<button class="btn btn-s" style="font-size:10px;padding:3px 8px;background:#10b981;color:#fff;border:none" onclick="expApprove(\''+e.id+'\',\'approved\')">✅ อนุมัติ</button> ';
-        h+='<button class="btn btn-s" style="font-size:10px;padding:3px 8px;background:#dc2626;color:#fff;border:none" onclick="expApprove(\''+e.id+'\',\'rejected\')">❌ ไม่อนุมัติ</button>';
-      }else if(st==='pending'){
-        h+='<span style="font-size:10px;color:var(--muted)">รอ Admin อนุมัติ</span>';
-      }
       h+=' <button class="btn btn-d btn-s" style="font-size:10px;padding:3px 6px" onclick="expDel(\''+e.id+'\')">🗑️</button>';
       h+='</td></tr>';
     });

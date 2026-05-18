@@ -181,7 +181,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       <div class="fld"><label>ชื่อเล่น</label><input id="i-nickname" placeholder="กรอกชื่อเล่น"></div>
       <div class="fld" id="F2"><label>โทรศัพท์ <span class="rq">*</span></label><input id="i-phone" placeholder="08XXXXXXXX" maxlength="10" inputmode="tel"></div>
       <div class="fld"><label>อีเมล</label><input id="i-email" placeholder="email@example.com" type="email" inputmode="email"></div>
-      <div class="fld"><label>🎂 วันเกิด</label><input id="i-birthday" type="date"></div>
+      <div class="fld"><label>🎂 วันเกิด (พ.ศ.)</label><div style="display:flex;gap:4px"><select id="i-bday-d" style="flex:1;padding:8px;border:1px solid var(--bdr);border-radius:7px;font-family:inherit;background:var(--inp)"><option value="">วัน</option></select><select id="i-bday-m" style="flex:1;padding:8px;border:1px solid var(--bdr);border-radius:7px;font-family:inherit;background:var(--inp)"><option value="">เดือน</option><option value="01">ม.ค.</option><option value="02">ก.พ.</option><option value="03">มี.ค.</option><option value="04">เม.ย.</option><option value="05">พ.ค.</option><option value="06">มิ.ย.</option><option value="07">ก.ค.</option><option value="08">ส.ค.</option><option value="09">ก.ย.</option><option value="10">ต.ค.</option><option value="11">พ.ย.</option><option value="12">ธ.ค.</option></select><select id="i-bday-y" style="flex:1;padding:8px;border:1px solid var(--bdr);border-radius:7px;font-family:inherit;background:var(--inp)"><option value="">ปี พ.ศ.</option></select></div><input type="hidden" id="i-birthday"></div>
       <div class="fld"><label>🪪 เลขบัตรประชาชน</label><input id="i-idcard" placeholder="X-XXXX-XXXXX-XX-X" maxlength="17" inputmode="numeric"></div>
       <div class="fld"><label>🏠 บ้านเลขที่ / ซอย / ถนน</label><input id="i-house" placeholder="บ้านเลขที่ หมู่ ซอย ถนน"></div>
       <div class="fld" style="position:relative"><label>🏠 ตำบล/แขวง</label><input id="i-subdistrict" placeholder="พิมพ์เพื่อค้นหา..." autocomplete="off" oninput="thaiAddrSearch(this.value,'sub')"><div id="i-sub-dd" class="addr-dd"></div></div>
@@ -349,7 +349,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
           <div class="fld"><label>ชื่อเล่น</label><input id="ae-nick" placeholder="ชื่อเล่น"></div>
           <div class="fld" id="ae-fld-phone"><label>โทรศัพท์ <span class="rq">*</span></label><input id="ae-phone" placeholder="08XXXXXXXX" maxlength="10" inputmode="tel" onfocus="aeClsErr(this)"></div>
           <div class="fld"><label>อีเมล</label><input id="ae-email" placeholder="email@example.com" type="email"></div>
-          <div class="fld"><label>🎂 วันเกิด</label><input id="ae-birthday" type="date" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
+          <div class="fld"><label>🎂 วันเกิด (พ.ศ.)</label><div style="display:flex;gap:4px"><select id="ae-bday-d" style="flex:1;padding:6px;border:1px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:12px;background:var(--inp)"><option value="">วัน</option></select><select id="ae-bday-m" style="flex:1;padding:6px;border:1px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:12px;background:var(--inp)"><option value="">เดือน</option><option value="01">ม.ค.</option><option value="02">ก.พ.</option><option value="03">มี.ค.</option><option value="04">เม.ย.</option><option value="05">พ.ค.</option><option value="06">มิ.ย.</option><option value="07">ก.ค.</option><option value="08">ส.ค.</option><option value="09">ก.ย.</option><option value="10">ต.ค.</option><option value="11">พ.ย.</option><option value="12">ธ.ค.</option></select><select id="ae-bday-y" style="flex:1;padding:6px;border:1px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:12px;background:var(--inp)"><option value="">ปี พ.ศ.</option></select></div><input type="hidden" id="ae-birthday"></div>
           <div class="fld"><label>🪪 เลขบัตรประชาชน</label><input id="ae-idcard" placeholder="X-XXXX-XXXXX-XX-X" maxlength="17" inputmode="numeric"></div>
           <div class="fld"><label>🏠 บ้านเลขที่/ซอย/ถนน</label><input id="ae-house" placeholder="บ้านเลขที่ หมู่ ซอย ถนน"></div>
           <div class="fld" style="position:relative"><label>ตำบล/แขวง</label><input id="ae-subdistrict" placeholder="พิมพ์ค้นหา..." autocomplete="off" oninput="thaiAddrSearch(this.value,'sub')"><div id="ae-sub-dd" class="addr-dd"></div></div>
@@ -1264,6 +1264,25 @@ function calcAge(bday){
   var age=Math.floor((now-bd)/(365.25*864e5));
   return age>=0&&age<150?age:'';
 }
+function initBdayDropdowns(prefix){
+  var dSel=$(prefix+'-bday-d'),ySel=$(prefix+'-bday-y');
+  if(!dSel||!ySel)return;
+  for(var d=1;d<=31;d++)dSel.innerHTML+='<option value="'+String(d).padStart(2,'0')+'">'+d+'</option>';
+  var curBE=new Date().getFullYear()+543;
+  for(var y=curBE;y>=2490;y--)ySel.innerHTML+='<option value="'+y+'">'+y+'</option>';
+  var combine=function(){
+    var dd=$(prefix+'-bday-d').value,mm=$(prefix+'-bday-m').value,yy=$(prefix+'-bday-y').value;
+    $(prefix+'-birthday').value=(dd&&mm&&yy)?yy+'-'+mm+'-'+dd:'';
+  };
+  dSel.onchange=combine;$(prefix+'-bday-m').onchange=combine;ySel.onchange=combine;
+}
+function setBdayDropdowns(prefix,val){
+  if(!val)return;var parts=String(val).split('-');if(parts.length<3)return;
+  var y=parseInt(parts[0]);if(y<2400)y+=543;
+  if($(prefix+'-bday-y'))$(prefix+'-bday-y').value=String(y);
+  if($(prefix+'-bday-m'))$(prefix+'-bday-m').value=parts[1];
+  if($(prefix+'-bday-d'))$(prefix+'-bday-d').value=parts[2];
+}
 
 /* ═══ PAGE NAV ═══ */
 function page(p){
@@ -1275,7 +1294,7 @@ function page(p){
   var hdr=document.querySelector('.hdr');if(hdr)hdr.style.display=(p==='admin')?'none':'';
   if(p==='admin'){if(isHR())document.body.classList.add('hr-mode');else document.body.classList.remove('hr-mode');loadAdmin()}
   if(p==='acc')loadAcc();
-  if(p==='form')loadPos();
+  if(p==='form'){loadPos();initBdayDropdowns('i')}
   if(p==='emp')loadEmpPortal();
   window.scrollTo(0,0);
 }
@@ -1782,6 +1801,7 @@ function showAdminAddEmp(){
   var dsel=$('ae-dept');dsel.innerHTML='<option value="">-- เลือก --</option>';
   DEPT.forEach(function(d){dsel.innerHTML+='<option value="'+esc(d.title)+'">'+esc(d.title)+'</option>'});
   window._aeFiles={id:null,cred:null,house:null,bank:null};
+  initBdayDropdowns('ae');
   $('ae-name').focus();
 }
 

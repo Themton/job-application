@@ -6338,7 +6338,7 @@ function loadDashboard(){
       h+='<span style="color:var(--pri);font-weight:600;min-width:20px">'+b.day+'</span>';
       h+='<span>'+esc(b.name)+'</span>';
       if(b.nickname)h+='<span style="color:var(--muted)">('+esc(b.nickname)+')</span>';
-      h+='<span style="color:var(--muted);font-size:10px;margin-left:auto">อายุ '+b.age+' ปี</span>';
+      h+='<span style="color:var(--muted);font-size:10px;margin-left:auto">🎂 '+b.day+' '+thaiMonths[monthNum]+' '+esc(b.birthday||'')+' • อายุ '+b.age+' ปี</span>';
       h+='</div>';
     });
     return h;

@@ -1151,11 +1151,20 @@ function sbRpc(fn,params){
   if(fn==='leave_submit'){
     var id='LV-'+Date.now()+'-'+Math.random().toString(36).substr(2,4);
     var empData={};try{empData=JSON.parse(localStorage.getItem('emp_data')||'{}')}catch(e){}
-    var empName='';var empEl=document.getElementById('emp-p-name');if(empEl)empName=empEl.textContent.split(' (')[0];
+    // Get emp_name: try DOM first, then fetch from DB
+    var empName='';
+    var empEl=document.getElementById('emp-p-name');
+    if(empEl&&empEl.textContent)empName=empEl.textContent.split(' (')[0];
+    // Fallback: get name from ALL array or emp_data
+    if(!empName&&empData.id){
+      if(typeof ALL!=='undefined'&&ALL.length){ALL.forEach(function(a){if(a.id===empData.id)empName=a.name})}
+    }
+    if(!empName)empName=empData.name||empData.email||params.p_emp_name||'';
+
     return sb("leaves","POST",{
       id:id,
       emp_id:empData.id||params.p_emp_id||'',
-      emp_name:empName||params.p_emp_name||'',
+      emp_name:empName,
       type:params.p_leave_type||params.p_type||'personal',
       date:params.p_start_date||params.p_date||'',
       end_date:params.p_end_date||'',
@@ -1166,7 +1175,6 @@ function sbRpc(fn,params){
       status:'pending',
       created_at:new Date().toISOString()
     }).then(function(){
-      // Send Telegram notification
       var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',maternity:'ลาคลอด'};
       tgNotify('leave_request',{name:empName,leaveType:lvLabels[params.p_leave_type]||params.p_leave_type,date:(params.p_start_date||'')+(params.p_end_date?' ถึง '+params.p_end_date:''),reason:params.p_reason||'',leaveId:id});
       return{ok:true,id:id};
@@ -6826,7 +6834,7 @@ function empLogin(){
     var last4=phone.length>=4?phone.slice(-4):'1234';
     if(pass!==last4&&pass!=='1234'){prog(-1);errEl.textContent='รหัสผ่านไม่ถูกต้อง — ใช้เบอร์โทร 4 ตัวท้าย';errEl.style.display='block';return}
     prog(100,'เข้าสู่ระบบ ✅ '+emp.name);
-    localStorage.setItem('emp_data',JSON.stringify({id:emp.id,email:email}));
+    localStorage.setItem('emp_data',JSON.stringify({id:emp.id,email:email,name:emp.name}));
     document.getElementById('P-emp-login').style.display='none';
     document.getElementById('P-emp').style.display='block';
     loadEmpPortal();

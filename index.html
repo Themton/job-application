@@ -7181,25 +7181,41 @@ function renderTermList(){
 function termPrintOne(empId){
   var a=null;ALL.forEach(function(x){if(x.id===empId)a=x});
   if(!a){toast('ไม่พบข้อมูล','terr');return}
-  var startDate=a.start_date||a.created_at?String(a.start_date||a.created_at).substring(0,10):'';
   var endDate=a.terminated_date||a.terminated_at?String(a.terminated_date||a.terminated_at).substring(0,10):'';
-  var today=new Date();var thaiDate=today.getDate()+' '+['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'][today.getMonth()+1]+' '+(today.getFullYear()+543);
+  // Convert to Thai date
+  var thaiMonthsFull=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  var edParts=endDate.split('-');
+  var edY=parseInt(edParts[0])||0;if(edY<2400)edY+=543;
+  var edThaiDate=(parseInt(edParts[2])||'')+' '+thaiMonthsFull[parseInt(edParts[1])||0]+' พ.ศ. '+edY;
 
-  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>ประกาศพ้นสภาพ</title>';
-  html+='<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700&display=swap" rel="stylesheet">';
-  html+='<style>@page{size:A4;margin:25mm 20mm}body{font-family:"Noto Sans Thai",sans-serif;margin:0;padding:40px;font-size:14px;line-height:1.8;color:#333}';
-  html+='.header{text-align:center;margin-bottom:30px}.header h2{margin:0;font-size:20px;font-weight:700}.header h3{margin:5px 0;font-size:16px;font-weight:600;color:#5c4a1e}';
-  html+='.line{border-bottom:2px solid #5c4a1e;margin:15px 0}.content{margin:20px 0;font-size:14px;text-indent:40px}';
-  html+='.sign{margin-top:60px;display:flex;justify-content:flex-end}.sign-box{text-align:center;width:250px}';
-  html+='.sign-line{border-bottom:1px solid #333;margin-bottom:5px;height:40px}</style></head><body>';
-  html+='<div class="header"><h2>บริษัท เดอะ เอ็มที จำกัด</h2><h3>ประกาศ</h3><p>เรื่อง แจ้งพ้นสภาพพนักงาน</p></div>';
-  html+='<div class="line"></div>';
-  html+='<div class="content">ตามที่ <b>'+esc(a.name)+'</b>'+(a.nickname?' ('+esc(a.nickname)+')':'')+' ตำแหน่ง <b>'+esc(a.position||'-')+'</b>'+(a.department?' แผนก <b>'+esc(a.department)+'</b>':'')+' ได้เข้าทำงานกับบริษัทตั้งแต่วันที่ '+startDate+' นั้น</div>';
-  html+='<div class="content">บริษัทขอแจ้งว่า พนักงานดังกล่าวได้ <b>พ้นสภาพ</b> การเป็นพนักงานของบริษัท ตั้งแต่วันที่ <b>'+endDate+'</b> เป็นต้นไป</div>';
-  html+='<div class="content">จึงประกาศมาเพื่อทราบโดยทั่วกัน</div>';
-  html+='<div style="margin-top:20px;text-align:right;font-size:13px">ประกาศ ณ วันที่ '+thaiDate+'</div>';
-  html+='<div class="sign"><div class="sign-box"><div class="sign-line"></div><p>ลงชื่อ ..................................</p><p>( .................................. )</p><p>ผู้จัดการ / กรรมการผู้จัดการ</p></div></div>';
-  html+='</body></html>';
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>ประกาศพ้นสภาพ - '+esc(a.name)+'</title>';
+  html+='<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">';
+  html+='<style>@page{size:A4;margin:0}body{font-family:"Noto Sans Thai",sans-serif;margin:0;padding:0;color:#333;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff}';
+  html+='.card{width:700px;padding:50px;text-align:center}';
+  html+='.logo{margin-bottom:20px}.logo img{height:60px}';
+  html+='.header-bar{background:#c0392b;color:#fff;font-size:32px;font-weight:900;padding:14px 40px;border-radius:8px;display:inline-block;margin:20px 0;letter-spacing:2px}';
+  html+='.company{font-size:16px;font-weight:600;margin:25px 0 5px;color:#444}';
+  html+='.announce{font-size:15px;margin:8px 0;line-height:1.8;color:#444}';
+  html+='.emp-name{font-size:26px;font-weight:900;color:#c0392b;margin:15px 0 5px}';
+  html+='.emp-pos{font-size:16px;font-weight:600;color:#555;margin:5px 0}';
+  html+='.date-text{font-size:18px;margin:15px 0;font-weight:600}';
+  html+='.date-text b{font-size:22px;color:#c0392b}';
+  html+='.disclaimer{font-size:13px;color:#555;margin:30px 40px;line-height:1.8;border-top:2px solid #c0392b;padding-top:20px}';
+  html+='.contact{background:#2c3e50;color:#fff;padding:14px;font-size:13px;border-radius:0 0 8px 8px;margin-top:30px;font-weight:600}';
+  html+='.divider{width:80px;height:3px;background:#c0392b;margin:15px auto}</style></head><body>';
+  
+  html+='<div class="card">';
+  html+='<div class="header-bar">ประกาศพ้นสภาพพนักงาน</div>';
+  html+='<div class="divider"></div>';
+  html+='<div class="company">บริษัท เดอะ เอ็มที จำกัด</div>';
+  html+='<div class="announce">ขอประกาศแจ้งการพ้นสภาพการเป็นพนักงานของ</div>';
+  html+='<div class="emp-name">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</div>';
+  html+='<div class="emp-pos">ตำแหน่ง '+esc(a.position||'-')+(a.department?' — '+esc(a.department):'')+'</div>';
+  html+='<div class="announce">ได้พ้นสภาพการเป็นพนักงานของบริษัทฯ</div>';
+  html+='<div class="date-text">ตั้งแต่วันที่ <b>'+edThaiDate+'</b> เป็นต้นไป</div>';
+  html+='<div class="disclaimer">บริษัท เดอะ เอ็มที จำกัด จะไม่รับผิดชอบต่อการกระทำใดๆ ทั้งสิ้น ของบุคคลดังกล่าวนี้ นับตั้งแต่วันที่พ้นสภาพการเป็นพนักงานของบริษัทฯ<br>จึงประกาศแจ้งให้ทราบโดยทั่วกัน</div>';
+  html+='<div class="contact">หากมีข้อสงสัยประการใดสามารถติดต่อสอบถามได้ที่ บริษัท เดอะ เอ็มที จำกัด<br>888/11 ม.6 ต.วังทอง อ.วังทอง พิษณุโลก 65130</div>';
+  html+='</div></body></html>';
 
   var iframe=document.createElement('iframe');iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:800px;height:1100px';
   document.body.appendChild(iframe);

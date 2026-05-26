@@ -6912,11 +6912,36 @@ function loadEmpPortal(){
         $('emp-p-leave-table').innerHTML=lh+'</tbody></table></div>';
       }else{$('emp-p-leave-table').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติการลา</div>'}
 
-      // Payroll history
+      // Payroll history - detailed like email slip
       if(pay.length){
-        var ph2='<div class="tw"><table><thead><tr><th>เดือน</th><th style="text-align:right">เงินเดือน</th><th style="text-align:right">เบี้ยขยัน</th><th style="text-align:right">รวมหัก</th><th style="text-align:right;color:var(--ok)">สุทธิ</th></tr></thead><tbody>';
-        pay.forEach(function(p){ph2+='<tr><td>'+esc(p.month)+'</td><td style="text-align:right">'+payFmt(p.salary)+'</td><td style="text-align:right">'+payFmt(p.diligence)+'</td><td style="text-align:right;color:var(--err)">'+payFmt(p.total_ded)+'</td><td style="text-align:right;font-weight:700;color:var(--ok)">'+payFmt(p.net)+'</td></tr>'});
-        $('emp-p-payroll').innerHTML=ph2+'</tbody></table></div>';
+        var ph2='';
+        pay.forEach(function(p){
+          var totalIncome=(p.salary||0)+(p.diligence||0);
+          var totalDed=(p.total_ded||0);
+          ph2+='<div style="border:1px solid var(--bdr);border-radius:10px;margin-bottom:12px;overflow:hidden">';
+          ph2+='<div style="background:linear-gradient(135deg,#5c4a1e,#8b6914);color:#fff;padding:10px 16px;font-weight:700;display:flex;justify-content:space-between;align-items:center"><span>📅 เดือน '+esc(p.month)+'</span><span style="font-size:18px">฿'+payFmt(p.net)+'</span></div>';
+          ph2+='<div style="padding:14px 16px">';
+          // รายรับ
+          ph2+='<div style="font-weight:700;color:var(--pri);margin-bottom:6px;font-size:13px">▶ รายรับ</div>';
+          ph2+='<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span>เงินเดือน</span><span>'+payFmt(p.salary)+'</span></div>';
+          ph2+='<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span>เบี้ยขยัน</span><span>'+payFmt(p.diligence)+'</span></div>';
+          ph2+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-top:1px solid var(--bdr);font-weight:700;font-size:13px;color:var(--ok)"><span>รวมรายรับ</span><span>'+payFmt(totalIncome)+'</span></div>';
+          // รายหัก
+          ph2+='<div style="font-weight:700;color:var(--err);margin:10px 0 6px;font-size:13px">▶ รายหัก</div>';
+          if(p.tax)ph2+='<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span>ภาษีหัก ณ ที่จ่าย 3%</span><span style="color:var(--err)">-'+payFmt(p.tax)+'</span></div>';
+          if(p.sso)ph2+='<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span>ประกันสังคม 5%</span><span style="color:var(--err)">-'+payFmt(p.sso)+'</span></div>';
+          if(p.slf)ph2+='<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span>หัก กยศ.</span><span style="color:var(--err)">-'+payFmt(p.slf)+'</span></div>';
+          if(p.advance)ph2+='<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span>เบิกล่วงหน้า</span><span style="color:var(--err)">-'+payFmt(p.advance)+'</span></div>';
+          ph2+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-top:1px solid var(--bdr);font-weight:700;font-size:13px;color:var(--err)"><span>รวมรายหัก</span><span>-'+payFmt(totalDed)+'</span></div>';
+          // สุทธิ
+          ph2+='<div style="margin-top:12px;background:linear-gradient(135deg,#f0e6c0,#fff8e0);padding:12px;border-radius:8px;text-align:center">';
+          ph2+='<div style="font-size:12px;color:var(--muted)">เงินเดือนสุทธิ</div>';
+          ph2+='<div style="font-size:24px;font-weight:900;color:var(--pri)">฿'+payFmt(p.net)+'</div>';
+          if(p.commission)ph2+='<div style="font-size:13px;color:var(--ok);margin-top:4px">+ คอมมิชชั่น ฿'+payFmt(p.commission)+'</div>';
+          ph2+='</div>';
+          ph2+='</div></div>';
+        });
+        $('emp-p-payroll').innerHTML=ph2;
       }else{$('emp-p-payroll').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติเงินเดือน</div>'}
 
       // Load leave requests + notifications + set default start date

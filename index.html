@@ -1031,7 +1031,7 @@ if(location.search.indexOf('emp')>-1){
 <div id="P-emp-login" style="display:none">
 <div class="wrap"><div class="lw"><div class="lb">
 <div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>พนักงานเข้าสู่ระบบ</h2><p class="s">ดูข้อมูลส่วนตัว / ตรวจสอบวันลา</p>
-<div class="fld"><label>อีเมล</label><input id="emp-l-email" placeholder="email@gmail.com" type="email" inputmode="email" onkeydown="if(event.key==='Enter')document.getElementById('emp-l-pass').focus()"></div>
+<div class="fld"><label>รหัสพนักงาน</label><input id="emp-l-email" placeholder="เช่น MT001" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')document.getElementById('emp-l-pass').focus()"></div>
 <div class="fld"><label>รหัสผ่าน (เบอร์โทร 4 ตัวท้าย)</label><input id="emp-l-pass" placeholder="เช่น 6339" type="password" maxlength="4" inputmode="numeric" pattern="[0-9]*" onkeydown="if(event.key==='Enter')empLogin()"></div>
 <div id="emp-l-err" style="display:none;color:#dc3545;background:rgba(220,53,69,.08);border:1px solid #dc3545;border-radius:6px;padding:8px 12px;font-size:12px;margin-top:8px"></div>
 <button class="btn btn-a" onclick="empLogin()" style="width:100%;margin-top:8px">🔑 เข้าสู่ระบบ</button>
@@ -6892,10 +6892,10 @@ function toast(t,c){var el=$('toast');el.textContent=(c==='tok'?'✅ ':c==='tinf
 
 /* ═══ EMPLOYEE PORTAL ═══ */
 function empLogin(){
-  var email=document.getElementById('emp-l-email').value.trim();
+  var code=document.getElementById('emp-l-email').value.trim().toUpperCase();
   var pass=document.getElementById('emp-l-pass').value;
   var errEl=document.getElementById('emp-l-err');
-  if(!email||email.indexOf('@')<0){errEl.textContent='กรุณากรอกอีเมล';errEl.style.display='block';return}
+  if(!code){errEl.textContent='กรุณากรอกรหัสพนักงาน';errEl.style.display='block';return}
   if(!pass){errEl.textContent='กรุณากรอกรหัสผ่าน';errEl.style.display='block';return}
   errEl.style.display='none';
   prog(20,'กำลังตรวจสอบ...');
@@ -6903,16 +6903,15 @@ function empLogin(){
     if(!Array.isArray(r)){prog(-1);errEl.textContent='เชื่อมต่อไม่ได้';errEl.style.display='block';return}
     var emp=null;
     r.forEach(function(a){
-      if(a.email&&a.email.trim().toLowerCase()===email.toLowerCase())emp=a;
+      if(a.emp_code&&a.emp_code.toUpperCase()===code)emp=a;
     });
-    if(!emp){prog(-1);errEl.textContent='ไม่พบอีเมลนี้ในระบบ — ติดต่อฝ่ายบุคคล';errEl.style.display='block';return}
-    // Check password: last 4 digits of phone OR "1234"
+    if(!emp){prog(-1);errEl.textContent='ไม่พบรหัสพนักงาน "'+code+'" — ติดต่อฝ่ายบุคคล';errEl.style.display='block';return}
     var phone=emp.phone||'';
     var last4=phone.length>=4?phone.slice(-4):'';
     if(!last4){prog(-1);errEl.textContent='พนักงานยังไม่มีเบอร์โทรในระบบ — ติดต่อฝ่ายบุคคล';errEl.style.display='block';return}
     if(pass!==last4){prog(-1);errEl.textContent='รหัสผ่านไม่ถูกต้อง — ใช้เบอร์โทร 4 ตัวท้าย';errEl.style.display='block';return}
     prog(100,'เข้าสู่ระบบ ✅ '+emp.name);
-    localStorage.setItem('emp_data',JSON.stringify({id:emp.id,email:email,name:emp.name}));
+    localStorage.setItem('emp_data',JSON.stringify({id:emp.id,email:emp.email||'',name:emp.name,emp_code:code}));
     document.getElementById('P-emp-login').style.display='none';
     document.getElementById('P-emp').style.display='block';
     loadEmpPortal();

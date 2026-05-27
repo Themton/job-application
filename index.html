@@ -408,6 +408,9 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
           <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empBulkSetDept()">🏢 กำหนดแผนก</button>
           <select id="emp-bulk-st" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;font-size:12px;font-family:inherit"><option value="">-- เลือกประเภท --</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="new">ใหม่</option></select>
           <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empBulkSetStatus()">📋 กำหนดประเภท</button>
+          <input type="date" id="emp-bulk-date" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;font-size:12px;font-family:inherit">
+          <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empBulkSetStartDate()">📅 กำหนดวันเริ่มงาน</button>
+          <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empBulkSetCode()">🏷️ กำหนดรหัส</button>
           <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empExport()">📥 Export ที่เลือก</button>
           <button class="btn btn-g btn-s" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="empClearSel()">✕ ยกเลิก</button>
         </div>
@@ -1701,6 +1704,47 @@ function empBulkSetStatus(){
       prog((ok+total-pending)/total*100,'กำหนดประเภท '+ok+'/'+total);
       if(--pending===0){prog(100,'กำหนด '+stLabel[st]+' ✅ '+ok+' คน');toast('กำหนด '+stLabel[st]+' ให้ '+ok+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();stats();doFilter()}
     }).catch(function(){if(--pending===0){prog(100,'เสร็จสิ้น');stats();doFilter()}});
+  });
+}
+
+function empBulkSetStartDate(){
+  var date=$('emp-bulk-date').value;
+  if(!date){toast('เลือกวันที่ก่อน','terr');return}
+  var ids=Object.keys(EMP_SEL);
+  if(!ids.length)return;
+  if(!confirm('กำหนดวันเริ่มงาน "'+date+'" ให้ '+ids.length+' คน?'))return;
+  var pending=ids.length,ok=0,total=ids.length;
+  prog(0,'กำหนดวันเริ่มงาน...');
+  ids.forEach(function(id){
+    sb("applications","PATCH",{start_date:date},"?id=eq."+id).then(function(){
+      ALL.forEach(function(a){if(a.id===id)a.start_date=date});ok++;
+      prog(ok/total*100,'กำหนดวันเริ่มงาน '+ok+'/'+total);
+      if(--pending===0){prog(100,'กำหนดวันเริ่มงาน ✅ '+ok+' คน');toast('📅 กำหนดวันเริ่มงาน '+date+' ให้ '+ok+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();doFilter()}
+    }).catch(function(){if(--pending===0){prog(100,'เสร็จสิ้น');doFilter()}});
+  });
+}
+
+function empBulkSetCode(){
+  var prefix=prompt('กำหนดรหัสพนักงาน:\n\nใส่ prefix เช่น "MT"\nระบบจะกำหนด MT001, MT002, ... ให้อัตโนมัติ','MT');
+  if(!prefix)return;
+  prefix=prefix.toUpperCase();
+  var ids=Object.keys(EMP_SEL);
+  if(!ids.length)return;
+  // Sort by created_at
+  var sorted=[];ALL.forEach(function(a){if(EMP_SEL[a.id])sorted.push(a)});
+  sorted.sort(function(a,b){return(a.created_at||'').localeCompare(b.created_at||'')});
+  // Find next available number
+  var maxNum=0;ALL.forEach(function(a){if(a.emp_code&&a.emp_code.indexOf(prefix)===0){var n=parseInt(a.emp_code.replace(prefix,''));if(n>maxNum)maxNum=n}});
+  if(!confirm('กำหนดรหัส '+prefix+String(maxNum+1).padStart(3,'0')+' ถึง '+prefix+String(maxNum+sorted.length).padStart(3,'0')+' ให้ '+sorted.length+' คน?'))return;
+  var pending=sorted.length,ok=0;
+  prog(0,'กำหนดรหัสพนักงาน...');
+  sorted.forEach(function(a,i){
+    var code=prefix+String(maxNum+1+i).padStart(3,'0');
+    sb("applications","PATCH",{emp_code:code},"?id=eq."+a.id).then(function(){
+      ALL.forEach(function(x){if(x.id===a.id)x.emp_code=code});ok++;
+      prog(ok/sorted.length*100,'กำหนดรหัส '+ok+'/'+sorted.length);
+      if(--pending===0){prog(100,'กำหนดรหัส ✅ '+ok+' คน');toast('🏷️ กำหนดรหัส '+prefix+'xxx ให้ '+ok+' คนแล้ว','tok');EMP_SEL={};empUpdateSelBar();doFilter()}
+    }).catch(function(){if(--pending===0){prog(100,'เสร็จสิ้น');doFilter()}});
   });
 }
 

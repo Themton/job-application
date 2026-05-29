@@ -611,10 +611,11 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       <div id="pay-db-area">
         <div class="cd">
           <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-            <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="paydb2-month" value="" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
+            <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="paydb2-month" value="" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)" onchange="payShowCutoff()"></div>
             <button class="btn btn-a btn-s" onclick="payDBLoad()">🗄️ ดึงข้อมูลพนักงาน</button>
             <button class="btn btn-g btn-s" onclick="payDBLoadPrev()">📋 ดึงเงินเดือนเดือนก่อน</button>
           </div>
+          <div id="paydb2-cutoff" style="font-size:12px;margin-top:8px;padding:8px 14px;background:rgba(198,149,43,.08);border:1px solid rgba(198,149,43,.2);border-radius:8px;display:none"></div>
           <div id="paydb2-status" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
         </div>
 
@@ -4483,7 +4484,33 @@ function payDBBuildFilters(){
   $('paydb2-filters').classList.remove('hide');$('paydb2-filters').style.display='flex';
 }
 
+function payShowCutoff(){
+  var month=$('paydb2-month').value;
+  if(!month){$('paydb2-cutoff').style.display='none';return}
+  var parts=month.split('-');
+  var y=parseInt(parts[0]),m=parseInt(parts[1]);
+  // Cutoff: 26 of previous month → 25 of this month
+  var prevM=m-1,prevY=y;if(prevM<1){prevM=12;prevY--}
+  var thM=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var startStr='26 '+thM[prevM]+' '+(prevY+543);
+  var endStr='25 '+thM[m]+' '+(y+543);
+  // Count working days (exclude Sundays)
+  var start=new Date(prevY,prevM-1,26);
+  var end=new Date(y,m-1,25);
+  var workDays=0;
+  for(var d=new Date(start);d<=end;d.setDate(d.getDate()+1)){if(d.getDay()!==0)workDays++}
+
+  var el=$('paydb2-cutoff');
+  el.style.display='block';
+  el.innerHTML='<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">'
+    +'<div><span style="font-weight:700;color:var(--pri)">📅 รอบตัดเงินเดือน (รายวัน)</span></div>'
+    +'<div style="font-weight:600">'+startStr+' — '+endStr+'</div>'
+    +'<div><span style="background:var(--acc);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">'+workDays+' วันทำงาน</span> <span style="color:var(--muted);font-size:10px">(ไม่นับอาทิตย์)</span></div>'
+    +'</div>';
+}
+
 function payDBLoad(){
+  payShowCutoff();
   var month=$('paydb2-month').value;
   $('paydb2-status').textContent='⏳ กำลังดึงข้อมูลพนักงาน...';
   prog(10,'ดึงข้อมูลพนักงาน...');
@@ -4526,8 +4553,23 @@ function payDBLoad(){
 
     var prefilled=PAYDB2.filter(function(e){return e.salary>0}).length;
     var savedCount=saved.length;
-    // คำนวณ ภาษี/ปกส. เฉพาะพนักงานใหม่ที่ไม่มีข้อมูลบันทึก (ไม่ทับค่าที่บันทึกไว้)
-    PAYDB2.forEach(function(e){if(!e._saved&&e.salary>0)payDBCalcRow(e)});
+
+    // ตัดรอบรายวัน: 26 เดือนก่อน → 25 เดือนนี้
+    var mp=month.split('-'),cutY=parseInt(mp[0]),cutM=parseInt(mp[1]);
+    var prevM2=cutM-1,prevY2=cutY;if(prevM2<1){prevM2=12;prevY2--}
+    var cutStart=new Date(prevY2,prevM2-1,26);
+    var cutEnd=new Date(cutY,cutM-1,25);
+    var defaultWorkDays=0;
+    for(var dd=new Date(cutStart);dd<=cutEnd;dd.setDate(dd.getDate()+1)){if(dd.getDay()!==0)defaultWorkDays++}
+
+    // Auto-fill work_days for daily employees (only if not saved)
+    PAYDB2.forEach(function(e){
+      if(e.status==='daily'&&!e._saved){
+        e.work_days=defaultWorkDays;
+        e.salary=Math.round(e.daily_rate*e.work_days*100)/100;
+      }
+      if(!e._saved&&(e.salary>0||e.work_days>0))payDBCalcRow(e);
+    });
 
     if(savedCount>0){
       $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — <span style="color:var(--ok)">โหลดข้อมูลที่บันทึกไว้เดือน '+month+' ได้ <b>'+savedCount+'</b> คน</span>';

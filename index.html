@@ -4489,13 +4489,18 @@ function payShowCutoff(){
   if(!month){$('paydb2-cutoff').style.display='none';return}
   var parts=month.split('-');
   var y=parseInt(parts[0]),m=parseInt(parts[1]);
-  // Cutoff: 26 of previous month → 25 of this month
+  // Cutoff: 25 of previous month → 25 of this month
+  // Special: first month (May 2026) starts from 1st
   var prevM=m-1,prevY=y;if(prevM<1){prevM=12;prevY--}
   var thM=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  var startStr='25 '+thM[prevM]+' '+(prevY+543);
+  var isFirstMonth=(y===2026&&m===5);
+  var startDay=isFirstMonth?1:25;
+  var startMonth=isFirstMonth?m:prevM;
+  var startYear=isFirstMonth?y:prevY;
+  var startStr=startDay+' '+thM[startMonth]+' '+(startYear+543);
   var endStr='25 '+thM[m]+' '+(y+543);
   // Count working days (exclude Sundays)
-  var start=new Date(prevY,prevM-1,25);
+  var start=new Date(startYear,startMonth-1,startDay);
   var end=new Date(y,m-1,25);
   var workDays=0;
   for(var d=new Date(start);d<=end;d.setDate(d.getDate()+1)){if(d.getDay()!==0)workDays++}
@@ -4554,10 +4559,11 @@ function payDBLoad(){
     var prefilled=PAYDB2.filter(function(e){return e.salary>0}).length;
     var savedCount=saved.length;
 
-    // ตัดรอบรายวัน: 26 เดือนก่อน → 25 เดือนนี้
+    // ตัดรอบรายวัน: 25 เดือนก่อน → 25 เดือนนี้ (เดือนแรก พ.ค.69 เริ่ม 1 พ.ค.)
     var mp=month.split('-'),cutY=parseInt(mp[0]),cutM=parseInt(mp[1]);
     var prevM2=cutM-1,prevY2=cutY;if(prevM2<1){prevM2=12;prevY2--}
-    var cutStart=new Date(prevY2,prevM2-1,25);
+    var isFirst=(cutY===2026&&cutM===5);
+    var cutStart=isFirst?new Date(2026,4,1):new Date(prevY2,prevM2-1,25);
     var cutEnd=new Date(cutY,cutM-1,25);
     var defaultWorkDays=0;
     for(var dd=new Date(cutStart);dd<=cutEnd;dd.setDate(dd.getDate()+1)){if(dd.getDay()!==0)defaultWorkDays++}

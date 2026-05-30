@@ -4725,7 +4725,8 @@ function payDBLoad(){
         e._absentDays=absD;
         absentApplied++;
       }
-      if((!e._saved&&(e.salary>0||e.work_days>0))||e._baseUpdated||e._absentDays>0)payDBCalcRow(e);
+      // resigned-pending คำนวณใหม่เสมอ เพื่อใช้กฎรายวัน (หัก 3% ไม่หัก ปกส.) แม้เป็นข้อมูลที่บันทึกแล้ว
+      if((!e._saved&&(e.salary>0||e.work_days>0))||e._baseUpdated||e._absentDays>0||e.status==='resigned_pending')payDBCalcRow(e);
     });
     var absentNote=absentApplied?' <span style="color:#dc2626;font-weight:700">📋 หักวันขาด '+absentApplied+' คน (จากระบบลา/ขาด เดือน '+month+')</span>':'';
 

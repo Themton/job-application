@@ -1184,8 +1184,10 @@ function sbRpc(fn,params){
     }
     return sb("leaves","GET",null,q).then(function(r){
       var rows=(Array.isArray(r)?r:[]).map(function(x){
+        var nm=x.emp_name||'';
+        if(!nm&&x.emp_id&&typeof ALL!=='undefined'){ALL.forEach(function(a){if(a.id===x.emp_id)nm=a.name})}
         return{
-          id:x.id,emp_id:x.emp_id,emp_name:x.emp_name,
+          id:x.id,emp_id:x.emp_id,emp_name:nm,
           leave_type:x.type||x.leave_type||'personal',
           start_date:x.date||x.start_date||'',
           end_date:x.end_date||x.date||'',

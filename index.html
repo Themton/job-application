@@ -4614,6 +4614,7 @@ function payDBLoad(){
         daily_rate:hasSaved&&p.daily_rate!==undefined?p.daily_rate:(a.daily_rate||352),
         work_days:hasSaved?p.work_days||0:0,
         salary:hasSaved?p.salary:(a.salary||0),
+        baseSalary:a.salary||0,
         diligence:p.diligence||0,
         late:p.late||0,
         absent_ded:p.absent_ded||0,
@@ -4648,16 +4649,24 @@ function payDBLoad(){
     for(var cd2=new Date(carryStart2);cd2<=carryEnd2;cd2.setDate(cd2.getDate()+1)){if(cd2.getDay()!==0)carryDays2++}
     window._carryDays=carryDays2;
 
+    var baseUpdated=0;
     PAYDB2.forEach(function(e){
       if(e.status==='daily'&&!e._saved){
         e.work_days=defaultWorkDays;
         e.salary=Math.round(e.daily_rate*e.work_days*100)/100;
       }
+      // พนักงานประจำที่บันทึกแล้ว: ถ้าฐานเงินเดือนถูกแก้ใหม่ → ดึงค่าล่าสุดมาใช้ + คำนวณภาษี/ปกส.ใหม่ (เก็บยอดหักเดิมไว้)
+      if(e._saved&&e.status!=='daily'&&e.status!=='monthly_daily'&&e.baseSalary>0&&e.baseSalary!==e.salary){
+        e.salary=e.baseSalary;
+        e._baseUpdated=true;
+        baseUpdated++;
+        payDBCalcRow(e);
+      }
       if(!e._saved&&(e.salary>0||e.work_days>0))payDBCalcRow(e);
     });
 
     if(savedCount>0){
-      $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — <span style="color:var(--ok)">โหลดข้อมูลที่บันทึกไว้เดือน '+month+' ได้ <b>'+savedCount+'</b> คน</span>';
+      $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — <span style="color:var(--ok)">โหลดข้อมูลที่บันทึกไว้เดือน '+month+' ได้ <b>'+savedCount+'</b> คน</span>'+(baseUpdated?' <span style="color:#d97706;font-weight:700">🔄 อัปเดตฐานเงินเดือนใหม่ '+baseUpdated+' คน (คำนวณภาษี/ปกส. ใหม่ — กดบันทึกเพื่อยืนยัน)</span>':'');
     }else{
       $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน'+(prefilled?' — ฐานเงินเดือน <b style="color:var(--ok)">'+prefilled+'</b> คน (คำนวณภาษี/ปกส. แล้ว)':'');
     }
@@ -4806,7 +4815,10 @@ function payDBRender(){
     cols.forEach(function(c){
       var v=e[c.k]||0;
       var auto=(c.k==='tax3'||c.k==='ss5')||(isDaily&&c.k==='salary'&&e.work_days>0);
-      h+='<td style="'+(auto?'background:#f0f8ff':'')+'"><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" data-i="'+i+'" placeholder="0" style="'+(auto?'color:#4a90d9':'')+'"></td>';
+      var refreshed=(c.k==='salary'&&e._baseUpdated);
+      var cellBg=refreshed?'background:#fef3c7':(auto?'background:#f0f8ff':'');
+      var cellColor=refreshed?'color:#92400e;font-weight:bold':(auto?'color:#4a90d9':'');
+      h+='<td style="'+cellBg+'" title="'+(refreshed?'อัปเดตฐานเงินเดือนใหม่จากข้อมูลพนักงาน':'')+'"><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" data-i="'+i+'" placeholder="0" style="'+cellColor+'"></td>';
     });
     h+='<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
     h+='<td class="xsum xsum-err">'+payFmt(e.totalDed)+'</td>';

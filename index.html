@@ -4809,7 +4809,7 @@ function payDBRender(){
   });
 
   var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0,tAbD=0;
-  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tAbD+=(e._absentDays||0);if(e.status==='daily'||e.status==='monthly_daily')tWD+=e.work_days});
+  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tAbD+=(e._absentDays||0);if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending')tWD+=e.work_days});
 
   var cols=[
     {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
@@ -4869,8 +4869,8 @@ function payDBRender(){
     h+='<td class="xr" style="font-size:10px">'+rowNum+'</td>';
     h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
     h+='<td class="xpos">'+esc(e.position)+'</td>';
-    // ค่าแรง/วัน & จำนวนวัน — active for daily/monthly_daily
-    var isDaily=(e.status==='daily'||e.status==='monthly_daily');
+    // ค่าแรง/วัน & จำนวนวัน — active for daily/monthly_daily/ลาออก-รอจ่าย (กรอกวันทำงานเองได้)
+    var isDaily=(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending');
     if(isDaily){
       h+='<td style="background:#f3e8ff;text-align:center;font-weight:bold;color:#7c3aed;font-size:12px">'+e.daily_rate+'</td>';
       h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="0" style="color:#7c3aed;font-weight:bold">'

@@ -2434,7 +2434,32 @@ function submitLeaveRequest(){
     return;
   }
 
-  var btn=event&&event.target;
+  // ตรวจสอบสิทธิ์ลากิจ (3 วัน/ปี)
+  if(type==='personal'){
+    var empData2={};try{empData2=JSON.parse(localStorage.getItem('emp_data')||'{}')}catch(e){}
+    var curYear=new Date().getFullYear();
+    prog(10,'ตรวจสอบสิทธิ์ลากิจ...');
+    sb("leaves","GET",null,"?emp_id=eq."+encodeURIComponent(empData2.id||'')+"&type=eq.personal&status=neq.rejected&status=neq.cancelled&select=days,date").then(function(usedLeaves){
+      var totalUsed=0;
+      (Array.isArray(usedLeaves)?usedLeaves:[]).forEach(function(l){
+        if(l.date&&l.date.indexOf(curYear)===0)totalUsed+=(l.days||1);
+      });
+      if(totalUsed+days>3){
+        prog(-1);
+        toast('❌ สิทธิ์ลากิจเหลือ '+(3-totalUsed)+' วัน (ใช้ไปแล้ว '+totalUsed+'/3 วัน) ไม่สามารถลา '+days+' วันได้','terr');
+        if(btn){btn.disabled=false;btn.innerHTML='📝 ส่งคำขอลา';}
+        return;
+      }
+      doSubmitLeave(type,start,end,half,reason,days,btn);
+    }).catch(function(){doSubmitLeave(type,start,end,half,reason,days,btn)});
+    return;
+  }
+
+  // Other leave types → submit directly
+  doSubmitLeave(type,start,end,half,reason,days,btn);
+}
+
+function doSubmitLeave(type,start,end,half,reason,days,btn){
   if(btn){btn.disabled=true;btn.innerHTML='⏳ กำลังส่ง...';}
 
   // ถ้ามีไฟล์ → อัปโหลดก่อน แล้วค่อย submit request
@@ -2904,7 +2929,7 @@ function runAudit(){
 }
 
 /* ═══ LEAVES ═══ */
-var LV_LIMITS={personal:6,sick:30,absent:999};
+var LV_LIMITS={personal:3,sick:30,absent:999};
 var LV_LABELS={personal:'ลากิจ',sick:'ลาป่วย',absent:'ขาดงาน'};
 var LV_COLORS={personal:'#3b82f6',sick:'#f59e0b',absent:'var(--err)'};
 
@@ -7062,7 +7087,7 @@ function loadEmpPortal(){
       leaves.forEach(function(l){var days=l.days||1;if(l.type==='personal')usedP+=days;else if(l.type==='sick')usedS+=days;else if(l.type==='absent')usedA+=days});
       var leftP=Math.max(0,6-usedP),leftS=Math.max(0,30-usedS);
       $('emp-p-leave-stats').innerHTML=[
-        {l:'ลากิจ',v:leftP+'/6',u:'วัน',c:leftP<=0?'var(--err)':leftP<=2?'#f59e0b':'var(--ok)',ic:'📋'},
+        {l:'ลากิจ',v:leftP+'/3',u:'วัน',c:leftP<=0?'var(--err)':leftP<=1?'#f59e0b':'var(--ok)',ic:'📋'},
         {l:'ลาป่วย',v:leftS+'/30',u:'วัน',c:leftS<=0?'var(--err)':leftS<=5?'#f59e0b':'var(--ok)',ic:'🏥'},
         {l:'ขาดงาน',v:usedA,u:'วัน',c:usedA>0?'var(--err)':'var(--muted)',ic:'✗'},
         {l:'ลาใช้ไป',v:usedP+usedS,u:'วัน',c:'var(--muted)',ic:'📊'}

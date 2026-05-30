@@ -5753,12 +5753,19 @@ function loadPayDB(){
   var month=$('paydb-month').value;
   if(!month)return;
   prog(10,'ดึงรายงานเดือน '+month+'...');
+  var _mp=month.split('-'),_lastD=new Date(parseInt(_mp[0]),parseInt(_mp[1]),0).getDate();
   Promise.all([
     sb("payroll","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*&order=emp_name"),
-    sb("commissions","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*").catch(function(){return[]})
+    sb("commissions","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*").catch(function(){return[]}),
+    sb("leaves","GET",null,"?type=eq.absent&date=gte."+month+"-01&date=lte."+month+"-"+String(_lastD).padStart(2,'0')+"&select=emp_id,date,days,status").catch(function(){return[]})
   ]).then(function(res){
     var pay=Array.isArray(res[0])?res[0]:[];
     var comm=Array.isArray(res[1])?res[1]:[];
+    var absentRows=Array.isArray(res[2])?res[2]:[];
+    // รวมวันขาดต่อพนักงาน (กันนับซ้ำ + ไม่นับปฏิเสธ/ยกเลิก)
+    var _abByEmp={};
+    absentRows.forEach(function(l){if(!l.emp_id)return;if(l.status==='rejected'||l.status==='cancelled')return;if(!_abByEmp[l.emp_id])_abByEmp[l.emp_id]={};var dk=l.date||('_'+Math.random());_abByEmp[l.emp_id][dk]=Math.max(_abByEmp[l.emp_id][dk]||0,l.days||1)});
+    var absentMap={};Object.keys(_abByEmp).forEach(function(eid){var s=0;Object.keys(_abByEmp[eid]).forEach(function(d){s+=_abByEmp[eid][d]});absentMap[eid]=s});
     var commMap={};comm.forEach(function(c){commMap[c.emp_name]=c.amount||0});
     PAYDB_DATA=pay.map(function(r){
       r.commission=commMap[r.emp_name]||r.commission||0;
@@ -5766,6 +5773,7 @@ function loadPayDB(){
       // Try to find email from ALL
       var dbEmp=null;ALL.forEach(function(a){if(a.name===r.emp_name)dbEmp=a});
       r.email=dbEmp?dbEmp.email||'':'';
+      r.absent_days=dbEmp?(absentMap[dbEmp.id]||0):0;
       return r;
     });
     paydbRender();
@@ -5834,6 +5842,8 @@ function paydbBuildSlipHTML(r){
   var f=payFmt,gt=r.net+(r.commission||0);
   var row=function(l,v){return'<tr><td style="padding:4px 0;color:#706040;font-size:13px">'+l+'</td><td style="padding:4px 0;text-align:right;font-size:13px">'+v+'</td></tr>'};
   var dedRows='';
+  if(r.late>0)dedRows+=row('&#3627;&#3633;&#3585;&#3617;&#3634;&#3626;&#3634;&#3618;',f(r.late));
+  if(r.absent_ded>0)dedRows+=row('&#3627;&#3633;&#3585;&#3586;&#3634;&#3604;&#3591;&#3634;&#3609;'+(r.absent_days>0?' ('+r.absent_days+' &#3623;&#3633;&#3609;)':''),f(r.absent_ded));
   if(r.tax3>0)dedRows+=row('&#3616;&#3634;&#3625;&#3637; 3%',f(r.tax3));
   if(r.ss5>0)dedRows+=row('&#3611;&#3619;&#3632;&#3585;&#3633;&#3609;&#3626;&#3633;&#3591;&#3588;&#3617; 5%',f(r.ss5));
   if(r.loan>0)dedRows+=row('&#3627;&#3633;&#3585; &#3585;&#3618;&#3624;.',f(r.loan));

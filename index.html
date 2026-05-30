@@ -2221,11 +2221,20 @@ function loadLeaveRequests(){
 }
 
 function renderLeaveRequestsAdmin(rows){
+  window._lvRows=rows;
   if(!rows.length){
     $('lv-admin-list').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่มีข้อมูล</p></div>';
     return;
   }
-  var h='<div class="tw"><table><thead><tr><th>วันที่ส่ง</th><th>พนักงาน</th><th>ประเภท</th><th>ช่วงลา</th><th>จำนวน</th><th>เหตุผล</th><th>สถานะ</th><th style="text-align:right">จัดการ</th></tr></thead><tbody>';
+  var canApprove=rows.filter(function(r){return r.status==='pending'||r.status==='hr_approved'}).length;
+  var h='';
+  if(canApprove){
+    h+='<div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+      +'<button class="btn btn-a btn-s" onclick="approveAllLeaveReq()" style="padding:7px 16px;font-size:13px;background:linear-gradient(135deg,#16a34a,#22c55e)">✅ อนุมัติทั้งหมด ('+canApprove+' ใบ)</button>'
+      +'<span style="font-size:11px;color:var(--muted)">เลื่อนทุกใบในรายการขึ้น 1 ขั้น — รออนุมัติ→HR อนุมัติ, HR อนุมัติ→อนุมัติสมบูรณ์</span>'
+      +'</div>';
+  }
+  h+='<div class="tw"><table><thead><tr><th>วันที่ส่ง</th><th>พนักงาน</th><th>ประเภท</th><th>ช่วงลา</th><th>จำนวน</th><th>เหตุผล</th><th>สถานะ</th><th style="text-align:right">จัดการ</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var color=LR_TYPE_COLOR[r.leave_type]||'#6b7280';
     var status=LR_STATUS_LABEL[r.status]||r.status;
@@ -2353,6 +2362,33 @@ function approveLeaveReq(id){
       toast('ใบลานี้ถูกตรวจแล้ว (สถานะ: '+lv.status+')','terr');
     }
   }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+function approveAllLeaveReq(){
+  var rows=(window._lvRows||[]).filter(function(r){return r.status==='pending'||r.status==='hr_approved'});
+  if(!rows.length){toast('ไม่มีใบลาที่อนุมัติได้','terr');return}
+  var pendingIds=rows.filter(function(r){return r.status==='pending'}).map(function(r){return r.id});
+  var hrIds=rows.filter(function(r){return r.status==='hr_approved'}).map(function(r){return r.id});
+  var msg='อนุมัติทั้งหมด '+rows.length+' ใบ?';
+  if(pendingIds.length)msg+='\n• HR อนุมัติ → ส่งต่อหัวหน้า: '+pendingIds.length+' ใบ';
+  if(hrIds.length)msg+='\n• หัวหน้าอนุมัติสมบูรณ์: '+hrIds.length+' ใบ';
+  if(!confirm(msg))return;
+  var user=localStorage.getItem('mt_username')||'';
+  var now=new Date().toISOString();
+  function idIn(ids){return '?id=in.('+ids.map(function(x){return '"'+x+'"'}).join(',')+')'}
+  var tasks=[];
+  if(pendingIds.length){
+    tasks.push(sb("leaves","PATCH",{status:'hr_approved',hr_approved_by:user||'HR',hr_approved_at:now,hr_note:'อนุมัติพร้อมกัน'},idIn(pendingIds)));
+  }
+  if(hrIds.length){
+    tasks.push(sb("leaves","PATCH",{status:'approved',mgr_approved_by:user||'Manager',mgr_approved_at:now,mgr_note:'อนุมัติพร้อมกัน'},idIn(hrIds)));
+  }
+  toast('⏳ กำลังอนุมัติ '+rows.length+' ใบ...','tok');
+  Promise.all(tasks).then(function(){
+    toast('✅ อนุมัติแล้ว '+rows.length+' ใบ','tok');
+    tgSend('✅ <b>อนุมัติการลาพร้อมกัน</b>\n\n'+(pendingIds.length?'📤 HR อนุมัติ → รอหัวหน้า: <b>'+pendingIds.length+'</b> ใบ\n':'')+(hrIds.length?'✅ หัวหน้าอนุมัติสมบูรณ์: <b>'+hrIds.length+'</b> ใบ\n':'')+'👤 โดย: '+esc(user||'-')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+    loadLeaveRequests();
+  }).catch(function(e){toast('Error: '+e,'terr');loadLeaveRequests()});
 }
 
 function rejectLeaveReq(id){

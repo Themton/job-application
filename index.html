@@ -2424,9 +2424,13 @@ function submitLeaveRequest(){
   var days=lrCalcDays();
   if(!days||days<=0){toast('จำนวนวันไม่ถูกต้อง','terr');return}
 
-  // บังคับแนบหลักฐานสำหรับลาป่วย
+  // บังคับแนบหลักฐานสำหรับลาป่วย + ลากิจ
   if(type==='sick'&&!LR_FILE){
     toast('ลาป่วยต้องแนบใบรับรองแพทย์','terr');
+    return;
+  }
+  if(type==='personal'&&!LR_FILE){
+    toast('ลากิจต้องแนบรูปหลักฐาน','terr');
     return;
   }
 
@@ -2497,6 +2501,8 @@ function lrUpdateEvidenceLabel(){
   if(!lbl)return;
   if(type==='sick'){
     lbl.innerHTML='หลักฐาน <span class="rq">*</span> <span style="font-size:11px;color:var(--err)">ต้องแนบใบรับรองแพทย์</span>';
+  }else if(type==='personal'){
+    lbl.innerHTML='หลักฐาน <span class="rq">*</span> <span style="font-size:11px;color:var(--err)">ต้องแนบรูปหลักฐาน</span>';
   }else{
     lbl.innerHTML='หลักฐาน <span style="font-size:11px;color:var(--muted)">(ถ้ามี)</span>';
   }

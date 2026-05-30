@@ -1229,7 +1229,13 @@ function sbRpc(fn,params){
     return sb("users","DELETE",null,"?id=eq."+encodeURIComponent(params.p_target_id)).then(function(){return{ok:true}}).catch(function(e){return{ok:false,message:String(e)}});
   }
   if(fn==='admin_reset_emp_password'){return Promise.resolve({ok:true,message:'รีเซ็ตรหัสผ่านแล้ว'})}
-  if(fn==='audit_write'||fn==='audit_read'){return Promise.resolve({ok:true,rows:[]})}
+  if(fn==='audit_write'){
+    var aid='AUD-'+Date.now()+'-'+Math.random().toString(36).substr(2,4);
+    return sb("audit_logs","POST",{id:aid,username:localStorage.getItem('mt_username')||'admin',role:localStorage.getItem('mt_role')||'admin',action:params.p_action||'',target:params.p_target||'',detail:params.p_detail||'',created_at:new Date().toISOString()}).then(function(){return{ok:true}}).catch(function(){return{ok:true}});
+  }
+  if(fn==='audit_read'){
+    return sb("audit_logs","GET",null,"?select=*&order=created_at.desc&limit="+(params.p_limit||200)).then(function(r){return{ok:true,rows:Array.isArray(r)?r.map(function(x){return{ts:x.created_at,username:x.username,role:x.role,action:x.action,target:x.target,detail:x.detail}}):[]}}).catch(function(){return{ok:true,rows:[]}});
+  }
   if(fn==='auth_check'){return Promise.resolve({ok:true})}
   if(fn==='auth_logout'){return Promise.resolve({ok:true})}
   if(fn==='notif_list'){return Promise.resolve({ok:true,rows:[]})}

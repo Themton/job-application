@@ -4808,8 +4808,8 @@ function payDBRender(){
     filtered.push({e:e,idx:i});
   });
 
-  var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0;
-  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;if(e.status==='daily'||e.status==='monthly_daily')tWD+=e.work_days});
+  var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0,tAbD=0;
+  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tAbD+=(e._absentDays||0);if(e.status==='daily'||e.status==='monthly_daily')tWD+=e.work_days});
 
   var cols=[
     {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
@@ -4821,7 +4821,7 @@ function payDBRender(){
     {k:'loan',l:'กยศ.',w:70,type:'ded'},
     {k:'advance',l:'เบิกล่วงหน้า',w:85,type:'ded'}
   ];
-  var totalCols=4+2+cols.length+3; // +2 for daily_rate & work_days
+  var totalCols=4+2+1+cols.length+3; // +2 daily_rate&work_days, +1 วันขาด
   var sums=[tSal,tDil,tLa,tAb,tT3,tS5,tLo,tAd];
 
   var h='<div class="xls-wrap"><table class="xls"><thead><tr>';
@@ -4831,10 +4831,11 @@ function payDBRender(){
   h+='<th style="min-width:90px">C</th>';
   h+='<th style="min-width:60px;background:#e8d5f5">D</th>';
   h+='<th style="min-width:60px;background:#e8d5f5">E</th>';
-  cols.forEach(function(c,ci){h+='<th style="min-width:'+c.w+'px">'+String.fromCharCode(70+ci)+'</th>'});
-  h+='<th style="min-width:90px;background:#d4ecc0">'+String.fromCharCode(70+cols.length)+'</th>';
-  h+='<th style="min-width:80px;background:#f5d0c0">'+String.fromCharCode(71+cols.length)+'</th>';
-  h+='<th style="min-width:100px;background:#c0d8f0">'+String.fromCharCode(72+cols.length)+'</th>';
+  h+='<th style="min-width:55px;background:#fde8e8">F</th>';
+  cols.forEach(function(c,ci){h+='<th style="min-width:'+c.w+'px">'+String.fromCharCode(71+ci)+'</th>'});
+  h+='<th style="min-width:90px;background:#d4ecc0">'+String.fromCharCode(71+cols.length)+'</th>';
+  h+='<th style="min-width:80px;background:#f5d0c0">'+String.fromCharCode(72+cols.length)+'</th>';
+  h+='<th style="min-width:100px;background:#c0d8f0">'+String.fromCharCode(73+cols.length)+'</th>';
   h+='</tr><tr>';
   h+='<th class="xr"></th>';
   h+='<th style="font-size:9px">ลำดับ</th>';
@@ -4842,6 +4843,7 @@ function payDBRender(){
   h+='<th style="text-align:left;padding-left:6px">ตำแหน่ง</th>';
   h+='<th style="background:#e8d5f5;font-size:10px">ค่าแรง/วัน</th>';
   h+='<th style="background:#e8d5f5;font-size:10px">จำนวนวัน</th>';
+  h+='<th style="background:#fde8e8;font-size:10px;color:#dc2626">วันขาด</th>';
   cols.forEach(function(c){h+='<th>'+c.l+'</th>'});
   h+='<th style="background:#d4ecc0">รวมรับ</th>';
   h+='<th style="background:#f5d0c0">รวมหัก</th>';
@@ -4872,11 +4874,13 @@ function payDBRender(){
     if(isDaily){
       h+='<td style="background:#f3e8ff;text-align:center;font-weight:bold;color:#7c3aed;font-size:12px">'+e.daily_rate+'</td>';
       h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="0" style="color:#7c3aed;font-weight:bold">'
-        +'<div style="font-size:8px;color:#3b82f6;margin-top:1px">ยกไป '+(window._carryDays||0)+' วัน'+(e._absentDays>0?' <span style="color:#dc2626;font-weight:700">• หักขาด '+e._absentDays+' วัน</span>':'')+'</div></td>';
+        +'<div style="font-size:8px;color:#3b82f6;margin-top:1px">ยกไป '+(window._carryDays||0)+' วัน</div></td>';
     }else{
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
     }
+    // วันขาด (แสดงอย่างเดียว ดึงจากระบบลา/ขาด)
+    h+='<td title="'+(e._absentDays>0?'ขาดงาน '+e._absentDays+' วัน (จากระบบลา/ขาด)':'')+'" style="text-align:center;font-size:12px;background:'+(e._absentDays>0?'#fde8e8':'#fafafa')+';color:'+(e._absentDays>0?'#dc2626':'#ccc')+';font-weight:'+(e._absentDays>0?'700':'400')+'">'+(e._absentDays>0?e._absentDays:'-')+'</td>';
     cols.forEach(function(c){
       var v=e[c.k]||0;
       var auto=(c.k==='tax3'||c.k==='ss5')||(isDaily&&c.k==='salary'&&e.work_days>0);
@@ -4900,6 +4904,7 @@ function payDBRender(){
   h+='<td></td>';
   h+='<td style="text-align:center;font-size:10px;color:#7c3aed">352</td>';
   h+='<td class="xsum" style="color:#7c3aed">'+(tWD||'')+'</td>';
+  h+='<td class="xsum" style="color:#dc2626">'+(tAbD||'')+'</td>';
   sums.forEach(function(s){h+='<td class="xsum">'+payFmt(s)+'</td>'});
   h+='<td class="xsum xsum-ok">'+payFmt(tI)+'</td>';
   h+='<td class="xsum xsum-err">'+payFmt(tD)+'</td>';

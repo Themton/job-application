@@ -4629,27 +4629,31 @@ function payDBLoad(){
   prog(10,'ดึงข้อมูลพนักงาน...');
 
   var queries=[sb("applications","GET",null,"?select=*&status=neq.terminated&order=status,name")];
-  // ช่วงตัดรอบ (25 เดือนก่อน → 25 เดือนนี้ / เดือนแรก พ.ค.69 เริ่ม 1) — ใช้ดึงวันขาดด้วย
+  // ช่วงวันขาด = ทั้งเดือนปฏิทินที่เลือก (ตรงกับวิธีบันทึกขาด/ลา)
   var _absStart='',_absEnd='';
   if(month){
     var _mp=month.split('-'),_cy=parseInt(_mp[0]),_cm=parseInt(_mp[1]);
-    var _pm=_cm-1,_py=_cy;if(_pm<1){_pm=12;_py--}
-    var _first=(_cy===2026&&_cm===5);
-    var _s=_first?new Date(2026,4,1):new Date(_py,_pm-1,25);
-    var _e=new Date(_cy,_cm-1,25);
-    var _fmt=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
-    _absStart=_fmt(_s);_absEnd=_fmt(_e);
+    var _lastD=new Date(_cy,_cm,0).getDate();
+    _absStart=month+'-01';
+    _absEnd=month+'-'+String(_lastD).padStart(2,'0');
   }
   queries.push(month?sb("payroll","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*").catch(function(){return[]}):Promise.resolve([]));
-  queries.push(month?sb("leaves","GET",null,"?type=eq.absent&date=gte."+_absStart+"&date=lte."+_absEnd+"&select=emp_id,date,days").catch(function(){return[]}):Promise.resolve([]));
+  queries.push(month?sb("leaves","GET",null,"?type=eq.absent&date=gte."+_absStart+"&date=lte."+_absEnd+"&select=emp_id,date,days,status").catch(function(){return[]}):Promise.resolve([]));
 
   Promise.all(queries).then(function(res){
     var r=res[0];
     var saved=Array.isArray(res[1])?res[1]:[];
     var absentRows=Array.isArray(res[2])?res[2]:[];
-    // รวมจำนวนวันขาดต่อพนักงาน (จากตาราง leaves type=absent)
+    // รวมจำนวนวันขาดต่อพนักงาน — กันนับซ้ำวันเดียวกัน (ไม่นับที่ถูกปฏิเสธ/ยกเลิก)
+    var _absByEmp={};
+    absentRows.forEach(function(l){
+      if(!l.emp_id)return;if(l.status==='rejected'||l.status==='cancelled')return;
+      if(!_absByEmp[l.emp_id])_absByEmp[l.emp_id]={};
+      var dkey=l.date||('_'+Math.random());
+      _absByEmp[l.emp_id][dkey]=Math.max(_absByEmp[l.emp_id][dkey]||0,l.days||1);
+    });
     var absentMap={};
-    absentRows.forEach(function(l){if(!l.emp_id)return;absentMap[l.emp_id]=(absentMap[l.emp_id]||0)+(l.days||1)});
+    Object.keys(_absByEmp).forEach(function(eid){var s=0;Object.keys(_absByEmp[eid]).forEach(function(d){s+=_absByEmp[eid][d]});absentMap[eid]=s});
     if(!Array.isArray(r)||!r.length){$('paydb2-status').textContent='ไม่พบพนักงาน';return}
 
     // Map saved payroll by name
@@ -4701,31 +4705,29 @@ function payDBLoad(){
     for(var cd2=new Date(carryStart2);cd2<=carryEnd2;cd2.setDate(cd2.getDate()+1)){if(cd2.getDay()!==0)carryDays2++}
     window._carryDays=carryDays2;
 
-    var baseUpdated=0,absentApplied=0,absentDailyDays=0;
+    var baseUpdated=0,absentApplied=0;
     PAYDB2.forEach(function(e){
-      var absD=absentMap[e.id]||0;
       if(e.status==='daily'&&!e._saved){
-        // รายวัน: หักวันขาดออกจากจำนวนวันทำงาน → เงินเดือนลดเอง
-        e.work_days=Math.max(0,defaultWorkDays-absD);
+        e.work_days=defaultWorkDays;
         e.salary=Math.round(e.daily_rate*e.work_days*100)/100;
-        if(absD>0){e._absentDays=absD;absentApplied++;absentDailyDays+=absD}
-      }else if(!e._saved&&absD>0){
-        // ประจำ/ใหม่ = หัก (เงินเดือน÷26)/วัน • ประจำ(รายวัน) = หัก ค่าแรง/วัน
-        var perDay=(e.status==='monthly_daily')?e.daily_rate:Math.round((e.salary||0)/26);
-        e.absent_ded=Math.round(perDay*absD);
-        e._absentDays=absD;
-        absentApplied++;
       }
-      // พนักงานประจำที่บันทึกแล้ว: ถ้าฐานเงินเดือนถูกแก้ใหม่ → ดึงค่าล่าสุดมาใช้ + คำนวณภาษี/ปกส.ใหม่ (เก็บยอดหักเดิมไว้)
+      // พนักงานประจำที่บันทึกแล้ว: ถ้าฐานเงินเดือนถูกแก้ใหม่ → ดึงค่าล่าสุดมาใช้
       if(e._saved&&e.status!=='daily'&&e.status!=='monthly_daily'&&e.baseSalary>0&&e.baseSalary!==e.salary){
         e.salary=e.baseSalary;
         e._baseUpdated=true;
         baseUpdated++;
-        payDBCalcRow(e);
       }
-      if(!e._saved&&(e.salary>0||e.work_days>0))payDBCalcRow(e);
+      // ดึงวันขาดจากตาราง leaves มาหัก (ทั้งเดือนที่บันทึกแล้วและยังไม่บันทึก)
+      var absD=absentMap[e.id]||0;
+      if(absD>0){
+        var perDay=(e.status==='daily'||e.status==='monthly_daily')?e.daily_rate:Math.round((e.salary||0)/26);
+        e.absent_ded=Math.round(perDay*absD);
+        e._absentDays=absD;
+        absentApplied++;
+      }
+      if((!e._saved&&(e.salary>0||e.work_days>0))||e._baseUpdated||absD>0)payDBCalcRow(e);
     });
-    var absentNote=absentApplied?' <span style="color:#dc2626;font-weight:700">📋 ดึงวันขาด '+absentApplied+' คน มาหักแล้ว (ช่วง '+_absStart+' ถึง '+_absEnd+')</span>':'';
+    var absentNote=absentApplied?' <span style="color:#dc2626;font-weight:700">📋 หักวันขาด '+absentApplied+' คน (จากระบบลา/ขาด เดือน '+month+')</span>':'';
 
     if(savedCount>0){
       $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — <span style="color:var(--ok)">โหลดข้อมูลที่บันทึกไว้เดือน '+month+' ได้ <b>'+savedCount+'</b> คน</span>'+(baseUpdated?' <span style="color:#d97706;font-weight:700">🔄 อัปเดตฐานเงินเดือนใหม่ '+baseUpdated+' คน (คำนวณภาษี/ปกส. ใหม่ — กดบันทึกเพื่อยืนยัน)</span>':'')+absentNote;

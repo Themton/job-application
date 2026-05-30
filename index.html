@@ -7097,11 +7097,12 @@ function loadEmpPortal(){
 
       // Header
       $('emp-p-name').textContent=a.name+(a.nickname?' ('+a.nickname+')':'');
-      $('emp-p-sub').textContent=(a.position||'-')+(a.department?' • '+a.department:'');
+      $('emp-p-sub').innerHTML=(a.emp_code?'<span style="background:var(--pri);color:#fff;padding:1px 8px;border-radius:8px;font-weight:700;font-size:11px;margin-right:6px">'+esc(a.emp_code)+'</span>':'')+(a.position||'-')+(a.department?' • '+a.department:'');
 
       // Info card
       var stLabel=a.status==='daily'?'รายวัน':a.status==='monthly'?'ประจำ':a.status==='terminated'?'พ้นสภาพ':'ใหม่';
       var info='<div class="g2" style="font-size:14px">';
+      info+='<div><span style="color:var(--muted)">🏷️ รหัสพนักงาน:</span> <b style="color:var(--pri)">'+esc(a.emp_code||'-')+'</b></div>';
       info+='<div><span style="color:var(--muted)">ชื่อ:</span> <b>'+esc(a.name)+'</b></div>';
       if(a.nickname)info+='<div><span style="color:var(--muted)">ชื่อเล่น:</span> '+esc(a.nickname)+'</div>';
       info+='<div><span style="color:var(--muted)">โทร:</span> '+esc(a.phone||'-')+'</div>';

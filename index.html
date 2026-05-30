@@ -1045,20 +1045,31 @@ if(location.search.indexOf('emp')>-1){
 <!-- PAGE: EMPLOYEE PORTAL -->
 <div id="P-emp" style="display:none">
 <div class="wrap">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px">
-    <div style="display:flex;align-items:center;gap:12px"><img src="LOGO_THEMT.png" style="width:40px;height:40px;border-radius:8px"><div><div style="font-size:18px;font-weight:700;color:var(--pri)" id="emp-p-name"></div><div style="font-size:12px;color:var(--muted)" id="emp-p-sub"></div></div></div>
-    <button class="btn btn-g btn-s" onclick="empLogout()">🚪 ออกจากระบบ</button>
+  <!-- Welcome Banner -->
+  <div style="background:linear-gradient(135deg,#5c4a1e,#8b6914);border-radius:16px;padding:24px;margin-bottom:18px;color:#fff;position:relative;overflow:hidden">
+    <div style="position:absolute;right:-20px;top:-20px;font-size:120px;opacity:.1">👤</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;position:relative">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">👋</div>
+        <div>
+          <div style="font-size:13px;opacity:.85" id="emp-p-greeting">สวัสดี</div>
+          <div style="font-size:22px;font-weight:800" id="emp-p-name"></div>
+          <div style="font-size:13px;opacity:.9;margin-top:2px" id="emp-p-sub"></div>
+        </div>
+      </div>
+      <button class="btn btn-s" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="empLogout()">🚪 ออกจากระบบ</button>
+    </div>
   </div>
 
   <!-- Info Card -->
   <div class="cd" style="margin-bottom:16px">
-    <div class="cd-t"><span class="dot"></span> ข้อมูลส่วนตัว</div>
+    <div class="cd-t"><span class="dot"></span> 📋 ข้อมูลส่วนตัว</div>
     <div id="emp-p-info"></div>
   </div>
 
   <!-- Leave Balance -->
   <div class="cd" style="margin-bottom:16px">
-    <div class="cd-t"><span class="dot"></span> วันลาคงเหลือ</div>
+    <div class="cd-t"><span class="dot"></span> 📅 วันลาคงเหลือ</div>
     <div id="emp-p-leave-stats" class="sts" style="margin-bottom:12px"></div>
     <div id="emp-p-leave-table"></div>
   </div>
@@ -7097,22 +7108,23 @@ function loadEmpPortal(){
 
       // Header
       $('emp-p-name').textContent=a.name+(a.nickname?' ('+a.nickname+')':'');
-      $('emp-p-sub').innerHTML=(a.emp_code?'<span style="background:var(--pri);color:#fff;padding:1px 8px;border-radius:8px;font-weight:700;font-size:11px;margin-right:6px">'+esc(a.emp_code)+'</span>':'')+(a.position||'-')+(a.department?' • '+a.department:'');
+      var hr2=new Date().getHours();
+      if($('emp-p-greeting'))$('emp-p-greeting').textContent=hr2<12?'สวัสดีตอนเช้า ☀️':hr2<17?'สวัสดีตอนบ่าย 🌤️':'สวัสดีตอนเย็น 🌙';
+      $('emp-p-sub').innerHTML=(a.emp_code?'<span style="background:rgba(255,255,255,.25);padding:1px 10px;border-radius:8px;font-weight:700;font-size:12px;margin-right:6px">'+esc(a.emp_code)+'</span>':'')+(a.position||'-')+(a.department?' • '+a.department:'');
 
-      // Info card
-      var stLabel=a.status==='daily'?'รายวัน':a.status==='monthly'?'ประจำ':a.status==='terminated'?'พ้นสภาพ':'ใหม่';
-      var info='<div class="g2" style="font-size:14px">';
-      info+='<div><span style="color:var(--muted)">🏷️ รหัสพนักงาน:</span> <b style="color:var(--pri)">'+esc(a.emp_code||'-')+'</b></div>';
-      info+='<div><span style="color:var(--muted)">ชื่อ:</span> <b>'+esc(a.name)+'</b></div>';
-      if(a.nickname)info+='<div><span style="color:var(--muted)">ชื่อเล่น:</span> '+esc(a.nickname)+'</div>';
-      info+='<div><span style="color:var(--muted)">โทร:</span> '+esc(a.phone||'-')+'</div>';
-      info+='<div><span style="color:var(--muted)">อีเมล:</span> '+esc(a.email||'-')+'</div>';
-      info+='<div><span style="color:var(--muted)">ตำแหน่ง:</span> '+esc(a.position||'-')+'</div>';
-      info+='<div><span style="color:var(--muted)">แผนก:</span> '+esc(a.department||'-')+'</div>';
-      info+='<div><span style="color:var(--muted)">ประเภท:</span> <b>'+stLabel+'</b></div>';
-      info+='<div><span style="color:var(--muted)">ธนาคาร:</span> '+esc(a.bank||'-')+' '+esc(a.bank_account||'')+'</div>';
-      info+='<div><span style="color:var(--muted)">วันที่เข้าทำงาน:</span> '+String(a.created_at||'').substring(0,10)+'</div>';
-      info+='</div>';
+      // Info card - clean visual rows
+      var stLabel=a.status==='daily'?'รายวัน':a.status==='monthly'?'ประจำ':a.status==='monthly_daily'?'ประจำ(รายวัน)':a.status==='terminated'?'พ้นสภาพ':'ใหม่';
+      var stColor=a.status==='daily'?'#f59e0b':a.status==='monthly'?'#10b981':a.status==='terminated'?'#6b7280':'#3b82f6';
+      function row(ic,label,val){return'<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.05)"><span style="font-size:18px;width:24px;text-align:center">'+ic+'</span><span style="color:var(--muted);font-size:13px;min-width:90px">'+label+'</span><span style="font-weight:600;font-size:14px">'+val+'</span></div>'}
+      var info='';
+      info+=row('🏷️','รหัสพนักงาน','<span style="color:var(--pri);font-weight:800">'+esc(a.emp_code||'-')+'</span>');
+      info+=row('👤','ชื่อ-สกุล',esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':''));
+      info+=row('📱','โทรศัพท์',esc(a.phone||'-'));
+      info+=row('💼','ตำแหน่ง',esc(a.position||'-'));
+      info+=row('🏢','แผนก',esc(a.department||'-'));
+      info+=row('🏷️','ประเภท','<span style="background:'+stColor+'18;color:'+stColor+';padding:2px 10px;border-radius:8px;font-weight:700;font-size:12px">'+stLabel+'</span>');
+      info+=row('🏦','ธนาคาร',esc(a.bank||'-')+' '+esc(a.bank_account||''));
+      info+=row('📅','วันที่เข้าทำงาน',String(a.start_date||a.created_at||'').substring(0,10));
       $('emp-p-info').innerHTML=info;
 
       // Leave balance

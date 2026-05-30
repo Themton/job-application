@@ -4911,7 +4911,9 @@ function payDBRender(){
 function payDBCalcRow(e){
   e.totalIncome=e.salary+e.diligence;
   // รายวัน: หัก 3% ไม่หัก ปกส. / ประจำ: ไม่หัก 3% หัก ปกส.5% / ประจำ(รายวัน): ไม่หัก 3% หัก ปกส.5%
-  if(e.status==='daily'){
+  // ลาออก-รอจ่าย ที่คิดจากจำนวนวัน (พนักงานรายวัน) → ใช้กฎรายวัน (หัก 3% ไม่หัก ปกส.)
+  var isResignedDaily=(e.status==='resigned_pending'&&e.work_days>0);
+  if(e.status==='daily'||isResignedDaily){
     e.tax3=Math.round(e.totalIncome*0.03*100)/100;
     e.ss5=0;
   }else if(e.status==='monthly_daily'){

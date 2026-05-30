@@ -1175,9 +1175,13 @@ function sbRpc(fn,params){
   if(fn==='leave_list'){
     var q='?select=*&order=created_at.desc&limit='+(params.p_limit||200);
     if(params.p_status)q+='&status=eq.'+params.p_status;
-    // Filter by employee if in emp mode
-    var empD;try{empD=JSON.parse(localStorage.getItem('emp_data')||'null')}catch(e){}
-    if(empD&&empD.id&&!params.p_status)q+='&emp_id=eq.'+encodeURIComponent(empD.id);
+    // Filter by employee ONLY when in employee portal mode (P-emp visible)
+    var empPage=document.getElementById('P-emp');
+    var inEmpMode=empPage&&empPage.style.display!=='none';
+    if(inEmpMode){
+      var empD;try{empD=JSON.parse(localStorage.getItem('emp_data')||'null')}catch(e){}
+      if(empD&&empD.id)q+='&emp_id=eq.'+encodeURIComponent(empD.id);
+    }
     return sb("leaves","GET",null,q).then(function(r){
       var rows=(Array.isArray(r)?r:[]).map(function(x){
         return{

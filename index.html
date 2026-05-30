@@ -4876,7 +4876,17 @@ function payDBRender(){
     h+='<td class="xr">'+rowNum+'</td>';
     h+='<td class="xr" style="font-size:10px">'+rowNum+'</td>';
     h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
-    h+='<td class="xpos">'+esc(e.position)+'</td>';
+    if(e.status==='resigned_pending'){
+      h+='<td class="xpos">'+esc(e.position)
+        +'<br><select onchange="payDBSetPrevStatus('+i+',this.value)" style="font-size:9px;margin-top:2px;border:1px solid #d97706;border-radius:4px;background:#fff7ed;color:#92400e;max-width:150px" title="ประเภทเดิมก่อนลาออก (มีผลต่อ ปกส.)">'
+        +'<option value="">เดิม: ?</option>'
+        +'<option value="daily"'+(e.prevStatus==='daily'?' selected':'')+'>เคยรายวัน (ไม่หัก ปกส.)</option>'
+        +'<option value="monthly_daily"'+(e.prevStatus==='monthly_daily'?' selected':'')+'>เคยประจำรายวัน+ปกส. (หัก 5%)</option>'
+        +'<option value="monthly"'+(e.prevStatus==='monthly'?' selected':'')+'>เคยประจำ (หัก ปกส. 5%)</option>'
+        +'</select></td>';
+    }else{
+      h+='<td class="xpos">'+esc(e.position)+'</td>';
+    }
     // ค่าแรง/วัน & จำนวนวัน — active for daily/monthly_daily/ลาออก-รอจ่าย (กรอกวันทำงานเองได้)
     var isDaily=(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending');
     if(isDaily){
@@ -4941,6 +4951,17 @@ function payDBCalcRow(e){
   }
   e.totalDed=e.late+e.absent_ded+e.tax3+e.ss5+e.loan+e.advance;
   e.net=Math.max(0,e.totalIncome-e.totalDed);
+}
+
+function payDBSetPrevStatus(i,val){
+  var e=PAYDB2[i];if(!e)return;
+  e.prevStatus=val;
+  if(val&&e.id)sb("applications","PATCH",{prev_status:val},"?id=eq."+e.id)
+    .then(function(){ALL.forEach(function(a){if(a.id===e.id)a.prev_status=val});toast('บันทึกประเภทเดิมแล้ว','tok')})
+    .catch(function(){toast('บันทึกไม่สำเร็จ — ตรวจว่าเพิ่มคอลัมน์ prev_status แล้ว','terr')});
+  payDBCalcRow(e);
+  payDBRender();
+  payDBUpdateFooter();
 }
 
 function payDBCell(i,field,val){

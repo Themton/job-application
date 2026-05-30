@@ -4618,6 +4618,13 @@ function payDBLoad(){
     for(var dd=new Date(cutStart);dd<=cutEnd;dd.setDate(dd.getDate()+1)){if(dd.getDay()!==0)defaultWorkDays++}
 
     // Auto-fill work_days for daily employees (only if not saved)
+    // Calculate carry-over days (26 to end of month)
+    var carryStart2=new Date(cutY,cutM-1,26);
+    var carryEnd2=new Date(cutY,cutM,0);
+    var carryDays2=0;
+    for(var cd2=new Date(carryStart2);cd2<=carryEnd2;cd2.setDate(cd2.getDate()+1)){if(cd2.getDay()!==0)carryDays2++}
+    window._carryDays=carryDays2;
+
     PAYDB2.forEach(function(e){
       if(e.status==='daily'&&!e._saved){
         e.work_days=defaultWorkDays;
@@ -4767,7 +4774,8 @@ function payDBRender(){
     var isDaily=(e.status==='daily'||e.status==='monthly_daily');
     if(isDaily){
       h+='<td style="background:#f3e8ff;text-align:center;font-weight:bold;color:#7c3aed;font-size:12px">'+e.daily_rate+'</td>';
-      h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="0" style="color:#7c3aed;font-weight:bold"></td>';
+      h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="0" style="color:#7c3aed;font-weight:bold">'
+        +'<div style="font-size:8px;color:#3b82f6;margin-top:1px">ยกไป '+(window._carryDays||0)+' วัน</div></td>';
     }else{
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';

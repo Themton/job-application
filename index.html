@@ -4934,10 +4934,11 @@ function payDBCell(i,field,val){
 
   // work_days changed → auto-calc salary
   if(field==='work_days'){
-    e.salary=Math.round(e.daily_rate*e.work_days*100)/100;
-    var salInp=$('paydb2-table').querySelector('input[data-i="'+i+'"][data-c="salary"]');
-    if(salInp)salInp.value=e.salary||'';
+    e.salary=Math.round((e.daily_rate||0)*e.work_days*100)/100;
     payDBCalcRow(e);
+    payDBRender();
+    payDBUpdateFooter();
+    return;
   }else if(field==='salary'||field==='diligence'){
     payDBCalcRow(e);
   }else{

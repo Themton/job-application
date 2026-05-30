@@ -5867,6 +5867,7 @@ function paydbBuildSlipHTML(r){
     +'<div style="font-size:12px;color:#706040">'+r.position+'</div></div>'
     +'<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px">'
     +'<tr><td colspan="2" style="font-size:12px;font-weight:600;color:#6a8c2a;padding-bottom:6px;border-bottom:1px solid #e2d5b8">&#9654; &#3619;&#3634;&#3618;&#3619;&#3633;&#3610;</td></tr>'
+    +(r.work_days>0&&r.daily_rate>0?row('&#3592;&#3635;&#3609;&#3623;&#3609;&#3623;&#3633;&#3609;&#3607;&#3635;&#3591;&#3634;&#3609;',r.work_days+' &#3623;&#3633;&#3609; &#215; '+f(r.daily_rate)+'/&#3623;&#3633;&#3609;'):'')
     +row('&#3648;&#3591;&#3636;&#3609;&#3648;&#3604;&#3639;&#3629;&#3609;',f(r.salary))
     +(r.diligence>0?row('&#3648;&#3610;&#3637;&#3657;&#3618;&#3586;&#3618;&#3633;&#3609;',f(r.diligence)):'')
     +'<tr><td style="padding:6px 0;font-weight:700;border-top:1px solid #e2d5b8">&#3619;&#3623;&#3617;&#3619;&#3634;&#3618;&#3619;&#3633;&#3610;</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#6a8c2a;border-top:1px solid #e2d5b8">'+f(r.total_income)+'</td></tr></table>'

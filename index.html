@@ -2681,10 +2681,12 @@ function terminate(id){
   var choice=prompt('เลือกประเภท:\n1 = ลาออก รอจ่ายเงินเดือน\n2 = พ้นสภาพทันที\n\nพิมพ์ 1 หรือ 2:','1');
   if(!choice)return;
   var st=choice.trim()==='2'?'terminated':'resigned_pending';
+  var orig='';ALL.forEach(function(a){if(a.id===id)orig=a.status});
   var termDate=prompt('📅 วันที่ออกจากงาน (YYYY-MM-DD):',new Date().toISOString().substring(0,10));
   if(!termDate)return;
   var now=new Date().toISOString();
   sb("applications","PATCH",{status:st,terminated_at:now,terminated_date:termDate},"?id=eq."+id).then(function(){
+    if(st==='resigned_pending'&&orig&&orig!=='resigned_pending')sb("applications","PATCH",{prev_status:orig},"?id=eq."+id).then(function(){ALL.forEach(function(a){if(a.id===id)a.prev_status=orig})}).catch(function(){});
     toast((st==='terminated'?'พ้นสภาพแล้ว':'ลาออก-รอจ่าย')+' — วันที่ '+termDate,'tok');
     ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=now;a.terminated_date=termDate}});
     var empName='';ALL.forEach(function(a){if(a.id===id)empName=a.name});
@@ -2696,10 +2698,12 @@ function quickTerminate(id,name){
   var choice=prompt('⛔ "'+name+'" ลาออก:\n1 = รอจ่ายเงินเดือนก่อน\n2 = พ้นสภาพทันที\n\nพิมพ์ 1 หรือ 2:','1');
   if(!choice)return;
   var st=choice.trim()==='2'?'terminated':'resigned_pending';
+  var orig='';ALL.forEach(function(a){if(a.id===id)orig=a.status});
   var termDate=prompt('📅 วันที่ออกจากงาน (YYYY-MM-DD):',new Date().toISOString().substring(0,10));
   if(!termDate)return;
   var now=new Date().toISOString();
   sb("applications","PATCH",{status:st,terminated_at:now,terminated_date:termDate},"?id=eq."+id).then(function(){
+    if(st==='resigned_pending'&&orig&&orig!=='resigned_pending')sb("applications","PATCH",{prev_status:orig},"?id=eq."+id).then(function(){ALL.forEach(function(a){if(a.id===id)a.prev_status=orig})}).catch(function(){});
     toast('⛔ '+name+(st==='terminated'?' พ้นสภาพแล้ว':' ลาออก-รอจ่ายเงินเดือน')+' — วันที่ '+termDate,'tok');
     ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=now;a.terminated_date=termDate}});
     tgNotify('terminate',{name:name,date:termDate,status:st==='terminated'?'พ้นสภาพ':'ลาออก-รอจ่ายเงินเดือน'});
@@ -4666,6 +4670,7 @@ function payDBLoad(){
       return{
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
+        prevStatus:a.prev_status||'',
         bank:a.bank||'',account:a.bank_account||'',
         daily_rate:hasSaved&&p.daily_rate!==undefined?p.daily_rate:(a.daily_rate||352),
         work_days:hasSaved?p.work_days||0:0,
@@ -4773,6 +4778,7 @@ function payDBLoadPrev(){
       return{
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
+        prevStatus:a.prev_status||'',
         bank:a.bank||'',account:a.bank_account||'',
         daily_rate:p.daily_rate||(a.daily_rate||352),
         work_days:0,
@@ -4916,8 +4922,13 @@ function payDBRender(){
 function payDBCalcRow(e){
   e.totalIncome=e.salary+e.diligence;
   // รายวัน: หัก 3% ไม่หัก ปกส. / ประจำ: ไม่หัก 3% หัก ปกส.5% / ประจำ(รายวัน): ไม่หัก 3% หัก ปกส.5%
-  // ลาออก-รอจ่าย ที่คิดจากจำนวนวัน (พนักงานรายวัน) → ใช้กฎรายวัน (หัก 3% ไม่หัก ปกส.)
-  var isResignedDaily=(e.status==='resigned_pending'&&e.work_days>0);
+  // ลาออก-รอจ่าย: ใช้ประเภทเดิมตัดสิน — เคยรายวัน=ไม่หัก ปกส. / เคยประจำรายวัน+ปกส.=หัก ปกส.5%
+  // ถ้าไม่รู้ประเภทเดิม (ข้อมูลเก่า) → ดูจากการกรอกจำนวนวัน
+  var isResignedDaily=false;
+  if(e.status==='resigned_pending'){
+    if(e.prevStatus)isResignedDaily=(e.prevStatus==='daily');
+    else isResignedDaily=(e.work_days>0);
+  }
   if(e.status==='daily'||isResignedDaily){
     e.tax3=Math.round(e.totalIncome*0.03*100)/100;
     e.ss5=0;

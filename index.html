@@ -4712,8 +4712,8 @@ function payDBLoad(){
         e.work_days=defaultWorkDays;
         e.salary=Math.round(e.daily_rate*e.work_days*100)/100;
       }
-      // พนักงานประจำที่บันทึกแล้ว: ถ้าฐานเงินเดือนถูกแก้ใหม่ → ดึงค่าล่าสุดมาใช้
-      if(e._saved&&e.status!=='daily'&&e.status!=='monthly_daily'&&e.baseSalary>0&&e.baseSalary!==e.salary){
+      // พนักงานประจำที่บันทึกแล้ว: ถ้าฐานเงินเดือนถูกแก้ใหม่ → ดึงค่าล่าสุดมาใช้ (ยกเว้นลาออก-รอจ่าย ให้กรอกเองอิสระ)
+      if(e._saved&&e.status!=='daily'&&e.status!=='monthly_daily'&&e.status!=='resigned_pending'&&e.baseSalary>0&&e.baseSalary!==e.salary){
         e.salary=e.baseSalary;
         e._baseUpdated=true;
         baseUpdated++;

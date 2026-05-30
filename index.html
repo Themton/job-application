@@ -4726,6 +4726,10 @@ function payDBLoad(){
         absentApplied++;
       }
       // resigned-pending คำนวณใหม่เสมอ เพื่อใช้กฎรายวัน (หัก 3% ไม่หัก ปกส.) แม้เป็นข้อมูลที่บันทึกแล้ว
+      // ถ้าจ่ายเป็นวัน (มีจำนวนวัน) → ซิงค์เงินเดือน = ค่าแรง × วัน ให้ตรงเสมอ
+      if(e.status==='resigned_pending'&&e.work_days>0&&e.daily_rate>0){
+        e.salary=Math.round(e.daily_rate*e.work_days*100)/100;
+      }
       if((!e._saved&&(e.salary>0||e.work_days>0))||e._baseUpdated||e._absentDays>0||e.status==='resigned_pending')payDBCalcRow(e);
     });
     var absentNote=absentApplied?' <span style="color:#dc2626;font-weight:700">📋 หักวันขาด '+absentApplied+' คน (จากระบบลา/ขาด เดือน '+month+')</span>':'';

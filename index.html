@@ -4567,10 +4567,10 @@ var PAYDB2_FILTER='';
 
 function payDBBuildFilters(){
   var stMap={};
-  var stLabels={daily:'🟡 พนักงานรายวัน',monthly:'🟢 พนักงานประจำ',monthly_daily:'🟣 ประจำ(รายวัน)+ปกส.',new:'🔵 พนักงานใหม่',resigned_pending:'⏳ รอจ่าย'};
+  var stLabels={daily:'🟡 พนักงานรายวัน',monthly:'🟢 พนักงานประจำ',monthly_daily:'🟣 ประจำ(รายวัน)+ปกส.',new:'🔵 พนักงานใหม่',resigned_pending:'⏳ ลาออก-รอจ่าย'};
   PAYDB2.forEach(function(e){var s=e.status||'new';stMap[s]=(stMap[s]||0)+1});
   var h='<button class="btn btn-s '+(PAYDB2_FILTER===''?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">ทั้งหมด ('+PAYDB2.length+')</button>';
-  ['monthly','monthly_daily','daily','new'].forEach(function(s){
+  ['monthly','monthly_daily','daily','new','resigned_pending'].forEach(function(s){
     if(!stMap[s])return;
     h+='<button class="btn btn-s '+(PAYDB2_FILTER===s?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\''+s+'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">'+(stLabels[s]||s)+' ('+stMap[s]+')</button>';
   });
@@ -5236,7 +5236,7 @@ function payDBExportSCB(){
   var whtH=[['Code','ลำดับที่\nCredit Seq. No.','เลขที่\nWHT Book No.','เลขประจำตัวผู้เสียภาษีอากร\nWHT Payer Tax ID','ผู้มีหน้าที่หักภาษี ณ ที่จ่าย\nWHT Payer Name','ที่อยู่ 1\nWHT Payer Address Line 1','ที่อยู่ 2\nWHT Payer Address Line 2','ที่อยู่ 2\nWHT Payer Address Line 2']];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(whtH),'WHT');
 
-  var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='monthly_daily'?'_ประจำรายวัน':PAYDB2_FILTER==='daily'?'_รายวัน':'';
+  var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='monthly_daily'?'_ประจำรายวัน':PAYDB2_FILTER==='daily'?'_รายวัน':PAYDB2_FILTER==='resigned_pending'?'_ลาออกรอจ่าย':'';
   XLSX.writeFile(wb,'CPX_Payroll_'+(month||'export')+stLabel+'_'+valid.length+'คน.xlsx');
   toast('สร้างไฟล์ SCB '+valid.length+' คน'+(PAYDB2_FILTER?' ['+stLabel.replace('_','')+']':''),'tok');
   }catch(err){toast('❌ Error: '+err.message,'terr');console.error('payDBExportSCB error:',err)}
@@ -5248,7 +5248,7 @@ function payDBExportCSV(){
     return e.salary>0||e.diligence>0||e.late>0||e.absent_ded>0||e.tax3>0||e.ss5>0||e.loan>0||e.advance>0||e.net>0;
   });
   if(!valid.length){toast('ไม่มีข้อมูล'+(PAYDB2_FILTER?' ประเภทนี้':''),'terr');return}
-  var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='monthly_daily'?'_ประจำรายวัน':PAYDB2_FILTER==='daily'?'_รายวัน':'';
+  var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='monthly_daily'?'_ประจำรายวัน':PAYDB2_FILTER==='daily'?'_รายวัน':PAYDB2_FILTER==='resigned_pending'?'_ลาออกรอจ่าย':'';
   var csv='\uFEFF';
   csv+='ชื่อ,ชื่อเล่น,ตำแหน่ง,สถานะ,ธนาคาร,เลขบัญชี,เงินเดือน,เบี้ยขยัน,รวมรายรับ,หักมาสาย,หักขาดงาน,ภาษี3%,ประกันสังคม5%,กยศ.,เบิกล่วงหน้า,รวมหัก,สุทธิ\n';
   valid.forEach(function(e){

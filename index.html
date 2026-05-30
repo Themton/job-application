@@ -7127,23 +7127,53 @@ function loadEmpPortal(){
       info+=row('📅','วันที่เข้าทำงาน',String(a.start_date||a.created_at||'').substring(0,10));
       $('emp-p-info').innerHTML=info;
 
-      // Leave balance
-      var usedP=0,usedS=0,usedA=0;
-      leaves.forEach(function(l){var days=l.days||1;if(l.type==='personal')usedP+=days;else if(l.type==='sick')usedS+=days;else if(l.type==='absent')usedA+=days});
+      // Leave balance - detailed with progress bars
+      var usedP=0,usedS=0,usedA=0,usedV=0;
+      var curY=new Date().getFullYear();
+      leaves.forEach(function(l){
+        if(l.status==='rejected'||l.status==='cancelled')return;
+        var days=l.days||1;
+        if(l.type==='personal')usedP+=days;else if(l.type==='sick')usedS+=days;else if(l.type==='absent')usedA+=days;else if(l.type==='vacation')usedV+=days;
+      });
       var empQuota=a.leave_quota||3;
       var leftP=Math.max(0,empQuota-usedP),leftS=Math.max(0,30-usedS);
-      $('emp-p-leave-stats').innerHTML=[
-        {l:'ลากิจ',v:leftP+'/'+empQuota,u:'วัน',c:leftP<=0?'var(--err)':leftP<=1?'#f59e0b':'var(--ok)',ic:'📋'},
-        {l:'ลาป่วย',v:leftS+'/30',u:'วัน',c:leftS<=0?'var(--err)':leftS<=5?'#f59e0b':'var(--ok)',ic:'🏥'},
-        {l:'ขาดงาน',v:usedA,u:'วัน',c:usedA>0?'var(--err)':'var(--muted)',ic:'✗'},
-        {l:'ลาใช้ไป',v:usedP+usedS,u:'วัน',c:'var(--muted)',ic:'📊'}
-      ].map(function(s){return'<div class="st"><div class="ic">'+s.ic+'</div><div class="l">'+s.l+'</div><div class="v" style="color:'+s.c+'">'+s.v+'</div><div class="u">'+s.u+'</div></div>'}).join('');
+
+      function leaveBar(ic,label,used,max,color){
+        var pct=max>0?Math.min(used/max*100,100):0;
+        var left=Math.max(0,max-used);
+        return'<div style="background:var(--bg);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:10px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+          +'<span style="font-weight:700;font-size:14px">'+ic+' '+label+'</span>'
+          +'<span style="font-size:13px"><b style="color:'+color+';font-size:18px">'+left+'</b> <span style="color:var(--muted)">/ '+max+' วัน</span></span>'
+          +'</div>'
+          +'<div style="background:rgba(0,0,0,.06);border-radius:8px;height:12px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:8px;transition:width .5s"></div></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px"><span>ใช้ไป '+used+' วัน</span><span>คงเหลือ '+left+' วัน</span></div>'
+          +'</div>';
+      }
+      var lb='';
+      lb+=leaveBar('📋','ลากิจ',usedP,empQuota,leftP<=0?'var(--err)':leftP<=1?'#f59e0b':'#10b981');
+      lb+=leaveBar('🏥','ลาป่วย',usedS,30,leftS<=0?'var(--err)':leftS<=5?'#f59e0b':'#10b981');
+      if(usedV>0)lb+=leaveBar('🌴','ลาพักร้อน',usedV,6,'#3b82f6');
+      if(usedA>0)lb+='<div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-radius:12px;padding:14px;margin-bottom:10px"><div style="display:flex;justify-content:space-between"><span style="font-weight:700;font-size:14px;color:var(--err)">✗ ขาดงาน</span><span style="color:var(--err);font-weight:800;font-size:18px">'+usedA+' วัน</span></div></div>';
+      // Summary line
+      lb+='<div style="display:flex;gap:10px;margin-top:6px"><div style="flex:1;text-align:center;background:rgba(198,149,43,.08);border-radius:10px;padding:10px"><div style="font-size:22px;font-weight:800;color:var(--pri)">'+(usedP+usedS+usedV)+'</div><div style="font-size:11px;color:var(--muted)">วันลาที่ใช้ไปทั้งหมด</div></div>'
+        +'<div style="flex:1;text-align:center;background:rgba(16,185,129,.08);border-radius:10px;padding:10px"><div style="font-size:22px;font-weight:800;color:#10b981">'+(leftP+leftS)+'</div><div style="font-size:11px;color:var(--muted)">วันลาคงเหลือรวม</div></div></div>';
+      $('emp-p-leave-stats').innerHTML=lb;
+      $('emp-p-leave-stats').className='';
 
       if(leaves.length){
-        var lh='<div class="tw"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>วัน</th><th>หมายเหตุ</th></tr></thead><tbody>';
-        var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',absent:'ขาดงาน'};
-        var lvColors={personal:'#007bff',sick:'#f59e0b',absent:'var(--err)'};
-        leaves.forEach(function(l){lh+='<tr><td>'+esc(l.date)+'</td><td><span style="color:'+(lvColors[l.type]||'#888')+';font-weight:600">'+(lvLabels[l.type]||l.type)+'</span></td><td style="text-align:center">'+(l.days||1)+'</td><td style="font-size:12px;color:var(--muted)">'+esc(l.note||'-')+'</td></tr>'});
+        var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',absent:'ขาดงาน',vacation:'ลาพักร้อน',other:'อื่นๆ'};
+        var lvColors={personal:'#007bff',sick:'#f59e0b',absent:'var(--err)',vacation:'#10b981',other:'#6b7280'};
+        var stLabels2={pending:'🟡 รออนุมัติ',hr_approved:'🔵 HR อนุมัติ',approved:'✅ อนุมัติแล้ว',rejected:'❌ ไม่อนุมัติ',cancelled:'🚫 ยกเลิก'};
+        var lh='<div style="font-size:13px;font-weight:700;margin:14px 0 8px;color:var(--pri)">📜 ประวัติการลา ('+leaves.length+' รายการ)</div>';
+        lh+='<div class="tw"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>วัน</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead><tbody>';
+        leaves.forEach(function(l){
+          lh+='<tr><td style="font-size:12px;white-space:nowrap">'+esc(l.date)+(l.end_date&&l.end_date!==l.date?'<br>ถึง '+esc(l.end_date):'')+'</td>'
+            +'<td><span style="color:'+(lvColors[l.type]||'#888')+';font-weight:600">'+(lvLabels[l.type]||l.type)+'</span></td>'
+            +'<td style="text-align:center;font-weight:600">'+(l.days||1)+'</td>'
+            +'<td style="font-size:11px">'+(stLabels2[l.status]||l.status||'')+'</td>'
+            +'<td style="font-size:12px;color:var(--muted)">'+esc(l.note||'-')+'</td></tr>';
+        });
         $('emp-p-leave-table').innerHTML=lh+'</tbody></table></div>';
       }else{$('emp-p-leave-table').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติการลา</div>'}
 

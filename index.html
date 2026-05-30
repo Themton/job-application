@@ -2031,7 +2031,7 @@ function detail(id){
     '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;align-items:center"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button><button class="btn btn-a btn-s" onclick="editEmp(\''+a.id+'\')">✏️ แก้ไขข้อมูล</button><button class="btn btn-g btn-s" onclick="resetEmpPass(\''+a.id+'\',\''+esc(a.name)+'\')" style="background:#fef3c7;border-color:#fbbf24;color:#92400e">🔑 รีเซ็ตรหัสผ่าน</button>'+(isTerm?'<span class="bg b-terminated" style="padding:6px 14px;font-size:12px">⛔ พ้นสภาพแล้ว — <input type="date" value="'+esc(termDateStr)+'" onchange="setTermDate(\''+a.id+'\',this.value)" style="border:1px solid #ccc;border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;background:#fff"></span> <button class="btn btn-g btn-s" onclick="reinstate(\''+a.id+'\')" style="background:#d4edda;border-color:#28a745;color:#155724">↩️ คืนสถานะพนักงาน</button>':isResigned?'<span class="bg b-resigned" style="padding:6px 14px;font-size:12px">⏳ ลาออก-รอจ่ายเงินเดือน</span> <button class="btn btn-a btn-s" onclick="confirmPaid(\''+a.id+'\')" style="background:#d4edda;border-color:#28a745;color:#155724">💰 จ่ายแล้ว → พ้นสภาพ</button> <button class="btn btn-g btn-s" onclick="reinstate(\''+a.id+'\')" style="background:#fef3c7;border-color:#f59e0b;color:#92400e">↩️ คืนสถานะ</button>':'<button class="tmbtn tmbtn-warn" onclick="terminate(\''+a.id+'\')">⛔ พ้นสภาพพนักงาน</button>')+'<button class="btn btn-d btn-s" style="margin-left:auto" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
     '<div class="dt"><div class="av">'+esc(a.name).charAt(0)+'</div><div style="flex:1"><div class="dn-nm">'+esc(a.name)+(a.nickname?' <span style="font-size:14px;color:var(--acc)">('+esc(a.nickname)+')</span>':'')+'</div></div><div><select class="ssel" onchange="chgSt(\''+a.id+'\',this.value)">'+opts+'</select></div></div>'+
     '<div class="emp-grid"><div class="dc"><h4>💼 ตำแหน่ง</h4><div style="font-size:14px;font-weight:600;color:var(--pri);margin-top:6px">'+esc(a.position||'-')+'</div></div><div class="dc"><h4>📅 วันที่เริ่มทำงาน</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.start_date||'')+'" onchange="setF(\''+a.id+'\',\'start_date\',this.value)"></div><div class="dc"><h4>🎂 วันเกิด</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.birthday||'')+'" onchange="setF(\''+a.id+'\',\'birthday\',this.value)">'+(a.birthday?'<div style="font-size:10px;color:var(--muted);margin-top:4px">อายุ '+calcAge(a.birthday)+' ปี</div>':'')+'</div><div class="dc"><h4>👷 สถานะ</h4><div style="margin-top:6px"><span class="bg '+(ST[a.status]||ST.new).c+'" style="padding:4px 12px;font-size:12px">'+(ST[a.status]||ST.new).l+'</span></div></div><div class="dc"><h4>📝 สัญญาจ้าง</h4><select class="ssel" style="width:100%;margin-top:4px;font-size:14px;font-weight:600" onchange="setF(\''+a.id+'\',\'contract_period\',this.value)"><option value="">-- เลือก --</option><option value="1m"'+(a.contract_period==='1m'?' selected':'')+'>1 เดือน</option><option value="3m"'+(a.contract_period==='3m'?' selected':'')+'>3 เดือน</option><option value="6m"'+(a.contract_period==='6m'?' selected':'')+'>6 เดือน</option><option value="1y"'+(a.contract_period==='1y'?' selected':'')+'>1 ปี</option></select>'+contractInfo+'</div><div class="dc" style="border:2px solid var(--acc)"><h4>💰 ฐานเงินเดือน (ประจำ)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:var(--pri)" value="'+(a.salary||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'salary\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.salary?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ล็อคแล้ว — ใช้ในระบบคิดเงินเดือนอัตโนมัติ</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกเงินเดือนเพื่อล็อค ไม่ต้องกรอกซ้ำทุกเดือน</div>')+'</div><div class="dc"><h4>🎓 หัก กยศ. (บาท/เดือน)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:#92400e" value="'+(a.loan||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'loan\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.loan?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ หัก '+payFmt(a.loan)+' ทุกเดือน</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกยอด กยศ. ระบบหักให้อัตโนมัติ</div>')+'</div></div>'+
-    '<div class="dg"><div class="dc"><h4>📋 ข้อมูลส่วนตัว</h4><div class="dr"><span class="i">🏷️</span> รหัสพนักงาน: <input class="ssel" style="width:80px;font-weight:700;color:var(--pri);text-transform:uppercase" value="'+esc(a.emp_code||'')+'" placeholder="MT001" onchange="setF(\''+a.id+'\',\'emp_code\',this.value.toUpperCase())"></div><div class="dr"><span class="i">👤</span> ชื่อ-สกุล: '+esc(a.name)+'</div>'+(a.nickname?'<div class="dr"><span class="i">😊</span> ชื่อเล่น: '+esc(a.nickname)+'</div>':'')+'<div class="dr"><span class="i">📱</span> โทรศัพท์: '+esc(a.phone)+'</div>'+(a.email?'<div class="dr"><span class="i">📧</span> อีเมล: '+esc(a.email)+'</div>':'')+(a.birthday?'<div class="dr"><span class="i">🎂</span> วันเกิด: '+esc(a.birthday)+'</div>':'')+(a.id_card?'<div class="dr"><span class="i">🪪</span> บัตร ปชช.: '+esc(a.id_card)+'</div>':'')+'<div class="dr"><span class="i">💼</span> ตำแหน่ง: '+esc(a.position||'-')+'</div></div>'+
+    '<div class="dg"><div class="dc"><h4>📋 ข้อมูลส่วนตัว</h4><div class="dr"><span class="i">🏷️</span> รหัสพนักงาน: <input class="ssel" style="width:80px;font-weight:700;color:var(--pri);text-transform:uppercase" value="'+esc(a.emp_code||'')+'" placeholder="MT001" onchange="setF(\''+a.id+'\',\'emp_code\',this.value.toUpperCase())"></div><div class="dr"><span class="i">📋</span> สิทธิ์ลากิจ: <select class="ssel" style="width:100px;font-weight:700" onchange="setF(\''+a.id+'\',\'leave_quota\',parseInt(this.value))"><option value="3"'+((!a.leave_quota||a.leave_quota==3)?' selected':'')+'>3 วัน/ปี</option><option value="6"'+((a.leave_quota==6)?' selected':'')+'>6 วัน/ปี</option></select></div><div class="dr"><span class="i">👤</span> ชื่อ-สกุล: '+esc(a.name)+'</div>'+(a.nickname?'<div class="dr"><span class="i">😊</span> ชื่อเล่น: '+esc(a.nickname)+'</div>':'')+'<div class="dr"><span class="i">📱</span> โทรศัพท์: '+esc(a.phone)+'</div>'+(a.email?'<div class="dr"><span class="i">📧</span> อีเมล: '+esc(a.email)+'</div>':'')+(a.birthday?'<div class="dr"><span class="i">🎂</span> วันเกิด: '+esc(a.birthday)+'</div>':'')+(a.id_card?'<div class="dr"><span class="i">🪪</span> บัตร ปชช.: '+esc(a.id_card)+'</div>':'')+'<div class="dr"><span class="i">💼</span> ตำแหน่ง: '+esc(a.position||'-')+'</div></div>'+
     '<div class="dc"><h4>📅 ข้อมูลการทำงาน</h4><div class="dr"><span class="i">📅</span> วันที่สมัคร: '+esc(dt)+'</div>'+(a.start_date?'<div class="dr"><span class="i">🗓️</span> เริ่มงาน: '+esc(a.start_date)+'</div>':'')+'<div class="dr"><span class="i">👷</span> สถานะ: '+(ST[a.status]||ST.new).l+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>🪪 บัตรประชาชน + ที่อยู่</h4><div style="margin-top:6px"><label style="font-size:10px;color:var(--muted)">เลขบัตรประชาชน</label><input class="ssel" style="width:100%;margin-top:2px" value="'+esc(a.id_card||'')+'" placeholder="X-XXXX-XXXXX-XX-X" onchange="setF(\''+a.id+'\',\'id_card\',this.value)"></div>'+
     '<div style="margin-top:8px"><label style="font-size:10px;color:var(--muted)">บ้านเลขที่/ซอย/ถนน</label><input class="ssel" style="width:100%;margin-top:2px" id="det-house-'+a.id+'" value="'+esc(a.house||'')+'" placeholder="บ้านเลขที่ หมู่ ซอย ถนน" onchange="detSaveAddr(\''+a.id+'\')"></div>'+
@@ -2434,23 +2434,27 @@ function submitLeaveRequest(){
     return;
   }
 
-  // ตรวจสอบสิทธิ์ลากิจ (3 วัน/ปี)
+  // ตรวจสอบสิทธิ์ลากิจ (ตามที่กำหนดให้แต่ละคน)
   if(type==='personal'){
     var empData2={};try{empData2=JSON.parse(localStorage.getItem('emp_data')||'{}')}catch(e){}
     var curYear=new Date().getFullYear();
     prog(10,'ตรวจสอบสิทธิ์ลากิจ...');
-    sb("leaves","GET",null,"?emp_id=eq."+encodeURIComponent(empData2.id||'')+"&type=eq.personal&status=neq.rejected&status=neq.cancelled&select=days,date").then(function(usedLeaves){
-      var totalUsed=0;
-      (Array.isArray(usedLeaves)?usedLeaves:[]).forEach(function(l){
-        if(l.date&&l.date.indexOf(curYear)===0)totalUsed+=(l.days||1);
+    // Fetch employee's leave_quota
+    sb("applications","GET",null,"?id=eq."+encodeURIComponent(empData2.id||'')+"&select=leave_quota").then(function(empArr){
+      var empQuota=(Array.isArray(empArr)&&empArr.length&&empArr[0].leave_quota)?empArr[0].leave_quota:3;
+      return sb("leaves","GET",null,"?emp_id=eq."+encodeURIComponent(empData2.id||'')+"&type=eq.personal&status=neq.rejected&status=neq.cancelled&select=days,date").then(function(usedLeaves){
+        var totalUsed=0;
+        (Array.isArray(usedLeaves)?usedLeaves:[]).forEach(function(l){
+          if(l.date&&l.date.indexOf(curYear)===0)totalUsed+=(l.days||1);
+        });
+        if(totalUsed+days>empQuota){
+          prog(-1);
+          toast('❌ สิทธิ์ลากิจเหลือ '+(empQuota-totalUsed)+' วัน (ใช้ไปแล้ว '+totalUsed+'/'+empQuota+' วัน) ไม่สามารถลา '+days+' วันได้','terr');
+          if(btn){btn.disabled=false;btn.innerHTML='📝 ส่งคำขอลา';}
+          return;
+        }
+        doSubmitLeave(type,start,end,half,reason,days,btn);
       });
-      if(totalUsed+days>3){
-        prog(-1);
-        toast('❌ สิทธิ์ลากิจเหลือ '+(3-totalUsed)+' วัน (ใช้ไปแล้ว '+totalUsed+'/3 วัน) ไม่สามารถลา '+days+' วันได้','terr');
-        if(btn){btn.disabled=false;btn.innerHTML='📝 ส่งคำขอลา';}
-        return;
-      }
-      doSubmitLeave(type,start,end,half,reason,days,btn);
     }).catch(function(){doSubmitLeave(type,start,end,half,reason,days,btn)});
     return;
   }
@@ -7085,9 +7089,10 @@ function loadEmpPortal(){
       // Leave balance
       var usedP=0,usedS=0,usedA=0;
       leaves.forEach(function(l){var days=l.days||1;if(l.type==='personal')usedP+=days;else if(l.type==='sick')usedS+=days;else if(l.type==='absent')usedA+=days});
-      var leftP=Math.max(0,6-usedP),leftS=Math.max(0,30-usedS);
+      var empQuota=a.leave_quota||3;
+      var leftP=Math.max(0,empQuota-usedP),leftS=Math.max(0,30-usedS);
       $('emp-p-leave-stats').innerHTML=[
-        {l:'ลากิจ',v:leftP+'/3',u:'วัน',c:leftP<=0?'var(--err)':leftP<=1?'#f59e0b':'var(--ok)',ic:'📋'},
+        {l:'ลากิจ',v:leftP+'/'+empQuota,u:'วัน',c:leftP<=0?'var(--err)':leftP<=1?'#f59e0b':'var(--ok)',ic:'📋'},
         {l:'ลาป่วย',v:leftS+'/30',u:'วัน',c:leftS<=0?'var(--err)':leftS<=5?'#f59e0b':'var(--ok)',ic:'🏥'},
         {l:'ขาดงาน',v:usedA,u:'วัน',c:usedA>0?'var(--err)':'var(--muted)',ic:'✗'},
         {l:'ลาใช้ไป',v:usedP+usedS,u:'วัน',c:'var(--muted)',ic:'📊'}

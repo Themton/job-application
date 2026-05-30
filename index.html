@@ -5774,6 +5774,8 @@ function loadPayDB(){
       var dbEmp=null;ALL.forEach(function(a){if(a.name===r.emp_name)dbEmp=a});
       r.email=dbEmp?dbEmp.email||'':'';
       r.absent_days=dbEmp?(absentMap[dbEmp.id]||0):0;
+      r.empStatus=dbEmp?dbEmp.status||'':'';
+      r._daysInMonth=_lastD;
       return r;
     });
     paydbRender();
@@ -5843,7 +5845,16 @@ function paydbBuildSlipHTML(r){
   var row=function(l,v){return'<tr><td style="padding:4px 0;color:#706040;font-size:13px">'+l+'</td><td style="padding:4px 0;text-align:right;font-size:13px">'+v+'</td></tr>'};
   var dedRows='';
   if(r.late>0)dedRows+=row('&#3627;&#3633;&#3585;&#3617;&#3634;&#3626;&#3634;&#3618;',f(r.late));
-  if(r.absent_ded>0)dedRows+=row('&#3627;&#3633;&#3585;&#3586;&#3634;&#3604;&#3591;&#3634;&#3609;'+(r.absent_days>0?' ('+r.absent_days+' &#3623;&#3633;&#3609;)':''),f(r.absent_ded));
+  if(r.absent_ded>0){
+    var _aLbl='&#3627;&#3633;&#3585;&#3586;&#3634;&#3604;&#3591;&#3634;&#3609;'+(r.absent_days>0?' ('+r.absent_days+' &#3623;&#3633;&#3609;)':'');
+    var _aMethod='';
+    if(r.absent_days>0){
+      var _isDailyType=(r.empStatus==='daily'||r.empStatus==='monthly_daily');
+      if(_isDailyType&&r.daily_rate>0)_aMethod=f(r.daily_rate)+' &#215; '+r.absent_days+' &#3623;&#3633;&#3609;';
+      else if(r.salary>0&&r._daysInMonth)_aMethod='&#3648;&#3591;&#3636;&#3609;&#3648;&#3604;&#3639;&#3629;&#3609; '+f(r.salary)+' &#247; '+r._daysInMonth+' &#3623;&#3633;&#3609; &#215; '+r.absent_days+' &#3623;&#3633;&#3609;';
+    }
+    dedRows+='<tr><td style="padding:4px 0;color:#706040;font-size:13px;vertical-align:top">'+_aLbl+(_aMethod?'<br><span style="font-size:10px;color:#a89870">'+_aMethod+'</span>':'')+'</td><td style="padding:4px 0;text-align:right;font-size:13px;vertical-align:top">'+f(r.absent_ded)+'</td></tr>';
+  }
   if(r.tax3>0)dedRows+=row('&#3616;&#3634;&#3625;&#3637; 3%',f(r.tax3));
   if(r.ss5>0)dedRows+=row('&#3611;&#3619;&#3632;&#3585;&#3633;&#3609;&#3626;&#3633;&#3591;&#3588;&#3617; 5%',f(r.ss5));
   if(r.loan>0)dedRows+=row('&#3627;&#3633;&#3585; &#3585;&#3618;&#3624;.',f(r.loan));

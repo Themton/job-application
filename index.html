@@ -6391,7 +6391,8 @@ function slipSendAll(){
 }
 
 /* ═══ REPORT ═══ */
-var RPT_DATA=[];
+var RPT_DATA=[],RPT_CARD_FILTER='';
+function rptCardFilter(key){RPT_CARD_FILTER=(RPT_CARD_FILTER===key)?'':key;renderReport()}
 
 function loadReport(){
   $('rpt-loading').style.display='block';$('rpt-table').innerHTML='';$('rpt-summary').innerHTML='';
@@ -6428,6 +6429,13 @@ function loadReport(){
   }).catch(function(e){$('rpt-loading').textContent='โหลดไม่สำเร็จ: '+e});
 }
 
+var RPT_CARD_LABEL={all:'พนักงานทั้งหมด',hasId:'มีบัตร ปชช.',noId:'ยังไม่มีบัตร',warnP:'ลากิจใกล้หมด',absent:'ขาดงาน'};
+function rptCard(key,ic,label,val,unit,color){
+  var active=(RPT_CARD_FILTER===key)||(key==='all'&&!RPT_CARD_FILTER);
+  return '<div class="st" onclick="rptCardFilter(\''+key+'\')" style="cursor:pointer;transition:.15s;'+(active?'outline:2px solid var(--pri);outline-offset:-2px;box-shadow:0 2px 10px rgba(0,0,0,.08)':'')+'" title="กดเพื่อดูเฉพาะกลุ่มนี้">'
+    +'<div class="ic">'+ic+'</div><div class="l">'+label+'</div>'
+    +'<div class="v"'+(color?' style="color:'+color+'"':'')+'>'+val+'</div><div class="u">'+unit+'</div></div>';
+}
 function renderReport(){
   if(!RPT_DATA.length){$('rpt-table').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่พบข้อมูล</p></div>';return}
 
@@ -6447,25 +6455,36 @@ function renderReport(){
 
   $('rpt-summary').innerHTML=
     '<div class="sts" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">'+
-    '<div class="st"><div class="ic">👥</div><div class="l">พนักงาน</div><div class="v">'+list.length+'</div><div class="u">คน</div></div>'+
-    '<div class="st"><div class="ic">🪪</div><div class="l">มีบัตร ปชช.</div><div class="v" style="color:var(--ok)">'+hasId+'</div><div class="u">คน</div></div>'+
-    '<div class="st"><div class="ic">❌</div><div class="l">ยังไม่มีบัตร</div><div class="v" style="color:var(--err)">'+noId+'</div><div class="u">คน</div></div>'+
-    '<div class="st"><div class="ic">⚠️</div><div class="l">ลากิจใกล้หมด</div><div class="v" style="color:var(--err)">'+warnP+'</div><div class="u">คน</div></div>'+
-    '<div class="st"><div class="ic">✗</div><div class="l">ขาดงานรวม</div><div class="v" style="color:var(--err)">'+totA+'</div><div class="u">ครั้ง</div></div>'+
-    '</div>';
+    rptCard('all','👥','พนักงาน',list.length,'คน','')+
+    rptCard('hasId','🪪','มีบัตร ปชช.',hasId,'คน','var(--ok)')+
+    rptCard('noId','❌','ยังไม่มีบัตร',noId,'คน','var(--err)')+
+    rptCard('warnP','⚠️','ลากิจใกล้หมด',warnP,'คน','var(--err)')+
+    rptCard('absent','✗','ขาดงานรวม',totA,'ครั้ง','var(--err)')+
+    '</div>'+
+    (RPT_CARD_FILTER?'<div style="margin-top:8px;font-size:12px;color:var(--muted)">🔎 กำลังกรอง: <b style="color:var(--pri)">'+RPT_CARD_LABEL[RPT_CARD_FILTER]+'</b> — <a href="javascript:void(0)" onclick="rptCardFilter(\''+RPT_CARD_FILTER+'\')" style="color:var(--err)">ล้างตัวกรอง ✕</a></div>':'');
+
+  // กรองตารางตามการ์ดที่กด
+  var shown=list.filter(function(r){
+    if(RPT_CARD_FILTER==='hasId')return !!r.id_link;
+    if(RPT_CARD_FILTER==='noId')return !r.id_link;
+    if(RPT_CARD_FILTER==='warnP')return r.personal_left<=1;
+    if(RPT_CARD_FILTER==='absent')return r.absent>0;
+    return true;
+  });
 
   // Table
   var h='<div class="tw"><table><thead><tr>'+
     '<th>ชื่อ-สกุล</th><th>เบอร์โทร</th><th>ตำแหน่ง</th>'+
     '<th style="text-align:center">เอกสาร</th>'+
     '<th style="text-align:center">ลากิจ<br><span style="font-size:8px;text-transform:none">ใช้/สิทธิ์</span></th>'+
-    '<th style="text-align:center">ลาป่วย<br><span style="font-size:8px;text-transform:none">ใช้/สิทธิ์</span></th>'+
+    '<th style="text-align:center">ลาป่วย<br><span style="font-size:8px;text-transform:none">ใช/สิทธิ์</span></th>'+
     '<th style="text-align:center">ลากิจ<br><span style="font-size:8px;text-transform:none">คงเหลือ</span></th>'+
     '<th style="text-align:center">ลาป่วย<br><span style="font-size:8px;text-transform:none">คงเหลือ</span></th>'+
     '<th style="text-align:center">ขาดงาน</th>'+
     '</tr></thead><tbody>';
 
-  list.forEach(function(r){
+  if(!shown.length){h+='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">ไม่มีพนักงานในกลุ่มนี้</td></tr>'}
+  shown.forEach(function(r){
     var pBg,pClr,pLabel,sBg2,sClr,sLabel;
     var isTerm=r.status==='terminated';
     // ลากิจ

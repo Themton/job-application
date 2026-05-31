@@ -10,6 +10,7 @@
 <title>ระบบข้อมูลพนักงาน บริษัทเดอะเอ็มที</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{--bg:#faf6ee;--card:#fff;--pri:#5c4a1e;--pri2:#8b6914;--acc:#c6952b;--acc2:#d4a73c;--txt:#3d3520;--txt2:#706040;--muted:#a89870;--bdr:#e2d5b8;--bdr2:#f0e8d4;--inp:#fdf9f0;--ok:#6a8c2a;--err:#c43e2a;--sh:0 1px 4px rgba(92,74,30,.06);--sh2:0 4px 14px rgba(92,74,30,.1);--sh3:0 12px 30px rgba(92,74,30,.14)}
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Noto Sans Thai',sans-serif;background:var(--bg);color:var(--txt);line-height:1.6}a{color:var(--pri2)}button{-webkit-tap-highlight-color:transparent}input,select,textarea{-webkit-appearance:none;appearance:none}
@@ -5275,7 +5276,52 @@ function payDBExportSCB(){
     return e.net>0;
   });
   if(!valid.length){toast('ไม่มีข้อมูล'+(PAYDB2_FILTER?' ประเภทนี้':'')+'  — คำนวณก่อน','terr');return}
+  if(typeof JSZip==='undefined'){toast('กำลังโหลดไลบรารี ลองใหม่อีกครั้ง','terr');return}
   var month=$('paydb2-month').value;
+  var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='monthly_daily'?'_ประจำรายวัน':PAYDB2_FILTER==='daily'?'_รายวัน':PAYDB2_FILTER==='resigned_pending'?'_ลาออกรอจ่าย':'';
+  prog(10,'สร้างไฟล์ SCB จากเทมเพลตต้นฉบับ...');
+  fetch('CPX_Toolkit_Template.xlsm').then(function(r){
+    if(!r.ok)throw new Error('โหลดเทมเพลตไม่ได้ (CPX_Toolkit_Template.xlsm)');
+    return r.arrayBuffer();
+  }).then(function(buf){
+    return JSZip.loadAsync(buf);
+  }).then(function(zip){
+    var path='xl/worksheets/sheet2.xml'; // Payment sheet
+    return zip.file(path).async('string').then(function(xml){
+      function xesc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+      function cS(ref,v){return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+xesc(v)+'</t></is></c>'}
+      function cN(ref,v){return '<c r="'+ref+'"><v>'+v+'</v></c>'}
+      var rowsXml='';
+      valid.forEach(function(e,i){
+        var bk=scbBank(BANK_MAP[e.bank]||e.bank||'');
+        var r=9+i;
+        var acct=String(e.account||'').replace(/[-\s]/g,'');
+        var amt=Math.round(e.net*100)/100;
+        rowsXml+='<row r="'+r+'">'
+          +cS('A'+r,String(i+1))
+          +cS('B'+r,bk.n)
+          +cS('C'+r,acct)
+          +cS('D'+r,e.name)
+          +cN('E'+r,amt)
+          +cS('G'+r,'Payer (OUR)')
+          +cS('N'+r,bk.c)
+          +cS('O'+r,'OUR')
+          +'</row>';
+      });
+      xml=xml.replace('</sheetData>',rowsXml+'</sheetData>');
+      zip.file(path,xml);
+      return zip.generateAsync({type:'blob',mimeType:'application/vnd.ms-excel.sheet.macroEnabled.12',compression:'DEFLATE'});
+    });
+  }).then(function(blob){
+    var fname='CPX_Payroll_'+(month||'export')+stLabel+'_'+valid.length+'คน.xlsm';
+    var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=fname;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+    prog(100,'สร้างไฟล์ SCB ✅ (เหมือนต้นฉบับ) '+valid.length+' คน');
+    toast('สร้างไฟล์ SCB '+valid.length+' คน — เปิดในเทมเพลตจริง','tok');
+  }).catch(function(err){prog(-1);toast('❌ '+err.message,'terr');console.error('payDBExportSCB error:',err)});
+}
+
+function payDBExportSCB_OLD(){
   var vDate='';
   if(month){var pp=month.split('-');var ld=new Date(parseInt(pp[0]),parseInt(pp[1]),0).getDate();vDate=String(ld).padStart(2,'0')+'/'+pp[1]+'/'+pp[0]}
 

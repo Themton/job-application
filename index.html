@@ -641,6 +641,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
             <button class="btn btn-a" onclick="payDBCalcAll()">📊 คำนวณทั้งหมด</button>
             <button class="btn btn-a btn-s" onclick="payDBSave()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">💾 บันทึกลงระบบ</button>
             <button class="btn btn-a btn-s" onclick="payDBExportSCB()" style="background:linear-gradient(135deg,#4e2a84,#7b3fa0)">🏦 สร้างไฟล์ SCB</button>
+            <button class="btn btn-g btn-s" onclick="payDBSCBSettings()" title="ตั้งค่าเลขบัญชีตัดเงิน + Product">⚙️</button>
             <button class="btn btn-g btn-s" onclick="payDBExportCSV()">📥 Export CSV</button>
             <span id="paydb2-save-status" style="font-size:12px;color:var(--muted)"></span>
           </div>
@@ -5278,6 +5279,18 @@ function payDBExportSCB(){
   if(!valid.length){toast('ไม่มีข้อมูล'+(PAYDB2_FILTER?' ประเภทนี้':'')+'  — คำนวณก่อน','terr');return}
   if(typeof JSZip==='undefined'){toast('กำลังโหลดไลบรารี ลองใหม่อีกครั้ง','terr');return}
   var month=$('paydb2-month').value;
+  // ค่าตั้งต้นบริษัท (จำไว้): เลขบัญชีตัดเงิน + product
+  var debit=localStorage.getItem('scb_debit')||'';
+  if(!debit){
+    debit=(prompt('🏦 ตั้งค่าครั้งแรก: เลขที่บัญชี SCB ที่ใช้ตัดเงินเดือน\n(ใส่เฉพาะตัวเลข ไม่ต้องมีขีด)','')||'').replace(/[-\s]/g,'');
+    if(!debit){toast('ยังไม่ได้ตั้งเลขบัญชีตัดเงิน','terr');return}
+    localStorage.setItem('scb_debit',debit);
+  }
+  var product=localStorage.getItem('scb_product')||'SCB Payroll1';
+  var prodCode=product==='SCB Payroll2'?'PA2':product==='SCB Payroll3'?'PA3':'PAY';
+  var vDate='';
+  if(month){var pp=month.split('-');var ld=new Date(parseInt(pp[0]),parseInt(pp[1]),0).getDate();vDate=String(ld).padStart(2,'0')+'/'+pp[1]+'/'+pp[0]}
+  else{var nw=new Date();var ld2=new Date(nw.getFullYear(),nw.getMonth()+1,0).getDate();vDate=String(ld2).padStart(2,'0')+'/'+String(nw.getMonth()+1).padStart(2,'0')+'/'+nw.getFullYear()}
   var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='monthly_daily'?'_ประจำรายวัน':PAYDB2_FILTER==='daily'?'_รายวัน':PAYDB2_FILTER==='resigned_pending'?'_ลาออกรอจ่าย':'';
   prog(10,'สร้างไฟล์ SCB จากเทมเพลตต้นฉบับ...');
   fetch('CPX_Toolkit_Template.xlsm').then(function(r){
@@ -5291,6 +5304,13 @@ function payDBExportSCB(){
       function xesc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
       function cS(ref,v){return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+xesc(v)+'</t></is></c>'}
       function cN(ref,v){return '<c r="'+ref+'"><v>'+v+'</v></c>'}
+      function setCell(oldc,ref,style,val){xml=xml.replace(oldc,'<c r="'+ref+'" s="'+style+'" t="inlineStr"><is><t xml:space="preserve">'+xesc(val)+'</t></is></c>')}
+      // เติมหัวเอกสาร: product(M1), บัญชีตัดเงิน(C3), บัญชีค่าธรรมเนียม(C4), วันที่(C5), product(E4)
+      setCell('<c r="M1" s="29"/>','M1','29',prodCode);
+      setCell('<c r="C3" s="113"/>','C3','113',debit);
+      setCell('<c r="C4" s="113"/>','C4','113',debit);
+      setCell('<c r="C5" s="130" t="s"><v>413</v></c>','C5','130',vDate);
+      setCell('<c r="E4" s="140" t="s"><v>416</v></c>','E4','140',product);
       var rowsXml='';
       valid.forEach(function(e,i){
         var bk=scbBank(BANK_MAP[e.bank]||e.bank||'');
@@ -5317,8 +5337,16 @@ function payDBExportSCB(){
     var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=fname;
     document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
     prog(100,'สร้างไฟล์ SCB ✅ (เหมือนต้นฉบับ) '+valid.length+' คน');
-    toast('สร้างไฟล์ SCB '+valid.length+' คน — เปิดในเทมเพลตจริง','tok');
+    toast('สร้างไฟล์ SCB '+valid.length+' คน — พร้อมอัปโหลด','tok');
   }).catch(function(err){prog(-1);toast('❌ '+err.message,'terr');console.error('payDBExportSCB error:',err)});
+}
+
+function payDBSCBSettings(){
+  var d=(prompt('🏦 เลขที่บัญชี SCB ที่ใช้ตัดเงินเดือน (เฉพาะตัวเลข):',localStorage.getItem('scb_debit')||'')||'').replace(/[-\s]/g,'');
+  if(d)localStorage.setItem('scb_debit',d);
+  var p=(prompt('เลือก Product:\n1 = SCB Payroll1\n2 = SCB Payroll2\n3 = SCB Payroll3\n(พิมพ์ 1/2/3)',localStorage.getItem('scb_product')==='SCB Payroll2'?'2':localStorage.getItem('scb_product')==='SCB Payroll3'?'3':'1')||'1').trim();
+  localStorage.setItem('scb_product',p==='2'?'SCB Payroll2':p==='3'?'SCB Payroll3':'SCB Payroll1');
+  toast('บันทึกค่าตั้งต้น SCB แล้ว: บัญชี '+(localStorage.getItem('scb_debit')||'-'),'tok');
 }
 
 function payDBExportSCB_OLD(){

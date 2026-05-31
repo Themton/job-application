@@ -1668,16 +1668,25 @@ function empSaveEmail(idx,val){
 }
 
 function empExportContact(){
-  var gv=function(id){var e=$(id);return e?e.value:''};
-  var q=gv('i-srch').toLowerCase(),st=gv('f-st'),pos=gv('f-pos'),dept=gv('f-dept');
-  var list=ALL.filter(function(a){
-    if(q&&[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)<0)return false;
-    if(st&&a.status!==st)return false;if(pos&&a.position!==pos)return false;if(dept&&a.department!==dept)return false;
-    return true;
-  });
   var selIds=Object.keys(EMP_SEL);
-  if(selIds.length){list=list.filter(function(a){return EMP_SEL[a.id]})}
-  if(!list.length){toast('ไม่มีข้อมูล','terr');return}
+  var list;
+  if(selIds.length){
+    // มีการเลือกไว้ → export เฉพาะคนที่เลือก (ตรงตามที่ติ๊ก)
+    list=ALL.filter(function(a){return EMP_SEL[a.id]});
+  }else{
+    // ไม่ได้เลือก → ใช้ตัวกรองเดียวกับที่แสดงในตาราง
+    var gv=function(id){var e=$(id);return e?e.value:''};
+    var q=gv('i-srch').toLowerCase(),st=gv('f-st'),pos=gv('f-pos'),dept=gv('f-dept');
+    list=ALL.filter(function(a){
+      if(q&&[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank,a.emp_code].join(' ').toLowerCase().indexOf(q)<0)return false;
+      if(st==='active'&&(a.status==='terminated'||a.status==='resigned_pending'))return false;
+      if(st&&st!=='active'&&a.status!==st)return false;
+      if(pos&&a.position!==pos)return false;
+      if(dept&&a.department!==dept)return false;
+      return true;
+    });
+  }
+  if(!list.length){toast('ไม่มีข้อมูล — เลือกพนักงาน หรือปรับตัวกรองก่อน','terr');return}
   list.sort(function(a,b){return(a.emp_code||'zzzz').localeCompare(b.emp_code||'zzzz')});
   if(typeof XLSX==='undefined'){toast('กำลังโหลดไลบรารี ลองอีกครั้ง','terr');return}
   // ล็อกอินพนักงาน: รหัสพนักงาน + รหัสผ่าน=เบอร์ 4 ตัวท้าย

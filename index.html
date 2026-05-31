@@ -7155,12 +7155,12 @@ function renderWarnings(){
 function addWarning(){
   // Build employee options
   var emps=ALL.filter(function(a){return a.status!=='terminated'});
-  var opts='';emps.forEach(function(a){opts+='<option value="'+esc(a.name)+'">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</option>'});
+  var opts='';emps.forEach(function(a){opts+='<option value="'+esc(a.name)+'" label="'+esc((a.nickname?'('+a.nickname+') ':'')+(a.position||''))+'">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</option>'});
   var ses=getSES();
   var html='<div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.remove()">'
     +'<div style="background:var(--card);border-radius:14px;padding:28px;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
     +'<h3 style="margin:0 0 16px;color:var(--pri);font-size:17px">⚠️ เพิ่มใบเตือน / บันทึก</h3>'
-    +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">พนักงาน *</label><select id="wf-emp" class="ssel" style="width:100%;margin-top:4px"><option value="">-- เลือก --</option>'+opts+'</select></div>'
+    +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">พนักงาน *</label><input id="wf-emp" list="wf-emp-list" class="ssel" style="width:100%;margin-top:4px" placeholder="พิมพ์ค้นหาชื่อพนักงาน..." autocomplete="off"><datalist id="wf-emp-list">'+opts+'</datalist></div>'
     +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">ประเภท *</label><select id="wf-type" class="ssel" style="width:100%;margin-top:4px"><option value="verbal">ตักเตือนด้วยวาจา</option><option value="written_1">ใบเตือนครั้งที่ 1</option><option value="written_2">ใบเตือนครั้งที่ 2</option><option value="written_3">ใบเตือนครั้งที่ 3 (สุดท้าย)</option><option value="note">บันทึกพฤติกรรม</option></select></div>'
     +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">รายละเอียด *</label><textarea id="wf-detail" rows="3" style="width:100%;margin-top:4px;padding:8px 12px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:13px;background:var(--inp)" placeholder="ระบุพฤติกรรม เหตุผล รายละเอียด..."></textarea></div>'
     +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600">วันที่</label><input type="date" id="wf-date" class="ssel" style="width:100%;margin-top:4px" value="'+new Date().toISOString().substring(0,10)+'"></div>'
@@ -7171,8 +7171,9 @@ function addWarning(){
 }
 
 function saveWarning(){
-  var emp=$('wf-emp').value,type=$('wf-type').value,detail=$('wf-detail').value.trim(),date=$('wf-date').value;
-  if(!emp){toast('เลือกพนักงาน','terr');return}
+  var emp=$('wf-emp').value.trim(),type=$('wf-type').value,detail=$('wf-detail').value.trim(),date=$('wf-date').value;
+  if(!emp){toast('พิมพ์/เลือกชื่อพนักงาน','terr');return}
+  if(!ALL.some(function(a){return a.status!=='terminated'&&a.name===emp})){toast('ไม่พบชื่อ "'+emp+'" — เลือกจากรายการที่ขึ้นมา','terr');return}
   if(!detail){toast('กรอกรายละเอียด','terr');return}
   var ses=getSES();
   var id='WRN-'+Date.now();

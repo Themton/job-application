@@ -1221,19 +1221,30 @@ function sbRpc(fn,params){
       if(!empName){var el=document.getElementById('emp-p-name');if(el&&el.textContent)empName=el.textContent.split(' (')[0]}
       if(!empName)empName=empData.name||empData.email||'';
 
-      return sb("leaves","POST",{
-        id:id,emp_id:empId,emp_name:empName,
-        type:params.p_leave_type||params.p_type||'personal',
-        date:params.p_start_date||params.p_date||'',
-        end_date:params.p_end_date||'',
-        days:params.p_days||1,half_day:params.p_half_day||false,
-        note:params.p_reason||params.p_note||'',
-        evidence_link:params.p_evidence_link||'',
-        status:'pending',created_at:new Date().toISOString()
-      }).then(function(){
-        var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',maternity:'ลาคลอด'};
-        tgNotify('leave_request',{name:empName,leaveType:lvLabels[params.p_leave_type]||params.p_leave_type,date:(params.p_start_date||'')+(params.p_end_date?' ถึง '+params.p_end_date:''),reason:params.p_reason||'',leaveId:id});
-        return{ok:true,id:id};
+      var startD=params.p_start_date||params.p_date||'';
+      var endD=params.p_end_date||startD;
+      // กฎ: 1 วันใช้สิทธิ์ลาได้ประเภทเดียว — เช็คช่วงวันทับกับลาเดิม
+      return sb("leaves","GET",null,"?emp_id=eq."+encodeURIComponent(empId)+"&select=date,end_date,type,status").then(function(ex){
+        var clash=(Array.isArray(ex)?ex:[]).some(function(l){
+          if(l.status==='rejected'||l.status==='cancelled')return false;
+          var ls=l.date||'',le=l.end_date||l.date||'';
+          return ls&&startD&&ls<=endD&&le>=startD; // ช่วงเวลาทับกัน
+        });
+        if(clash)return{ok:false,error:'overlapping',message:'วันที่เลือกมีการลาอยู่แล้ว — 1 วันใช้สิทธิ์ลาได้เพียงประเภทเดียว'};
+        return sb("leaves","POST",{
+          id:id,emp_id:empId,emp_name:empName,
+          type:params.p_leave_type||params.p_type||'personal',
+          date:params.p_start_date||params.p_date||'',
+          end_date:params.p_end_date||'',
+          days:params.p_days||1,half_day:params.p_half_day||false,
+          note:params.p_reason||params.p_note||'',
+          evidence_link:params.p_evidence_link||'',
+          status:'pending',created_at:new Date().toISOString()
+        }).then(function(){
+          var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',maternity:'ลาคลอด'};
+          tgNotify('leave_request',{name:empName,leaveType:lvLabels[params.p_leave_type]||params.p_leave_type,date:(params.p_start_date||'')+(params.p_end_date?' ถึง '+params.p_end_date:''),reason:params.p_reason||'',leaveId:id});
+          return{ok:true,id:id};
+        });
       });
     }).catch(function(e){return{ok:false,error:String(e)}});
   }
@@ -3083,17 +3094,23 @@ function addLeave(empId){
   var type=$('lv-type').value,date=$('lv-date').value,note=$('lv-note').value.trim(),days=parseFloat($('lv-days').value);
   if(!date){toast('กรุณาเลือกวันที่','terr');return}
 
-  // เช็คโควต้า
-  sb("leaves","GET",null,"?emp_id=eq."+empId+"&type=eq."+type+"&select=id,days").then(function(existing){
-    var used=0;
-    if(Array.isArray(existing))existing.forEach(function(e){used+=(e.days||1)});
-    var max=LV_LIMITS[type];
-    if(used+days>max){toast(LV_LABELS[type]+' ใช้แล้ว '+used+'/'+max+' วัน ไม่สามารถเพิ่ม '+days+' วันได้','terr');return}
+  // กฎ: 1 วันใช้สิทธิ์ลาได้ประเภทเดียว — เช็คว่าวันนั้นมีลา/ขาดอยู่แล้วหรือยัง
+  sb("leaves","GET",null,"?emp_id=eq."+empId+"&date=eq."+encodeURIComponent(date)+"&select=id,type,status").then(function(sameDay){
+    var dup=Array.isArray(sameDay)?sameDay.filter(function(x){return x.status!=='rejected'&&x.status!=='cancelled'}):[];
+    if(dup.length){toast('วันที่ '+date+' มี "'+(LV_LABELS[dup[0].type]||dup[0].type)+'" อยู่แล้ว — 1 วันใช้สิทธิ์ลาได้ประเภทเดียว','terr');return}
 
-    var id="LV-"+Date.now();
-    sb("leaves","POST",{id:id,emp_id:empId,type:type,date:date,note:note,days:days}).then(function(r){
-      if(Array.isArray(r)&&r.length){toast('บันทึก'+(days===0.5?' (ครึ่งวัน)':'')+' แล้ว','tok');loadLeaves(empId)}
-      else{toast('บันทึกไม่สำเร็จ','terr');console.log(r)}
+    // เช็คโควต้า
+    sb("leaves","GET",null,"?emp_id=eq."+empId+"&type=eq."+type+"&select=id,days").then(function(existing){
+      var used=0;
+      if(Array.isArray(existing))existing.forEach(function(e){used+=(e.days||1)});
+      var max=LV_LIMITS[type];
+      if(used+days>max){toast(LV_LABELS[type]+' ใช้แล้ว '+used+'/'+max+' วัน ไม่สามารถเพิ่ม '+days+' วันได้','terr');return}
+
+      var id="LV-"+Date.now();
+      sb("leaves","POST",{id:id,emp_id:empId,type:type,date:date,note:note,days:days}).then(function(r){
+        if(Array.isArray(r)&&r.length){toast('บันทึก'+(days===0.5?' (ครึ่งวัน)':'')+' แล้ว','tok');loadLeaves(empId)}
+        else{toast('บันทึกไม่สำเร็จ','terr');console.log(r)}
+      }).catch(function(e){toast('Error: '+e,'terr')});
     }).catch(function(e){toast('Error: '+e,'terr')});
   }).catch(function(e){toast('Error: '+e,'terr')});
 }

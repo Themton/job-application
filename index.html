@@ -4696,6 +4696,17 @@ function payDBLoad(){
     Object.keys(_absByEmp).forEach(function(eid){var s=0;Object.keys(_absByEmp[eid]).forEach(function(d){s+=_absByEmp[eid][d]});absentMap[eid]=s});
     if(!Array.isArray(r)||!r.length){$('paydb2-status').textContent='ไม่พบพนักงาน';return}
 
+    // ดูพ้นสภาพ: เก็บเฉพาะคนที่พ้นสภาพในเดือนที่เลือก (คนทำงานอยู่คงไว้เพื่อความถูกต้องตอนบันทึก)
+    var _termThisMonth=0;
+    if(_inclTerm&&month){
+      r=r.filter(function(a){
+        if(a.status!=='terminated')return true;
+        var td=String(a.terminated_date||a.terminated_at||'').substring(0,7);
+        if(td===month){_termThisMonth++;return true}
+        return false;
+      });
+    }
+
     // Map saved payroll by name
     var savedMap={};
     saved.forEach(function(p){savedMap[p.emp_name.trim()]=p});
@@ -4781,6 +4792,9 @@ function payDBLoad(){
     }
     prog(100,'ดึงข้อมูล ✅ '+PAYDB2.length+' คน');
     PAYDB2_FILTER=(_inclTerm?'terminated':'');payDBBuildFilters();payDBRender();
+    if(_inclTerm){
+      $('paydb2-status').innerHTML='⛔ ดูพนักงานพ้นสภาพ — พ้นสภาพในเดือน '+month+' <b>'+_termThisMonth+'</b> คน'+(_termThisMonth?' (กรอกยอดค้าง + เลือกประเภทเดิม แล้วบันทึก)':' — ไม่มีใครพ้นสภาพเดือนนี้');
+    }
     $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';$('paydb2-late-area').classList.remove('hide');$('paydb2-late-area').style.display='block';
   }).catch(function(e){$('paydb2-status').textContent='❌ ดึงไม่สำเร็จ: '+e});
 }

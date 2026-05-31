@@ -5983,8 +5983,9 @@ function loadPayDB(){
     PAYDB_DATA=pay.map(function(r){
       r.commission=commMap[r.emp_name]||r.commission||0;
       r.grand_total=r.net+r.commission;
-      // Try to find email from ALL
-      var dbEmp=null;ALL.forEach(function(a){if(a.name===r.emp_name)dbEmp=a});
+      // Try to find email/ประเภท from ALL (จับคู่ชื่อแบบตัดช่องว่าง กันไม่ติดเพราะเว้นวรรค)
+      var rn=(r.emp_name||'').trim();
+      var dbEmp=null;ALL.forEach(function(a){if((a.name||'').trim()===rn)dbEmp=a});
       r.email=dbEmp?dbEmp.email||'':'';
       r.absent_days=dbEmp?(absentMap[dbEmp.id]||0):0;
       r.empStatus=dbEmp?dbEmp.status||'':'';
@@ -6007,13 +6008,17 @@ function paydbBuildFilters(){
     if(!stMap[s])return;
     h+='<button class="btn btn-s '+(PAYDB_FILTER===s?'btn-a':'btn-g')+'" onclick="PAYDB_FILTER=\''+s+'\';paydbBuildFilters();paydbRender()" style="font-size:11px;padding:5px 12px">'+stLabels[s]+' ('+stMap[s]+')</button>';
   });
+  if(stMap['']){
+    h+='<button class="btn btn-s '+(PAYDB_FILTER==='__none__'?'btn-a':'btn-g')+'" onclick="PAYDB_FILTER=\'__none__\';paydbBuildFilters();paydbRender()" style="font-size:11px;padding:5px 12px;color:#b91c1c" title="ชื่อในบันทึกไม่ตรงกับทะเบียนพนักงาน">❓ ไม่ระบุประเภท ('+stMap['']+')</button>';
+  }
   $('paydb-filters').innerHTML=h;
 }
 
 function paydbRender(){
   var q=$('paydb-srch').value.toLowerCase();
   var list=PAYDB_DATA.filter(function(r){
-    if(PAYDB_FILTER&&r.empStatus!==PAYDB_FILTER)return false;
+    if(PAYDB_FILTER==='__none__'){if(r.empStatus)return false}
+    else if(PAYDB_FILTER&&r.empStatus!==PAYDB_FILTER)return false;
     if(!q)return true;
     return(r.emp_name+' '+r.nickname+' '+r.position).toLowerCase().indexOf(q)>=0;
   });

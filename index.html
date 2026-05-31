@@ -869,7 +869,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
       <div class="cd" style="max-width:750px">
         <div class="cd-t"><span class="dot"></span> ข้อมูลหนังสือรับรอง</div>
         <div class="g2">
-          <div class="fld"><label>เลือกพนักงาน <span class="rq">*</span></label><select id="cert-emp" onchange="certFillEmp()"><option value="">-- เลือกพนักงาน --</option></select></div>
+          <div class="fld"><label>เลือกพนักงาน <span class="rq">*</span></label><input id="cert-emp-search" list="cert-emp-list" oninput="certFillEmp()" placeholder="พิมพ์ค้นหาชื่อพนักงาน..." autocomplete="off"><datalist id="cert-emp-list"></datalist><input type="hidden" id="cert-emp"></div>
           <div class="fld"><label>ตำแหน่ง</label><input id="cert-pos"></div>
           <div class="fld"><label>วันที่เริ่มงาน</label><input id="cert-start" type="date"></div>
           <div class="fld"><label>เงินเดือน (บาท) <span class="rq">*</span></label><input id="cert-salary" type="number" placeholder="15000" inputmode="numeric"></div>
@@ -3689,17 +3689,22 @@ function slipAutoEmail(){
 
 /* ═══ SALARY CERTIFICATE ═══ */
 function certInit(){
-  var sel=$('cert-emp');sel.innerHTML='<option value="">-- เลือกพนักงาน --</option>';
-  ALL.filter(function(a){return a.status!=='terminated'}).forEach(function(a){
-    sel.innerHTML+='<option value="'+esc(a.id)+'">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</option>';
-  });
+  var dl=$('cert-emp-list');if(dl){dl.innerHTML='';
+    ALL.filter(function(a){return a.status!=='terminated'}).forEach(function(a){
+      dl.innerHTML+='<option value="'+esc(a.name+(a.nickname?' ('+a.nickname+')':''))+'">';
+    });
+  }
+  if($('cert-emp'))$('cert-emp').value='';
+  if($('cert-emp-search'))$('cert-emp-search').value='';
   if(!$('cert-date').value){$('cert-date').value=new Date().toISOString().substring(0,10)}
 }
 
 function certFillEmp(){
-  var id=$('cert-emp').value;
-  if(!id){$('cert-pos').value='';$('cert-salary').value='';return}
-  var a;ALL.forEach(function(x){if(x.id===id)a=x});if(!a)return;
+  var v=($('cert-emp-search').value||'').trim();
+  var a=null;
+  ALL.forEach(function(x){if(x.status==='terminated')return;var disp=x.name+(x.nickname?' ('+x.nickname+')':'');if(disp===v||x.name===v)a=x});
+  $('cert-emp').value=a?a.id:'';
+  if(!a){$('cert-pos').value='';$('cert-salary').value='';return}
   $('cert-pos').value=a.position||'';
   $('cert-start').value=a.start_date||a.created_at?((a.start_date||a.created_at).substring(0,10)):'';
   // ใช้ฐานเงินเดือนจาก applications ก่อน ถ้าไม่มีค่อยดึงจาก payroll

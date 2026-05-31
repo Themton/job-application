@@ -4949,7 +4949,8 @@ function payDBRender(){
       var cellBg=refreshed?'background:#fef3c7':absentAuto?'background:#fde8e8':(auto?'background:#f0f8ff':'');
       var cellColor=refreshed?'color:#92400e;font-weight:bold':absentAuto?'color:#dc2626;font-weight:bold':(auto?'color:#4a90d9':'');
       var cellTitle=refreshed?'อัปเดตฐานเงินเดือนใหม่จากข้อมูลพนักงาน':absentAuto?('หักขาดงาน '+e._absentDays+' วัน (ดึงจากระบบลา/ขาด)'):'';
-      h+='<td style="'+cellBg+'" title="'+cellTitle+'"><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" data-i="'+i+'" placeholder="0" style="'+cellColor+'"></td>';
+      var dayBadge=absentAuto?'<div style="font-size:9px;color:#dc2626;font-weight:700;text-align:center;margin-top:1px;line-height:1.1">📋 ขาด '+e._absentDays+' วัน</div>':'';
+      h+='<td style="'+cellBg+'" title="'+cellTitle+'"><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" data-i="'+i+'" placeholder="0" style="'+cellColor+'">'+dayBadge+'</td>';
     });
     h+='<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
     h+='<td class="xsum xsum-err">'+payFmt(e.totalDed)+'</td>';

@@ -4720,6 +4720,7 @@ function payDBLoad(){
         tax3:p.tax3||0,
         ss5:p.ss5||0,
         loan:hasSaved?p.loan:(a.loan||0),
+        baseLoan:a.loan||0,
         advance:p.advance||0,
         commission:p.commission||0,
         totalIncome:p.total_income||0,totalDed:p.total_ded||0,net:p.net||0,
@@ -4749,7 +4750,7 @@ function payDBLoad(){
     window._carryDays=carryDays2;
 
     var daysInMonth=new Date(cutY,cutM,0).getDate(); // จำนวนวันของเดือนนั้น (หักขาดพนักงานประจำ)
-    var baseUpdated=0,absentApplied=0;
+    var baseUpdated=0,absentApplied=0,loanUpdated=0;
     PAYDB2.forEach(function(e){
       if(e.status==='daily'&&!e._saved){
         e.work_days=defaultWorkDays;
@@ -4773,14 +4774,21 @@ function payDBLoad(){
       if(e.status==='resigned_pending'&&e.work_days>0&&e.daily_rate>0){
         e.salary=Math.round(e.daily_rate*e.work_days*100)/100;
       }
-      if((!e._saved&&(e.salary>0||e.work_days>0))||e._baseUpdated||e._absentDays>0||e.status==='resigned_pending')payDBCalcRow(e);
+      // กยศ: ดึงยอดหักประจำจากโปรไฟล์ล่าสุด ถ้าต่างจากที่บันทึก (เช่น ตั้ง กยศ หลังบันทึกเดือนไปแล้ว)
+      if(e._saved&&e.baseLoan>0&&e.baseLoan!==e.loan){
+        e.loan=e.baseLoan;
+        e._loanUpdated=true;
+        loanUpdated++;
+      }
+      if((!e._saved&&(e.salary>0||e.work_days>0))||e._baseUpdated||e._loanUpdated||e._absentDays>0||e.status==='resigned_pending')payDBCalcRow(e);
     });
     var absentNote=absentApplied?' <span style="color:#dc2626;font-weight:700">📋 หักวันขาด '+absentApplied+' คน (จากระบบลา/ขาด เดือน '+month+')</span>':'';
+    var loanNote=loanUpdated?' <span style="color:#92400e;font-weight:700">🎓 อัปเดต กยศ. '+loanUpdated+' คน (กดบันทึกเพื่อยืนยัน)</span>':'';
 
     if(savedCount>0){
-      $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — <span style="color:var(--ok)">โหลดข้อมูลที่บันทึกไว้เดือน '+month+' ได้ <b>'+savedCount+'</b> คน</span>'+(baseUpdated?' <span style="color:#d97706;font-weight:700">🔄 อัปเดตฐานเงินเดือนใหม่ '+baseUpdated+' คน (คำนวณภาษี/ปกส. ใหม่ — กดบันทึกเพื่อยืนยัน)</span>':'')+absentNote;
+      $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — <span style="color:var(--ok)">โหลดข้อมูลที่บันทึกไว้เดือน '+month+' ได้ <b>'+savedCount+'</b> คน</span>'+(baseUpdated?' <span style="color:#d97706;font-weight:700">🔄 อัปเดตฐานเงินเดือนใหม่ '+baseUpdated+' คน (คำนวณภาษี/ปกส. ใหม่ — กดบันทึกเพื่อยืนยัน)</span>':'')+loanNote+absentNote;
     }else{
-      $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน'+(prefilled?' — ฐานเงินเดือน <b style="color:var(--ok)">'+prefilled+'</b> คน (คำนวณภาษี/ปกส. แล้ว)':'')+absentNote;
+      $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน'+(prefilled?' — ฐานเงินเดือน <b style="color:var(--ok)">'+prefilled+'</b> คน (คำนวณภาษี/ปกส. แล้ว)':'')+loanNote+absentNote;
     }
     prog(100,'ดึงข้อมูล ✅ '+PAYDB2.length+' คน');
     PAYDB2_FILTER='';payDBBuildFilters();payDBRender();

@@ -614,6 +614,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
             <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="paydb2-month" value="" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)" onchange="payShowCutoff()"></div>
             <button class="btn btn-a btn-s" onclick="payDBLoad()">🗄️ ดึงข้อมูลพนักงาน</button>
             <button class="btn btn-g btn-s" onclick="payDBLoadPrev()">📋 ดึงเงินเดือนเดือนก่อน</button>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;margin-left:4px"><input type="checkbox" id="paydb2-incl-term" onchange="payDBLoad()" style="cursor:pointer">รวมพนักงานพ้นสภาพ</label>
           </div>
           <div id="paydb2-cutoff" style="font-size:12px;margin-top:8px;padding:8px 14px;background:rgba(198,149,43,.08);border:1px solid rgba(198,149,43,.2);border-radius:8px;display:none"></div>
           <div id="paydb2-status" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
@@ -4621,10 +4622,10 @@ var PAYDB2_FILTER='';
 
 function payDBBuildFilters(){
   var stMap={};
-  var stLabels={daily:'🟡 พนักงานรายวัน',monthly:'🟢 พนักงานประจำ',monthly_daily:'🟣 ประจำ(รายวัน)+ปกส.',new:'🔵 พนักงานใหม่',resigned_pending:'⏳ ลาออก-รอจ่าย'};
+  var stLabels={daily:'🟡 พนักงานรายวัน',monthly:'🟢 พนักงานประจำ',monthly_daily:'🟣 ประจำ(รายวัน)+ปกส.',new:'🔵 พนักงานใหม่',resigned_pending:'⏳ ลาออก-รอจ่าย',terminated:'⛔ พ้นสภาพ'};
   PAYDB2.forEach(function(e){var s=e.status||'new';stMap[s]=(stMap[s]||0)+1});
   var h='<button class="btn btn-s '+(PAYDB2_FILTER===''?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">ทั้งหมด ('+PAYDB2.length+')</button>';
-  ['monthly','monthly_daily','daily','new','resigned_pending'].forEach(function(s){
+  ['monthly','monthly_daily','daily','new','resigned_pending','terminated'].forEach(function(s){
     if(!stMap[s])return;
     h+='<button class="btn btn-s '+(PAYDB2_FILTER===s?'btn-a':'btn-g')+'" onclick="PAYDB2_FILTER=\''+s+'\';payDBBuildFilters();payDBRender()" style="font-size:11px;padding:5px 12px">'+(stLabels[s]||s)+' ('+stMap[s]+')</button>';
   });
@@ -4682,7 +4683,8 @@ function payDBLoad(){
   $('paydb2-status').textContent='⏳ กำลังดึงข้อมูลพนักงาน...';
   prog(10,'ดึงข้อมูลพนักงาน...');
 
-  var queries=[sb("applications","GET",null,"?select=*&status=neq.terminated&order=status,name")];
+  var _inclTerm=$('paydb2-incl-term')&&$('paydb2-incl-term').checked;
+  var queries=[sb("applications","GET",null,"?select=*"+(_inclTerm?'':'&status=neq.terminated')+"&order=status,name")];
   // ช่วงวันขาด = ทั้งเดือนปฏิทินที่เลือก (ตรงกับวิธีบันทึกขาด/ลา)
   var _absStart='',_absEnd='';
   if(month){
@@ -4769,7 +4771,7 @@ function payDBLoad(){
         e.salary=Math.round(e.daily_rate*e.work_days*100)/100;
       }
       // พนักงานประจำที่บันทึกแล้ว: ถ้าฐานเงินเดือนถูกแก้ใหม่ → ดึงค่าล่าสุดมาใช้ (ยกเว้นลาออก-รอจ่าย ให้กรอกเองอิสระ)
-      if(e._saved&&e.status!=='daily'&&e.status!=='monthly_daily'&&e.status!=='resigned_pending'&&e.baseSalary>0&&e.baseSalary!==e.salary){
+      if(e._saved&&e.status!=='daily'&&e.status!=='monthly_daily'&&e.status!=='resigned_pending'&&e.status!=='terminated'&&e.baseSalary>0&&e.baseSalary!==e.salary){
         e.salary=e.baseSalary;
         e._baseUpdated=true;
         baseUpdated++;
@@ -4781,9 +4783,8 @@ function payDBLoad(){
         e._absentDays=absD;
         absentApplied++;
       }
-      // resigned-pending คำนวณใหม่เสมอ เพื่อใช้กฎรายวัน (หัก 3% ไม่หัก ปกส.) แม้เป็นข้อมูลที่บันทึกแล้ว
-      // ถ้าจ่ายเป็นวัน (มีจำนวนวัน) → ซิงค์เงินเดือน = ค่าแรง × วัน ให้ตรงเสมอ
-      if(e.status==='resigned_pending'&&e.work_days>0&&e.daily_rate>0){
+      // ลาออก-รอจ่าย/พ้นสภาพ คำนวณใหม่เสมอ — ถ้าจ่ายเป็นวัน (มีจำนวนวัน) → ซิงค์เงินเดือน = ค่าแรง × วัน
+      if((e.status==='resigned_pending'||e.status==='terminated')&&e.work_days>0&&e.daily_rate>0){
         e.salary=Math.round(e.daily_rate*e.work_days*100)/100;
       }
       // กยศ: ดึงยอดหักประจำจากโปรไฟล์ล่าสุด ถ้าต่างจากที่บันทึก (เช่น ตั้ง กยศ หลังบันทึกเดือนไปแล้ว)
@@ -4792,7 +4793,7 @@ function payDBLoad(){
         e._loanUpdated=true;
         loanUpdated++;
       }
-      if((!e._saved&&(e.salary>0||e.work_days>0))||e._baseUpdated||e._loanUpdated||e._absentDays>0||e.status==='resigned_pending')payDBCalcRow(e);
+      if((!e._saved&&(e.salary>0||e.work_days>0))||e._baseUpdated||e._loanUpdated||e._absentDays>0||e.status==='resigned_pending'||e.status==='terminated')payDBCalcRow(e);
     });
     var absentNote=absentApplied?' <span style="color:#dc2626;font-weight:700">📋 หักวันขาด '+absentApplied+' คน (จากระบบลา/ขาด เดือน '+month+')</span>':'';
     var loanNote=loanUpdated?' <span style="color:#92400e;font-weight:700">🎓 อัปเดต กยศ. '+loanUpdated+' คน (กดบันทึกเพื่อยืนยัน)</span>':'';
@@ -4861,11 +4862,11 @@ function payDBRender(){
   if(!PAYDB2.length){$('paydb2-table').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่มีข้อมูล</p></div>';return}
 
   // Sort by status group: monthly → monthly_daily → daily → new → resigned_pending
-  var stOrder={monthly:0,monthly_daily:1,daily:2,new:3,resigned_pending:4};
+  var stOrder={monthly:0,monthly_daily:1,daily:2,new:3,resigned_pending:4,terminated:5};
   PAYDB2.sort(function(a,b){var sa=stOrder[a.status]!==undefined?stOrder[a.status]:9;var sb2=stOrder[b.status]!==undefined?stOrder[b.status]:9;if(sa!==sb2)return sa-sb2;return a.name.localeCompare(b.name,'th')});
 
-  var stLabels={daily:'พนักงานรายวัน',monthly:'พนักงานประจำ',monthly_daily:'ประจำ(รายวัน)+ปกส.',new:'พนักงานใหม่',resigned_pending:'⏳ ลาออก-รอจ่ายเงินเดือน'};
-  var stColors={daily:'#f59e0b',monthly:'#28a745',monthly_daily:'#7c3aed',new:'#007bff',resigned_pending:'#d97706'};
+  var stLabels={daily:'พนักงานรายวัน',monthly:'พนักงานประจำ',monthly_daily:'ประจำ(รายวัน)+ปกส.',new:'พนักงานใหม่',resigned_pending:'⏳ ลาออก-รอจ่ายเงินเดือน',terminated:'⛔ พ้นสภาพ (จ่ายยอดค้าง)'};
+  var stColors={daily:'#f59e0b',monthly:'#28a745',monthly_daily:'#7c3aed',new:'#007bff',resigned_pending:'#d97706',terminated:'#9ca3af'};
 
   // Build filtered list with original indices
   var srch=$('paydb2-srch')?$('paydb2-srch').value.toLowerCase():'';
@@ -4877,7 +4878,7 @@ function payDBRender(){
   });
 
   var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0,tAbsDays=0;
-  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tAbsDays+=(e._absentDays||0);if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending')tWD+=e.work_days});
+  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tAbsDays+=(e._absentDays||0);if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated')tWD+=e.work_days});
 
   var cols=[
     {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
@@ -4935,9 +4936,9 @@ function payDBRender(){
     h+='<td class="xr">'+rowNum+'</td>';
     h+='<td class="xr" style="font-size:10px">'+rowNum+'</td>';
     h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
-    if(e.status==='resigned_pending'){
+    if(e.status==='resigned_pending'||e.status==='terminated'){
       h+='<td class="xpos">'+esc(e.position)
-        +'<br><select onchange="payDBSetPrevStatus('+i+',this.value)" style="font-size:9px;margin-top:2px;border:1px solid #d97706;border-radius:4px;background:#fff7ed;color:#92400e;max-width:150px" title="ประเภทเดิมก่อนลาออก (มีผลต่อ ปกส.)">'
+        +'<br><select onchange="payDBSetPrevStatus('+i+',this.value)" style="font-size:9px;margin-top:2px;border:1px solid #d97706;border-radius:4px;background:#fff7ed;color:#92400e;max-width:150px" title="ประเภทเดิมก่อนพ้นสภาพ (มีผลต่อ ปกส.)">'
         +'<option value="">เดิม: ?</option>'
         +'<option value="daily"'+(e.prevStatus==='daily'?' selected':'')+'>เคยรายวัน (ไม่หัก ปกส.)</option>'
         +'<option value="monthly_daily"'+(e.prevStatus==='monthly_daily'?' selected':'')+'>เคยประจำรายวัน+ปกส. (หัก 5%)</option>'
@@ -4947,7 +4948,7 @@ function payDBRender(){
       h+='<td class="xpos">'+esc(e.position)+'</td>';
     }
     // ค่าแรง/วัน & จำนวนวัน — active for daily/monthly_daily/ลาออก-รอจ่าย (กรอกวันทำงานเองได้)
-    var isDaily=(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending');
+    var isDaily=(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated');
     if(isDaily){
       h+='<td style="background:#f3e8ff;text-align:center;font-weight:bold;color:#7c3aed;font-size:12px">'+e.daily_rate+'</td>';
       h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="0" style="color:#7c3aed;font-weight:bold">'
@@ -4999,7 +5000,7 @@ function payDBCalcRow(e){
   // ลาออก-รอจ่าย: ใช้ประเภทเดิมตัดสิน — เคยรายวัน=ไม่หัก ปกส. / เคยประจำรายวัน+ปกส.=หัก ปกส.5%
   // ถ้าไม่รู้ประเภทเดิม (ข้อมูลเก่า) → ดูจากการกรอกจำนวนวัน
   var isResignedDaily=false;
-  if(e.status==='resigned_pending'){
+  if(e.status==='resigned_pending'||e.status==='terminated'){
     if(e.prevStatus)isResignedDaily=(e.prevStatus==='daily');
     else isResignedDaily=(e.work_days>0);
   }

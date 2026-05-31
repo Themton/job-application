@@ -4862,13 +4862,14 @@ function payDBRender(){
     filtered.push({e:e,idx:i});
   });
 
-  var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0;
-  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending')tWD+=e.work_days});
+  var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0,tAbsDays=0;
+  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tAbsDays+=(e._absentDays||0);if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending')tWD+=e.work_days});
 
   var cols=[
     {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
     {k:'diligence',l:'เบี้ยขยัน',w:75,type:'inc'},
     {k:'late',l:'หักมาสาย',w:80,type:'ded'},
+    {k:'_absentDays',l:'วันขาด',w:55,type:'days'},
     {k:'absent_ded',l:'หักขาดงาน',w:80,type:'ded'},
     {k:'tax3',l:'ภาษี 3% ⚡',w:80,type:'ded'},
     {k:'ss5',l:'ปกส. 5% ⚡',w:80,type:'ded'},
@@ -4876,7 +4877,7 @@ function payDBRender(){
     {k:'advance',l:'เบิกล่วงหน้า',w:85,type:'ded'}
   ];
   var totalCols=4+2+cols.length+3; // +2 daily_rate&work_days
-  var sums=[tSal,tDil,tLa,tAb,tT3,tS5,tLo,tAd];
+  var sums=[tSal,tDil,tLa,tAbsDays,tAb,tT3,tS5,tLo,tAd];
 
   var h='<div class="xls-wrap"><table class="xls"><thead><tr>';
   h+='<th class="xr" style="min-width:28px"></th>';
@@ -4942,6 +4943,11 @@ function payDBRender(){
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
     }
     cols.forEach(function(c){
+      if(c.type==='days'){
+        var ad=e._absentDays||0;
+        h+='<td style="text-align:center;'+(ad>0?'background:#fde8e8;color:#dc2626;font-weight:bold':'background:#fafafa;color:#ccc')+'" title="จำนวนวันขาดงาน (ดึงจากระบบลา/ขาด)">'+(ad>0?ad:'-')+'</td>';
+        return;
+      }
       var v=e[c.k]||0;
       var auto=(c.k==='tax3'||c.k==='ss5')||(isDaily&&c.k==='salary'&&e.work_days>0);
       var refreshed=(c.k==='salary'&&e._baseUpdated);
@@ -4949,8 +4955,7 @@ function payDBRender(){
       var cellBg=refreshed?'background:#fef3c7':absentAuto?'background:#fde8e8':(auto?'background:#f0f8ff':'');
       var cellColor=refreshed?'color:#92400e;font-weight:bold':absentAuto?'color:#dc2626;font-weight:bold':(auto?'color:#4a90d9':'');
       var cellTitle=refreshed?'อัปเดตฐานเงินเดือนใหม่จากข้อมูลพนักงาน':absentAuto?('หักขาดงาน '+e._absentDays+' วัน (ดึงจากระบบลา/ขาด)'):'';
-      var dayBadge=absentAuto?'<div style="font-size:9px;color:#dc2626;font-weight:700;text-align:center;margin-top:1px;line-height:1.1">📋 ขาด '+e._absentDays+' วัน</div>':'';
-      h+='<td style="'+cellBg+'" title="'+cellTitle+'"><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" data-i="'+i+'" placeholder="0" style="'+cellColor+'">'+dayBadge+'</td>';
+      h+='<td style="'+cellBg+'" title="'+cellTitle+'"><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" data-i="'+i+'" placeholder="0" style="'+cellColor+'"></td>';
     });
     h+='<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
     h+='<td class="xsum xsum-err">'+payFmt(e.totalDed)+'</td>';
@@ -4965,7 +4970,7 @@ function payDBRender(){
   h+='<td></td>';
   h+='<td style="text-align:center;font-size:10px;color:#7c3aed">352</td>';
   h+='<td class="xsum" style="color:#7c3aed">'+(tWD||'')+'</td>';
-  sums.forEach(function(s){h+='<td class="xsum">'+payFmt(s)+'</td>'});
+  sums.forEach(function(s,si){var isDays=cols[si]&&cols[si].type==='days';h+='<td class="xsum"'+(isDays?' style="color:#dc2626"':'')+'>'+(isDays?(s||'')+(s?' วัน':''):payFmt(s))+'</td>'});
   h+='<td class="xsum xsum-ok">'+payFmt(tI)+'</td>';
   h+='<td class="xsum xsum-err">'+payFmt(tD)+'</td>';
   h+='<td class="xsum" style="font-size:14px;color:var(--pri)">'+payFmt(tN)+'</td>';

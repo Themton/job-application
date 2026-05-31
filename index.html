@@ -641,6 +641,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
             <button class="btn btn-a" onclick="payDBCalcAll()">📊 คำนวณทั้งหมด</button>
             <button class="btn btn-a btn-s" onclick="payDBSave()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">💾 บันทึกลงระบบ</button>
             <button class="btn btn-a btn-s" onclick="payDBExportSCB()" style="background:linear-gradient(135deg,#4e2a84,#7b3fa0)">🏦 สร้างไฟล์ SCB</button>
+            <button class="btn btn-a btn-s" onclick="payDBExportTxt()" style="background:linear-gradient(135deg,#166534,#16a34a)">📄 ไฟล์ .txt (อัปโหลดตรง)</button>
             <button class="btn btn-g btn-s" onclick="payDBSCBSettings()" title="ตั้งค่าเลขบัญชีตัดเงิน + Product">⚙️</button>
             <button class="btn btn-g btn-s" onclick="payDBExportCSV()">📥 Export CSV</button>
             <span id="paydb2-save-status" style="font-size:12px;color:var(--muted)"></span>
@@ -5269,6 +5270,52 @@ function payDBSave(){
       toast('บันทึกเรียบร้อย','tok');
     }).catch(function(e){prog(-1);$('paydb2-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
   }).catch(function(e){prog(-1);$('paydb2-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
+}
+
+function payDBExportTxt(){
+  var valid=PAYDB2.filter(function(e){
+    if(PAYDB2_FILTER&&e.status!==PAYDB2_FILTER)return false;
+    return e.net>0;
+  });
+  if(!valid.length){toast('ไม่มีข้อมูล'+(PAYDB2_FILTER?' ประเภทนี้':'')+' — คำนวณก่อน','terr');return}
+  var debit=localStorage.getItem('scb_debit')||'';
+  if(!debit){
+    debit=(prompt('🏦 ตั้งค่าครั้งแรก: เลขที่บัญชี SCB ที่ใช้ตัดเงินเดือน (เฉพาะตัวเลข)','')||'').replace(/[-\s]/g,'');
+    if(!debit){toast('ยังไม่ได้ตั้งเลขบัญชีตัดเงิน','terr');return}
+    localStorage.setItem('scb_debit',debit);
+  }
+  var product='RFT'; // Other Bank Transfer (ORFT) — ตามไฟล์จริงของบริษัท
+  var month=$('paydb2-month').value;
+  var vd='';
+  if(month){var pp=month.split('-');var ld=new Date(parseInt(pp[0]),parseInt(pp[1]),0).getDate();vd=pp[0]+pp[1]+String(ld).padStart(2,'0')}
+  else{var nw=new Date();vd=nw.getFullYear()+String(nw.getMonth()+1).padStart(2,'0')+String(nw.getDate()).padStart(2,'0')}
+  // batch ref = DDMMYY(พ.ศ.)HHMMSS
+  function p2(x){return String(x).padStart(2,'0')}
+  var nn=new Date();
+  var batchRef=p2(nn.getDate())+p2(nn.getMonth()+1)+p2((nn.getFullYear()+543)%100)+p2(nn.getHours())+p2(nn.getMinutes())+p2(nn.getSeconds());
+  var fileRef=batchRef+product;
+  function amt(v){return (Math.round((v||0)*100)/100).toFixed(2)}
+  function clean(s){return String(s==null?'':s).replace(/\|/g,' ').replace(/[\r\n]/g,' ')}
+  var total=0;valid.forEach(function(e){total+=Math.round(e.net*100)/100});
+  var scbCount=0;
+  var L=[];
+  L.push('HEADER|'+fileRef+'|');
+  L.push('BCHDET|'+batchRef+'|'+product+'|'+vd+'|'+debit+'|'+debit+'|'+amt(total)+'|'+valid.length+'||');
+  valid.forEach(function(e){
+    var bk=scbBank(BANK_MAP[e.bank]||e.bank||'');
+    var code=String(bk.c||'').padStart(3,'0');
+    if(code==='014')scbCount++;
+    var acct=String(e.account||'').replace(/[-\s|]/g,'');
+    L.push('TXNDET||'+acct+'||'+code+'|0000|'+amt(e.net)+'||OUR|N||N||'+clean(e.name)+'||||N|||N|N||||N||');
+  });
+  L.push('TRAILR|1|'+valid.length+'|'+amt(total));
+  var content=L.join('\r\n')+'\r\n';
+  var blob=new Blob([content],{type:'text/plain;charset=utf-8'}); // UTF-8 ไม่มี BOM
+  var fname='SCB_Payroll_'+(month||'export')+'_'+valid.length+'คน_'+batchRef+'.txt';
+  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=fname;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  var w=scbCount>0?' ⚠️ มีบัญชี SCB '+scbCount+' คน (ORFT อาจไม่รับโอนเข้า SCB — ตรวจสอบ)':'';
+  toast('สร้างไฟล์ .txt '+valid.length+' คน ฿'+amt(total)+w,scbCount>0?'twarn':'tok');
 }
 
 function payDBExportSCB(){

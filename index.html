@@ -518,15 +518,12 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <span class="ttl" style="font-size:18px">🗓️ อนุมัติการลา</span>
         <div style="display:flex;gap:6px;align-items:center">
           <select id="lv-filter-status" onchange="loadLeaveRequests()" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;background:var(--inp);font-family:inherit">
-            <option value="pending">🟡 รออนุมัติ (HR)</option>
-            <option value="hr_approved">🔵 HR อนุมัติแล้ว — รอหัวหน้า</option>
-            <option value="approved">🟢 อนุมัติสมบูรณ์</option>
+            <option value="pending">🟡 รออนุมัติ</option>
+            <option value="hr_approved">🔵 รอหัวหน้าอนุมัติ</option>
+            <option value="approved">🟢 อนุมัติแล้ว</option>
             <option value="rejected">🔴 ไม่อนุมัติ</option>
-            <option value="">ทั้งหมด</option>
-            <option value="approved">อนุมัติแล้ว</option>
-            <option value="rejected">ปฏิเสธ</option>
-            <option value="cancelled">ยกเลิก</option>
-            <option value="">ทั้งหมด</option>
+            <option value="cancelled">⚪ ยกเลิก</option>
+            <option value="">📋 ทั้งหมด</option>
           </select>
           <button class="btn btn-g btn-s" onclick="loadLeaveRequests()">🔄</button>
         </div>
@@ -2270,56 +2267,56 @@ function loadLeaveRequests(){
 function renderLeaveRequestsAdmin(rows){
   window._lvRows=rows;
   if(!rows.length){
-    $('lv-admin-list').innerHTML='<div class="emp"><div class="ei">📭</div><p>ไม่มีข้อมูล</p></div>';
+    $('lv-admin-list').innerHTML='<div style="text-align:center;padding:64px 20px;color:var(--muted)"><div style="font-size:46px;margin-bottom:8px">📭</div><div style="font-size:15px">ไม่มีรายการลาในสถานะนี้</div></div>';
     return;
   }
   var canApprove=rows.filter(function(r){return r.status==='pending'||r.status==='hr_approved'}).length;
   var h='';
   if(canApprove){
-    h+='<div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
-      +'<button class="btn btn-a btn-s" onclick="approveAllLeaveReq()" style="padding:7px 16px;font-size:13px;background:linear-gradient(135deg,#16a34a,#22c55e)">✅ อนุมัติทั้งหมด ('+canApprove+' ใบ)</button>'
-      +'<span style="font-size:11px;color:var(--muted)">เลื่อนทุกใบในรายการขึ้น 1 ขั้น — รออนุมัติ→HR อนุมัติ, HR อนุมัติ→อนุมัติสมบูรณ์</span>'
-      +'</div>';
+    h+='<div style="margin-bottom:14px"><button class="btn btn-a" onclick="approveAllLeaveReq()" style="background:linear-gradient(135deg,#16a34a,#22c55e);padding:8px 18px">✅ อนุมัติทั้งหมด ('+canApprove+' ใบ)</button></div>';
   }
-  h+='<div class="tw"><table><thead><tr><th>วันที่ส่ง</th><th>พนักงาน</th><th>ประเภท</th><th>ช่วงลา</th><th>จำนวน</th><th>เหตุผล</th><th>สถานะ</th><th style="text-align:right">จัดการ</th></tr></thead><tbody>';
+  h+='<div style="display:flex;flex-direction:column;gap:10px">';
   rows.forEach(function(r){
     var color=LR_TYPE_COLOR[r.leave_type]||'#6b7280';
     var status=LR_STATUS_LABEL[r.status]||r.status;
     var sColor=LR_STATUS_COLOR[r.status]||'#6b7280';
-    var submitted=String(r.submitted_at||'').substring(0,16).replace('T',' ');
     var range=r.start_date===r.end_date?esc(r.start_date):esc(r.start_date)+' → '+esc(r.end_date);
-    var evidence=r.evidence_link?' <a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" style="text-decoration:none" title="ดูหลักฐาน">📎</a>':'';
 
-    h+='<tr>'
-      +'<td style="font-size:11px;color:var(--muted);white-space:nowrap">'+esc(submitted)+'</td>'
-      +'<td class="nm">'+esc(r.emp_name)+'</td>'
-      +'<td><span class="bg" style="background:'+color+'22;color:'+color+';font-weight:600">'+esc(LR_TYPE_LABEL[r.leave_type]||r.leave_type)+'</span></td>'
-      +'<td style="font-size:12px;white-space:nowrap">'+range+(r.half_day?' <span style="color:#f59e0b">½</span>':'')+'</td>'
-      +'<td style="font-weight:700">'+r.days+'</td>'
-      +'<td style="max-width:260px;font-size:12px">'+esc(r.reason||'')+evidence+'</td>'
-      +'<td><span style="color:'+sColor+';font-weight:600;font-size:12px;white-space:nowrap">'+status+'</span>'
-      +(r.review_note?'<div style="font-size:10px;color:var(--muted);margin-top:2px">หมายเหตุ: '+esc(r.review_note)+'</div>':'')
-      +(r.reviewed_by_name?'<div style="font-size:10px;color:var(--muted)">โดย '+esc(r.reviewed_by_name)+'</div>':'')
-      +'</td>'
-      +'<td style="text-align:right;white-space:nowrap">';
-
+    h+='<div style="border:1px solid var(--bdr);border-left:4px solid '+color+';border-radius:12px;padding:14px 16px;background:var(--card)">';
+    // หัวการ์ด: ชื่อ + สถานะ
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px">';
+    h+='<div style="font-weight:700;font-size:15px">'+esc(r.emp_name)+'</div>';
+    h+='<span style="background:'+sColor+'1f;color:'+sColor+';font-weight:600;font-size:11px;padding:3px 11px;border-radius:20px;white-space:nowrap">'+status+'</span>';
+    h+='</div>';
+    // ข้อมูล: ประเภท · ช่วงวัน · จำนวน · วันที่ส่ง
+    h+='<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;margin-bottom:'+(r.reason?'9px':'11px')+'">';
+    h+='<span style="background:'+color+'1f;color:'+color+';font-weight:600;padding:2px 10px;border-radius:6px">'+esc(LR_TYPE_LABEL[r.leave_type]||r.leave_type)+'</span>';
+    h+='<span style="color:var(--muted)">📅 '+range+(r.half_day?' <span style="color:#f59e0b">(ครึ่งวัน)</span>':'')+'</span>';
+    h+='<span style="font-weight:700;color:var(--pri)">'+r.days+' วัน</span>';
+    if(r.submitted_at)h+='<span style="color:var(--muted);font-size:11px">ส่ง '+esc(String(r.submitted_at).substring(0,10))+'</span>';
+    h+='</div>';
+    if(r.reason)h+='<div style="font-size:12px;background:var(--inp);border-radius:8px;padding:8px 10px;margin-bottom:10px">📝 '+esc(r.reason)+'</div>';
+    if(r.review_note)h+='<div style="font-size:11px;color:var(--muted);margin-bottom:9px">หมายเหตุ: '+esc(r.review_note)+(r.reviewed_by_name?' (โดย '+esc(r.reviewed_by_name)+')':'')+'</div>';
+    // ปุ่มจัดการ
+    h+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
     if(r.status==='pending'){
-      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">✅ HR อนุมัติ</button> '
-        +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">❌ ปฏิเสธ</button> ';
-      if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 ดูหลักฐาน</a> ';
-      h+='<button class="btn btn-d btn-s hr-hide" onclick="deleteLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px;background:rgba(220,38,38,.08);color:var(--err)">🗑️ ลบ</button>';
+      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">✅ HR อนุมัติ</button>'
+        +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">❌ ปฏิเสธ</button>';
+      if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:5px 14px;font-size:12px;text-decoration:none">📎 หลักฐาน</a>';
+      h+='<button class="btn btn-g btn-s hr-hide" onclick="deleteLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px;color:var(--err)">🗑️ ลบ</button>';
     }else if(r.status==='hr_approved'){
-      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px;background:linear-gradient(135deg,#2563eb,#3b82f6)">✅ หัวหน้าอนุมัติ</button> '
-        +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">❌ ไม่อนุมัติ</button> ';
-      h+='<button class="btn btn-g btn-s" onclick="revertLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">↩️ คืนค่า</button> ';
+      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px;background:linear-gradient(135deg,#2563eb,#3b82f6)">✅ หัวหน้าอนุมัติ</button>'
+        +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">❌ ไม่อนุมัติ</button>'
+        +'<button class="btn btn-g btn-s" onclick="revertLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">↩️ คืนค่า</button>';
+      if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:5px 14px;font-size:12px;text-decoration:none">📎 หลักฐาน</a>';
     }else{
-      if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:4px 10px;font-size:11px;text-decoration:none">📎 หลักฐาน</a> ';
-      h+='<button class="btn btn-g btn-s" onclick="revertLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px">↩️ คืนค่า</button> ';
-      h+='<button class="btn btn-d btn-s hr-hide" onclick="deleteLeaveReq(\''+r.id+'\')" style="padding:4px 10px;font-size:11px;background:rgba(220,38,38,.08);color:var(--err)">🗑️ ลบ</button>';
+      if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:5px 14px;font-size:12px;text-decoration:none">📎 หลักฐาน</a>';
+      h+='<button class="btn btn-g btn-s" onclick="revertLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">↩️ คืนค่า</button>';
+      h+='<button class="btn btn-g btn-s hr-hide" onclick="deleteLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px;color:var(--err)">🗑️ ลบ</button>';
     }
-    h+='</td></tr>';
+    h+='</div></div>';
   });
-  h+='</tbody></table></div>';
+  h+='</div>';
   $('lv-admin-list').innerHTML=h;
 }
 

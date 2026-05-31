@@ -614,7 +614,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
             <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="paydb2-month" value="" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)" onchange="payShowCutoff()"></div>
             <button class="btn btn-a btn-s" onclick="payDBLoad()">🗄️ ดึงข้อมูลพนักงาน</button>
             <button class="btn btn-g btn-s" onclick="payDBLoadPrev()">📋 ดึงเงินเดือนเดือนก่อน</button>
-            <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;margin-left:4px"><input type="checkbox" id="paydb2-incl-term" onchange="payDBLoad()" style="cursor:pointer">รวมพนักงานพ้นสภาพ</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;margin-left:4px"><input type="checkbox" id="paydb2-incl-term" onchange="payDBLoad()" style="cursor:pointer">ดูพนักงานพ้นสภาพ (แยกกลุ่ม)</label>
           </div>
           <div id="paydb2-cutoff" style="font-size:12px;margin-top:8px;padding:8px 14px;background:rgba(198,149,43,.08);border:1px solid rgba(198,149,43,.2);border-radius:8px;display:none"></div>
           <div id="paydb2-status" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
@@ -4804,7 +4804,7 @@ function payDBLoad(){
       $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน'+(prefilled?' — ฐานเงินเดือน <b style="color:var(--ok)">'+prefilled+'</b> คน (คำนวณภาษี/ปกส. แล้ว)':'')+loanNote+absentNote;
     }
     prog(100,'ดึงข้อมูล ✅ '+PAYDB2.length+' คน');
-    PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
+    PAYDB2_FILTER=(_inclTerm?'terminated':'');payDBBuildFilters();payDBRender();
     $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';$('paydb2-late-area').classList.remove('hide');$('paydb2-late-area').style.display='block';
   }).catch(function(e){$('paydb2-status').textContent='❌ ดึงไม่สำเร็จ: '+e});
 }

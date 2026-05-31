@@ -1658,7 +1658,8 @@ function empSaveEmail(idx,val){
 }
 
 function empExportContact(){
-  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value,bank=$('f-bank').value,em=$('f-email').value;
+  var gv=function(id){var e=$(id);return e?e.value:''};
+  var q=gv('i-srch').toLowerCase(),st=gv('f-st'),pos=gv('f-pos'),dept=gv('f-dept');
   var list=ALL.filter(function(a){
     if(q&&[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)<0)return false;
     if(st&&a.status!==st)return false;if(pos&&a.position!==pos)return false;if(dept&&a.department!==dept)return false;
@@ -1668,23 +1669,20 @@ function empExportContact(){
   if(selIds.length){list=list.filter(function(a){return EMP_SEL[a.id]})}
   if(!list.length){toast('ไม่มีข้อมูล','terr');return}
   list.sort(function(a,b){return(a.emp_code||'zzzz').localeCompare(b.emp_code||'zzzz')});
-  // ใช้ HTML .xls + บังคับคอลัมน์รหัส/เบอร์เป็นข้อความ (กันเลข 0 หน้าหาย)
-  var h='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"><style>td,th{border:1px solid #ccc;padding:4px 10px;font-size:13px;font-family:sans-serif}th{background:#5c4a1e;color:#fff}.txt{mso-number-format:"\\@"}</style></head><body><table>';
-  h+='<tr><th>รหัสพนักงาน</th><th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>เบอร์โทร</th></tr>';
+  if(typeof XLSX==='undefined'){toast('กำลังโหลดไลบรารี ลองอีกครั้ง','terr');return}
+  // ล็อกอินพนักงาน: รหัสพนักงาน + รหัสผ่าน=เบอร์ 4 ตัวท้าย
+  var rows=[['รหัสพนักงาน','ชื่อ-สกุล','ชื่อเล่น','เบอร์โทร','รหัสผ่าน (4 ตัวท้าย)']];
   list.forEach(function(a){
-    h+='<tr>';
-    h+='<td class="txt">'+esc(a.emp_code||'')+'</td>';
-    h+='<td>'+esc(a.name||'')+'</td>';
-    h+='<td>'+esc(a.nickname||'')+'</td>';
-    h+='<td class="txt">'+esc(a.phone||'')+'</td>';
-    h+='</tr>';
+    var ph=String(a.phone||'').replace(/\D/g,'');
+    rows.push([String(a.emp_code||''),String(a.name||''),String(a.nickname||''),String(a.phone||''),ph.slice(-4)]);
   });
-  h+='</table></body></html>';
-  var blob=new Blob(['\uFEFF'+h],{type:'application/vnd.ms-excel;charset=utf-8'});
-  var url=URL.createObjectURL(blob);var el=document.createElement('a');el.href=url;
-  el.download='รหัส_เบอร์โทร'+(selIds.length?'_เลือก'+list.length+'คน':'')+'_'+new Date().toISOString().substring(0,10)+'.xls';
-  document.body.appendChild(el);el.click();document.body.removeChild(el);URL.revokeObjectURL(url);
-  toast('Export รหัส+เบอร์ '+list.length+' คน','tok');
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  // บังคับทุกเซลล์เป็นข้อความ (กันเลข 0 หน้าหาย + รหัสผ่านคงรูป)
+  Object.keys(ws).forEach(function(k){if(k[0]==='!')return;var c=ws[k];if(c&&c.v!=null){c.t='s';c.v=String(c.v);c.z='@'}});
+  ws['!cols']=[{wch:12},{wch:24},{wch:12},{wch:14},{wch:16}];
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'ล็อกอินพนักงาน');
+  XLSX.writeFile(wb,'รหัส_เบอร์_ล็อกอิน'+(selIds.length?'_เลือก'+list.length+'คน':'')+'_'+new Date().toISOString().substring(0,10)+'.xlsx');
+  toast('Export รหัส+เบอร์+รหัสผ่าน '+list.length+' คน','tok');
 }
 
 function empExport(){

@@ -4763,7 +4763,7 @@ function payDBLoad(){
       // ดึงวันขาดมาหัก — เฉพาะประจำ/ใหม่ (เงินเดือนคงที่) • รายวัน/รายวันปกส คิดจากจำนวนวันที่กรอกเองอยู่แล้ว
       var absD=absentMap[e.id]||0;
       if(absD>0&&(e.status==='monthly'||e.status==='new')){
-        e.absent_ded=Math.round(Math.round((e.salary||0)/daysInMonth)*absD);
+        e.absent_ded=Math.round((e.salary||0)/daysInMonth*absD*100)/100;
         e._absentDays=absD;
         absentApplied++;
       }

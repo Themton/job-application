@@ -6000,6 +6000,16 @@ function loadPayDB(){
       r._daysInMonth=_lastD;
       return r;
     });
+    // เติมคนลาออก-รอจ่ายที่ยังไม่ได้คิดเงิน/บันทึก (จะได้เห็นครบ ไม่ตกหล่น)
+    var _savedNames={};PAYDB_DATA.forEach(function(r){_savedNames[(r.emp_name||'').trim()]=true});
+    ALL.forEach(function(a){
+      if(a.status!=='resigned_pending')return;
+      if(_savedNames[(a.name||'').trim()])return;
+      PAYDB_DATA.push({emp_name:a.name,nickname:a.nickname||'',position:a.position||'',
+        salary:0,diligence:0,late:0,absent_ded:0,tax3:0,ss5:0,loan:0,advance:0,
+        total_income:0,total_ded:0,net:0,commission:0,grand_total:0,
+        email:a.email||'',absent_days:0,empStatus:'resigned_pending',_daysInMonth:_lastD,_notSaved:true});
+    });
     paydbBuildFilters();
     paydbRender();
     prog(100,'โหลดรายงาน ✅ '+PAYDB_DATA.length+' คน');
@@ -6054,17 +6064,22 @@ function paydbRender(){
 
   list.forEach(function(r,i){
     var gt=r.grand_total||(r.net+r.commission);
-    h+='<tr>';
-    h+='<td><div class="nm">'+esc(r.emp_name)+'</div>'+(r.nickname?'<div class="em">('+esc(r.nickname)+')</div>':'')+'</td>';
+    h+='<tr'+(r._notSaved?' style="background:rgba(245,158,11,.06)"':'')+'>';
+    h+='<td><div class="nm">'+esc(r.emp_name)+(r._notSaved?' <span style="font-size:9px;color:#92400e;background:#fef3c7;border:1px solid #fbbf24;border-radius:4px;padding:1px 5px;font-weight:700">⏳ ยังไม่บันทึก</span>':'')+'</div>'+(r.nickname?'<div class="em">('+esc(r.nickname)+')</div>':'')+'</td>';
     h+='<td style="font-size:11px">'+esc(r.position)+'</td>';
+    if(r._notSaved){
+      h+='<td colspan="6" style="text-align:center;font-size:11px;color:#92400e">ยังไม่ได้คิดเงินเดือน — ไปที่ 💰 คิดเงินเดือน → กรอก → 💾 บันทึก</td>';
+    }else{
     h+='<td style="text-align:right;font-variant-numeric:tabular-nums">'+payFmt(r.salary)+'</td>';
     h+='<td style="text-align:right;font-variant-numeric:tabular-nums">'+payFmt(r.diligence)+'</td>';
     h+='<td style="text-align:right;font-variant-numeric:tabular-nums;color:var(--err)">'+payFmt(r.total_ded)+'</td>';
     h+='<td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--ok)">'+payFmt(r.net)+'</td>';
     h+='<td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:'+(r.commission>0?'#d4a73c':'var(--muted)')+'">'+payFmt(r.commission)+'</td>';
     h+='<td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;color:var(--pri);background:rgba(198,149,43,.06)">'+payFmt(gt)+'</td>';
+    }
     h+='<td style="text-align:center;white-space:nowrap">';
-    if(r._sent){h+='<span style="color:var(--ok);font-size:11px">✅ ส่งแล้ว</span>'}
+    if(r._notSaved){h+='<span style="color:var(--muted);font-size:11px">—</span>'}
+    else if(r._sent){h+='<span style="color:var(--ok);font-size:11px">✅ ส่งแล้ว</span>'}
     else if(r._sending){h+='<span style="color:var(--acc);font-size:11px">⏳ ส่ง...</span>'}
     else{h+='<input value="'+esc(r.email||'')+'" onchange="PAYDB_DATA['+PAYDB_DATA.indexOf(r)+'].email=this.value" placeholder="email" style="width:100px;padding:3px 6px;border:1px solid var(--bdr);border-radius:4px;font-size:10px;font-family:inherit"> <button class="btn btn-a btn-s" style="font-size:10px;padding:2px 8px" onclick="paydbSendOne('+PAYDB_DATA.indexOf(r)+')">📧</button>'}
     h+='</td></tr>';
@@ -6147,6 +6162,7 @@ function paydbSendOne(i){
 
 function paydbSendAll(){
   var toSend=PAYDB_DATA.filter(function(r){
+    if(r._notSaved)return false;
     if(PAYDB_FILTER&&r.empStatus!==PAYDB_FILTER)return false;
     return r.email&&r.email.indexOf('@')>=0&&!r._sent;
   });

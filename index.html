@@ -5277,6 +5277,7 @@ function payDBExportSCB(){
     return e.net>0;
   });
   if(!valid.length){toast('ไม่มีข้อมูล'+(PAYDB2_FILTER?' ประเภทนี้':'')+'  — คำนวณก่อน','terr');return}
+  if(valid.length>259){toast('เกิน 259 คน เทมเพลตรองรับไม่พอ — แบ่งกรองประเภทก่อน','terr');return}
   if(typeof JSZip==='undefined'){toast('กำลังโหลดไลบรารี ลองใหม่อีกครั้ง','terr');return}
   var month=$('paydb2-month').value;
   // ค่าตั้งต้นบริษัท (จำไว้): เลขบัญชีตัดเงิน + product
@@ -5311,24 +5312,26 @@ function payDBExportSCB(){
       setCell('<c r="C4" s="113"/>','C4','113',debit);
       setCell('<c r="C5" s="130" t="s"><v>413</v></c>','C5','130',vDate);
       setCell('<c r="E4" s="140" t="s"><v>416</v></c>','E4','140',product);
-      var rowsXml='';
+      // เติมค่าลงเซลล์เดิมในแถว 9+ (แถวมีอยู่แล้ว — ห้ามเพิ่มแถวใหม่ ไม่งั้น Excel ซ่อมแซม)
+      function fill(col,r,val,isNum){
+        var re=new RegExp('<c r="'+col+r+'"([^>]*?)/>');
+        xml=xml.replace(re,function(m,a){a=a.replace(/\s+t="[^"]*"/,'');
+          return isNum?'<c r="'+col+r+'"'+a+'><v>'+val+'</v></c>':'<c r="'+col+r+'"'+a+' t="inlineStr"><is><t xml:space="preserve">'+xesc(val)+'</t></is></c>';});
+      }
       valid.forEach(function(e,i){
         var bk=scbBank(BANK_MAP[e.bank]||e.bank||'');
         var r=9+i;
         var acct=String(e.account||'').replace(/[-\s]/g,'');
         var amt=Math.round(e.net*100)/100;
-        rowsXml+='<row r="'+r+'">'
-          +cS('A'+r,String(i+1))
-          +cS('B'+r,bk.n)
-          +cS('C'+r,acct)
-          +cS('D'+r,e.name)
-          +cN('E'+r,amt)
-          +cS('G'+r,'Payer (OUR)')
-          +cS('N'+r,bk.c)
-          +cS('O'+r,'OUR')
-          +'</row>';
+        fill('A',r,String(i+1));
+        fill('B',r,bk.n);
+        fill('C',r,acct);
+        fill('D',r,e.name);
+        fill('E',r,amt,true);
+        fill('G',r,'Payer (OUR)');
+        fill('N',r,bk.c);
+        fill('O',r,'OUR');
       });
-      xml=xml.replace('</sheetData>',rowsXml+'</sheetData>');
       zip.file(path,xml);
       return zip.generateAsync({type:'blob',mimeType:'application/vnd.ms-excel.sheet.macroEnabled.12',compression:'DEFLATE'});
     });

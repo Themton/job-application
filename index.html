@@ -783,6 +783,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
         <button class="btn btn-d btn-s" onclick="paydbDelete()">🗑️ ลบ</button>
         <button class="btn btn-g btn-s" onclick="loadPayDBMonths()">🔄</button>
       </div>
+      <div id="paydb-filters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
       <div id="paydb-stats" class="sts" style="margin-bottom:14px"></div>
       <div id="paydb-table"></div>
       <div id="paydb-send-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
@@ -5946,7 +5947,7 @@ function paySaveToDB(){
   });
 }
 
-var PAYDB_DATA=[],PAYDB_MONTHS=[];
+var PAYDB_DATA=[],PAYDB_MONTHS=[],PAYDB_FILTER='';
 
 function loadPayDBMonths(){
   sb("payroll","GET",null,"?select=month&order=month.desc").then(function(r){
@@ -5990,14 +5991,29 @@ function loadPayDB(){
       r._daysInMonth=_lastD;
       return r;
     });
+    paydbBuildFilters();
     paydbRender();
     prog(100,'โหลดรายงาน ✅ '+PAYDB_DATA.length+' คน');
   }).catch(function(e){prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
 }
 
+function paydbBuildFilters(){
+  if(!$('paydb-filters'))return;
+  var stMap={};
+  PAYDB_DATA.forEach(function(r){var s=r.empStatus||'';stMap[s]=(stMap[s]||0)+1});
+  var stLabels={monthly:'🟢 รายเดือน (ประจำ)',monthly_daily:'🟣 ประจำ(รายวัน)+ปกส.',daily:'🟡 รายวัน',new:'🔵 ใหม่',resigned_pending:'⏳ ลาออก-รอจ่าย'};
+  var h='<button class="btn btn-s '+(PAYDB_FILTER===''?'btn-a':'btn-g')+'" onclick="PAYDB_FILTER=\'\';paydbBuildFilters();paydbRender()" style="font-size:11px;padding:5px 12px">ทั้งหมด ('+PAYDB_DATA.length+')</button>';
+  ['monthly','monthly_daily','daily','new','resigned_pending'].forEach(function(s){
+    if(!stMap[s])return;
+    h+='<button class="btn btn-s '+(PAYDB_FILTER===s?'btn-a':'btn-g')+'" onclick="PAYDB_FILTER=\''+s+'\';paydbBuildFilters();paydbRender()" style="font-size:11px;padding:5px 12px">'+stLabels[s]+' ('+stMap[s]+')</button>';
+  });
+  $('paydb-filters').innerHTML=h;
+}
+
 function paydbRender(){
   var q=$('paydb-srch').value.toLowerCase();
   var list=PAYDB_DATA.filter(function(r){
+    if(PAYDB_FILTER&&r.empStatus!==PAYDB_FILTER)return false;
     if(!q)return true;
     return(r.emp_name+' '+r.nickname+' '+r.position).toLowerCase().indexOf(q)>=0;
   });
@@ -6117,9 +6133,12 @@ function paydbSendOne(i){
 }
 
 function paydbSendAll(){
-  var toSend=PAYDB_DATA.filter(function(r){return r.email&&r.email.indexOf('@')>=0&&!r._sent});
+  var toSend=PAYDB_DATA.filter(function(r){
+    if(PAYDB_FILTER&&r.empStatus!==PAYDB_FILTER)return false;
+    return r.email&&r.email.indexOf('@')>=0&&!r._sent;
+  });
   if(!toSend.length){toast('ไม่มีพนักงานที่มีอีเมล หรือส่งครบแล้ว','terr');return}
-  if(!confirm('ส่งสลิปเงินเดือน+คอมมิชชั่น ให้ '+toSend.length+' คน?'))return;
+  if(!confirm('ส่งสลิปเงินเดือน+คอมมิชชั่น ให้ '+toSend.length+' คน'+(PAYDB_FILTER?' (เฉพาะกลุ่มที่เลือก)':'')+'?'))return;
   $('paydb-send-status').textContent='⏳ กำลังส่ง...';
   var idx=0,ok=0,fail=0,total=toSend.length;
   prog(0,'เริ่มส่งสลิป...');
@@ -6145,9 +6164,11 @@ function paydbSendAll(){
 function paydbExport(){
   if(!PAYDB_DATA.length){toast('ไม่มีข้อมูล','terr');return}
   var month=$('paydb-month').value;
+  var rows=PAYDB_DATA.filter(function(r){return !PAYDB_FILTER||r.empStatus===PAYDB_FILTER});
+  var stSuffix=PAYDB_FILTER==='monthly'?'_รายเดือน':PAYDB_FILTER==='monthly_daily'?'_ประจำรายวัน':PAYDB_FILTER==='daily'?'_รายวัน':PAYDB_FILTER==='new'?'_ใหม่':PAYDB_FILTER==='resigned_pending'?'_ลาออกรอจ่าย':'';
   var h='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"><style>td,th{border:1px solid #ccc;padding:4px 8px;font-size:12px;font-family:sans-serif}th{background:#5c4a1e;color:#fff}.comm{background:#fff8e0;color:#856404;font-weight:bold}.total{background:#f0e8d4;font-weight:bold}</style></head><body><table>';
   h+='<tr><th>&#3648;&#3604;&#3639;&#3629;&#3609;</th><th>&#3594;&#3639;&#3656;&#3629;</th><th>&#3605;&#3635;&#3649;&#3627;&#3609;&#3656;&#3591;</th><th>&#3648;&#3591;&#3636;&#3609;&#3648;&#3604;&#3639;&#3629;&#3609;</th><th>&#3648;&#3610;&#3637;&#3657;&#3618;&#3586;&#3618;&#3633;&#3609;</th><th>&#3619;&#3623;&#3617;&#3619;&#3633;&#3610;</th><th>&#3616;&#3634;&#3625;&#3637;3%</th><th>&#3611;&#3585;&#3626;.5%</th><th>&#3585;&#3618;&#3624;.</th><th>&#3648;&#3610;&#3636;&#3585;&#3621;&#3656;&#3623;&#3591;&#3627;&#3609;&#3657;&#3634;</th><th>&#3619;&#3623;&#3617;&#3627;&#3633;&#3585;</th><th>&#3626;&#3640;&#3607;&#3608;&#3636;</th><th style="background:#856404">&#3588;&#3629;&#3617;&#3617;&#3636;&#3594;&#3594;&#3633;&#3656;&#3609;</th><th style="background:#3d3018">&#3619;&#3623;&#3617;&#3592;&#3656;&#3634;&#3618;</th></tr>';
-  PAYDB_DATA.forEach(function(r){
+  rows.forEach(function(r){
     var gt=r.net+(r.commission||0);
     h+='<tr><td>'+month+'</td><td>'+esc(r.emp_name)+'</td><td>'+esc(r.position)+'</td>';
     h+='<td>'+r.salary+'</td><td>'+r.diligence+'</td><td>'+r.total_income+'</td>';
@@ -6156,9 +6177,9 @@ function paydbExport(){
   });
   h+='</table></body></html>';
   var blob=new Blob(['\uFEFF'+h],{type:'application/vnd.ms-excel;charset=utf-8'});
-  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='รายงานเงินเดือน_'+month+'.xls';
+  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='รายงานเงินเดือน_'+month+stSuffix+'.xls';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-  toast('Export '+PAYDB_DATA.length+' คน','tok');
+  toast('Export '+rows.length+' คน','tok');
 }
 
 function paydbDelete(){

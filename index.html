@@ -1162,7 +1162,7 @@ var EM="https://script.google.com/macros/s/AKfycbyDrEQweHxOpdKdZ3TA0niJ7YG02rqFF
 var MODE=location.search.indexOf('admin')>-1?'admin':location.search.indexOf('acc')>-1?'acc':location.search.indexOf('emp')>-1?'emp':'public';
 
 /* ═══ Supabase ═══ */
-function isHR(){var s=getSES();return s&&s.role==='hr'}
+function isHR(){var s=getSES();return(s&&s.role==='hr')||localStorage.getItem('mt_role')==='hr'}
 function sb(t,m,b,q){
   if(m==='DELETE'&&isHR()){toast('⛔ HR ไม่มีสิทธิ์ลบข้อมูล','terr');return Promise.reject('HR cannot delete')}
   var u=SB+"/rest/v1/"+t+(q||"");
@@ -1520,6 +1520,7 @@ function doLogin(){
     localStorage.setItem('mt_logged','1');
     localStorage.setItem('mt_role',user.role||'admin');
     localStorage.setItem('mt_username',user.username||u);
+    setSES({role:user.role||'admin',username:user.username||u,display_name:user.display_name||''});
     page('admin');
   }).catch(function(e){
     if(p==='1234'){localStorage.setItem('mt_logged','1');localStorage.setItem('mt_role','admin');localStorage.setItem('mt_username','admin');page('admin');return}

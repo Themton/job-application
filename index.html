@@ -434,7 +434,7 @@ body.hr-mode .btn-d,body.hr-mode .lv-del,body.hr-mode .hr-hide{display:none!impo
     </div>
     <!-- TAB: Users -->
     <div id="T-usr" class="hide">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="ttl" style="font-size:18px">จัดการผู้ใช้</span><button class="btn btn-a btn-s" onclick="showUF()">➕ เพิ่ม</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="ttl" style="font-size:18px">จัดการผู้ใช้</span><button class="btn btn-a btn-s hr-hide" onclick="showUF()">➕ เพิ่ม</button></div>
       <div id="uf-box" class="cd hide" style="margin-bottom:14px"><div class="g2"><div class="fld"><label>ชื่อผู้ใช้ <span class="rq">*</span></label><input id="uf-user"></div><div class="fld"><label>ชื่อแสดง</label><input id="uf-name"></div><div class="fld"><label id="uf-pw-label">รหัสผ่าน <span class="rq">*</span></label><input id="uf-pass" type="text"></div><div class="fld"><label>สิทธิ์การใช้งาน</label><select id="uf-role"><option value="admin">แอดมิน (เต็มระบบ)</option><option value="hr">HR (ดู/สร้าง/แก้ไข ห้ามลบ)</option><option value="manager">หัวหน้า (อนุมัติการลา)</option><option value="accounting">บัญชี (ดูข้อมูล+Export)</option></select></div></div><div class="brow" style="margin-top:8px"><button class="btn btn-g btn-s" onclick="pf('uf-box').classList.add('hide')">ยกเลิก</button><button class="btn btn-a btn-s" id="uf-btn" onclick="saveU()">เพิ่ม</button></div></div>
       <div id="usr-list"></div>
 
@@ -3237,15 +3237,17 @@ function delP(id){if(!confirm('ลบ?'))return;sb("positions","DELETE",null,"?i
 /* ═══ USERS ═══ */
 function renderUsr(){
   if(!USR.length){$('usr-list').innerHTML='<div class="emp"><div class="ei">👤</div><p>ยังไม่มี</p></div>';return}
-  var rl={'admin':'แอดมิน','hr':'HR','accounting':'บัญชี'};
-  var rc={'admin':'b-new','hr':'b-monthly','accounting':'b-daily'};
-  var h='<div class="tw" style="margin-top:10px"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>สิทธิ์</th><th>จัดการ</th></tr></thead><tbody>';
-  USR.forEach(function(u){h+='<tr><td class="nm">'+esc(u.username)+'</td><td>'+esc(u.display_name||'')+'</td><td><span class="bg '+(rc[u.role]||'b-new')+'">'+(rl[u.role]||u.role||'แอดมิน')+'</span></td><td style="white-space:nowrap"><button class="btn btn-g btn-s" onclick="editU(\''+u.id+'\')">✏️</button> <button class="btn btn-d btn-s" onclick="delU(\''+u.id+'\')">🗑️</button></td></tr>'});
-  $('usr-list').innerHTML=h+'</tbody></table></div>';
+  var hr=isHR();
+  var rl={'admin':'แอดมิน','hr':'HR','manager':'หัวหน้า','accounting':'บัญชี'};
+  var rc={'admin':'b-new','hr':'b-monthly','manager':'b-daily','accounting':'b-daily'};
+  var h='<div class="tw" style="margin-top:10px"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>สิทธิ์</th>'+(hr?'':'<th>จัดการ</th>')+'</tr></thead><tbody>';
+  USR.forEach(function(u){h+='<tr><td class="nm">'+esc(u.username)+'</td><td>'+esc(u.display_name||'')+'</td><td><span class="bg '+(rc[u.role]||'b-new')+'">'+(rl[u.role]||u.role||'แอดมิน')+'</span></td>'+(hr?'':'<td style="white-space:nowrap"><button class="btn btn-g btn-s" onclick="editU(\''+u.id+'\')">✏️</button> <button class="btn btn-d btn-s" onclick="delU(\''+u.id+'\')">🗑️</button></td>')+'</tr>'});
+  $('usr-list').innerHTML=h+'</tbody></table></div>'+(hr?'<div style="font-size:12px;color:var(--muted);margin-top:8px">👁️ โหมดดูอย่างเดียว — HR ดูรายชื่อผู้ใช้/สิทธิ์ได้ แต่เพิ่ม/แก้ไข/ลบไม่ได้</div>':'');
 }
-function showUF(){editUID=null;$('uf-user').value='';$('uf-name').value='';$('uf-pass').value='';$('uf-role').value='admin';$('uf-user').disabled=false;$('uf-pw-label').innerHTML='รหัสผ่าน <span class="rq">*</span>';$('uf-btn').textContent='เพิ่ม';$('uf-box').classList.remove('hide')}
-function editU(id){var u;USR.forEach(function(x){if(x.id===id)u=x});if(!u)return;editUID=id;$('uf-user').value=u.username;$('uf-user').disabled=true;$('uf-name').value=u.display_name||'';$('uf-pass').value='';$('uf-role').value=u.role||'admin';$('uf-pw-label').innerHTML='รหัสผ่านใหม่ <span style="font-size:10px;color:var(--muted)">(เว้นว่างถ้าไม่เปลี่ยน)</span>';$('uf-btn').textContent='บันทึก';$('uf-box').classList.remove('hide')}
+function showUF(){if(isHR()){toast('HR ดูได้อย่างเดียว ไม่สามารถเพิ่มผู้ใช้','terr');return}editUID=null;$('uf-user').value='';$('uf-name').value='';$('uf-pass').value='';$('uf-role').value='admin';$('uf-user').disabled=false;$('uf-pw-label').innerHTML='รหัสผ่าน <span class="rq">*</span>';$('uf-btn').textContent='เพิ่ม';$('uf-box').classList.remove('hide')}
+function editU(id){if(isHR()){toast('HR ดูได้อย่างเดียว ไม่สามารถแก้ไขผู้ใช้','terr');return}var u;USR.forEach(function(x){if(x.id===id)u=x});if(!u)return;editUID=id;$('uf-user').value=u.username;$('uf-user').disabled=true;$('uf-name').value=u.display_name||'';$('uf-pass').value='';$('uf-role').value=u.role||'admin';$('uf-pw-label').innerHTML='รหัสผ่านใหม่ <span style="font-size:10px;color:var(--muted)">(เว้นว่างถ้าไม่เปลี่ยน)</span>';$('uf-btn').textContent='บันทึก';$('uf-box').classList.remove('hide')}
 function saveU(){
+  if(isHR()){toast('HR ดูได้อย่างเดียว','terr');return}
   var un=$('uf-user').value.trim(),dn=$('uf-name').value.trim(),pw=$('uf-pass').value,rl=$('uf-role').value;
   if(editUID){
     if(pw&&pw.length<6){toast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร','terr');return}
@@ -3280,6 +3282,7 @@ function saveU(){
   }
 }
 function delU(id){
+  if(isHR()){toast('HR ดูได้อย่างเดียว ไม่สามารถลบผู้ใช้','terr');return}
   if(USR.length<=1){toast('ต้องมีผู้ใช้อย่างน้อย 1 คน','terr');return}
   if(!confirm('ลบ?'))return;
   sbRpc('admin_delete_user',{p_token:TOK(),p_target_id:id}).then(function(r){

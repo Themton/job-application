@@ -1521,6 +1521,8 @@ function doLogin(){
     localStorage.setItem('mt_role',user.role||'admin');
     localStorage.setItem('mt_username',user.username||u);
     setSES({role:user.role||'admin',username:user.username||u,display_name:user.display_name||''});
+    var welcome=user.display_name||user.username||u;
+    setTimeout(function(){try{toast('👋 ยินดีต้อนรับ '+welcome,'tok')}catch(e){}},400);
     page('admin');
   }).catch(function(e){
     if(p==='1234'){localStorage.setItem('mt_logged','1');localStorage.setItem('mt_role','admin');localStorage.setItem('mt_username','admin');page('admin');return}
@@ -1532,11 +1534,15 @@ function doLogin(){
 function loadAdmin(){
   $('A-ld').classList.remove('hide');$('A-main').classList.add('hide');$('A-det').classList.add('hide');
   loadAppSettings();
-  // Show role badge
+  // Show role badge + ชื่อผู้ใช้ที่ล็อกอิน
   var ses=getSES();
-  if(ses&&ses.role==='hr'){$('sb-role-badge').innerHTML='<span class="hr-badge">HR</span>'}
-  else if(localStorage.getItem('mt_role')==='manager'){$('sb-role-badge').innerHTML='<span class="hr-badge" style="background:#2563eb">หัวหน้า</span>'}
-  else $('sb-role-badge').innerHTML='';
+  var role=(ses&&ses.role)||localStorage.getItem('mt_role')||'admin';
+  var uname=(ses&&(ses.display_name||ses.username))||localStorage.getItem('mt_username')||'';
+  var badge=role==='hr'?'<span class="hr-badge">HR</span>'
+    :role==='manager'?'<span class="hr-badge" style="background:#2563eb">หัวหน้า</span>'
+    :role==='accounting'?'<span class="hr-badge" style="background:#16a34a">บัญชี</span>'
+    :'<span class="hr-badge" style="background:#6b7280">แอดมิน</span>';
+  $('sb-role-badge').innerHTML=badge+(uname?'<div style="font-size:12px;font-weight:600;margin-top:4px">👤 '+esc(uname)+'</div>':'');
 
   // Manager: show only leave approval + logout
   if(localStorage.getItem('mt_role')==='manager'){

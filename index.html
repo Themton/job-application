@@ -2028,6 +2028,17 @@ function aeClsAllErr(){
   $('ae-errors').style.display='none';
 }
 
+function nextEmpCode(prefix){
+  prefix=(prefix||'MT').toUpperCase();
+  var maxNum=0;
+  ALL.forEach(function(a){
+    if(a.emp_code&&a.emp_code.toUpperCase().indexOf(prefix)===0){
+      var n=parseInt(a.emp_code.toUpperCase().replace(prefix,''),10);
+      if(!isNaN(n)&&n>maxNum)maxNum=n;
+    }
+  });
+  return prefix+String(maxNum+1).padStart(3,'0');
+}
 function adminAddEmp(){
   aeClsAllErr();
   var nm=$('ae-name').value.trim(),nick=$('ae-nick').value.trim(),ph=$('ae-phone').value.trim();
@@ -2065,7 +2076,8 @@ function adminAddEmp(){
   }
 
   var id='EMP-'+Date.now();
-  var data={id:id,name:nm,nickname:nick,phone:ph,email:em,birthday:bday||null,id_card:idcard||null,address:addr||null,emergency_contact:emgName||null,emergency_phone:emgPhone||null,department:dept,position:pos,status:st,education:edu,bank:bk,bank_account:ba};
+  var newCode=nextEmpCode('MT');
+  var data={id:id,emp_code:newCode,name:nm,nickname:nick,phone:ph,email:em,birthday:bday||null,id_card:idcard||null,address:addr||null,emergency_contact:emgName||null,emergency_phone:emgPhone||null,department:dept,position:pos,status:st,education:edu,bank:bk,bank_account:ba};
   var btn=$('ae-save-btn');btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';
   prog(20,'กำลังเพิ่มพนักงาน...');
 
@@ -2100,7 +2112,7 @@ function adminAddEmp(){
             $('ae-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย (100%)</span>';
           }else{$('ae-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ — '+esc((r2&&r2.error)||'ระบบปฏิเสธไฟล์')+'</span>'}
           prog(100,'เพิ่มพนักงาน ✅ '+nm);btn.disabled=false;btn.textContent='💾 บันทึกพนักงาน';
-          toast('เพิ่ม '+nm+' เรียบร้อย','tok');stats();doFilter();adminClearEmp();
+          toast('เพิ่ม '+nm+' ('+newCode+') เรียบร้อย','tok');stats();doFilter();adminClearEmp();
         }).catch(function(e){
           $('ae-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ — '+esc(e.message||e)+'</span>';
           prog(100,'เพิ่มพนักงาน ✅ (อัปโหลดไม่สำเร็จ)');btn.disabled=false;btn.textContent='💾 บันทึกพนักงาน';
@@ -2108,7 +2120,7 @@ function adminAddEmp(){
         });
       }else{
         prog(100,'เพิ่มพนักงาน ✅ '+nm);btn.disabled=false;btn.textContent='💾 บันทึกพนักงาน';
-        toast('เพิ่ม '+nm+' เรียบร้อย','tok');stats();doFilter();adminClearEmp();
+        toast('เพิ่ม '+nm+' ('+newCode+') เรียบร้อย','tok');stats();doFilter();adminClearEmp();
         $('admin-add-emp').classList.add('hide');
       }
     }else{prog(-1);btn.disabled=false;btn.textContent='💾 บันทึกพนักงาน';toast('เพิ่มไม่สำเร็จ','terr');console.log(r)}

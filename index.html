@@ -1563,7 +1563,7 @@ function loadAdmin(){
 
   // Manager: show only leave approval + logout
   if(localStorage.getItem('mt_role')==='manager'){
-    document.querySelectorAll('.sb-item').forEach(function(el){if(!el.classList.contains('sb-logout')&&el.id!=='tab-lv'&&el.id!=='tab-exp')el.style.display='none'});
+    document.querySelectorAll('.sb-item').forEach(function(el){if(!el.classList.contains('sb-logout')&&el.id!=='tab-lv'&&el.id!=='tab-exp'&&el.id!=='tab-emp')el.style.display='none'});
     document.querySelectorAll('.sb-sep').forEach(function(el){el.style.display='none'});
     showTab('lv');
   }
@@ -2051,6 +2051,17 @@ function adminAddEmp(){
     $('ae-errors').style.display='block';
     toast('กรุณากรอกข้อมูลให้ครบ ('+errors.length+' รายการ)','terr');
     return;
+  }
+
+  // กันบันทึกชื่อพนักงานซ้ำ
+  var dup=ALL.filter(function(a){return (a.name||'').trim().toLowerCase()===nm.toLowerCase()});
+  if(dup.length){
+    if(!confirm('⚠️ มีพนักงานชื่อ "'+nm+'" อยู่แล้ว'+(dup[0].emp_code?' (รหัส '+dup[0].emp_code+')':'')+(dup[0].phone?' เบอร์ '+dup[0].phone:'')+'\n\nยืนยันเพิ่มซ้ำหรือไม่?')){
+      $('ae-errors').innerHTML='⚠️ มีพนักงานชื่อ "'+esc(nm)+'" อยู่แล้ว — ยกเลิกการเพิ่มซ้ำ';
+      $('ae-errors').style.display='block';
+      toast('มีพนักงานชื่อนี้อยู่แล้ว ไม่บันทึกซ้ำ','terr');
+      return;
+    }
   }
 
   var id='EMP-'+Date.now();

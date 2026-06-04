@@ -1159,6 +1159,25 @@ var SB="https://fnkohtdpwdwedjrtklre.supabase.co";
 var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZua29odGRwd2R3ZWRqcnRrbHJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTA3MjIsImV4cCI6MjA4ODkyNjcyMn0.AuotNxQWgKiSYpS7kLBMm3jOCFhJWsXy31yaqG6dwic";
 var DA="https://script.google.com/macros/s/AKfycbwcTjVoxptk6TSumHxqAtbZ3ULmYUQ2EKk38IRzF8EYazviK9FR_gUIYtw03MKPYl3n/exec";
 var EM="https://script.google.com/macros/s/AKfycbyDrEQweHxOpdKdZ3TA0niJ7YG02rqFFcyccECtS6LgcRkRZMZnt7Z1xwTfFTXat0GI/exec";
+// อัปโหลดไป Google Apps Script พร้อมรายงาน % ความคืบหน้า (XHR เพราะ fetch ดู % ไม่ได้)
+function gasUpload(body,onProgress){
+  return new Promise(function(resolve,reject){
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST',DA,true);
+    xhr.setRequestHeader('Content-Type','text/plain;charset=utf-8');
+    xhr.upload.onprogress=function(e){if(e.lengthComputable&&onProgress)onProgress(Math.round(e.loaded/e.total*100))};
+    xhr.upload.onload=function(){if(onProgress)onProgress(100)};
+    xhr.onload=function(){
+      if(xhr.status>=200&&xhr.status<400){
+        try{resolve(JSON.parse(xhr.responseText))}catch(e){reject(new Error('ระบบอัปโหลดตอบกลับผิดรูปแบบ ('+String(xhr.responseText||'').substring(0,80)+')'))}
+      }else reject(new Error('HTTP '+xhr.status));
+    };
+    xhr.onerror=function(){reject(new Error('เชื่อมต่อระบบอัปโหลดไม่ได้'))};
+    xhr.ontimeout=function(){reject(new Error('หมดเวลาอัปโหลด (ไฟล์อาจใหญ่เกิน)'))};
+    xhr.timeout=120000;
+    xhr.send(body);
+  });
+}
 var MODE=location.search.indexOf('admin')>-1?'admin':location.search.indexOf('acc')>-1?'acc':location.search.indexOf('emp')>-1?'emp':'public';
 
 /* ═══ Supabase ═══ */
@@ -1477,13 +1496,11 @@ function doSubmit(){
       // Upload files
       showUB();
       var body=JSON.stringify({action:'upload_files',id:id,credData:fd.credData,credType:fd.credType,credName:fd.credName,idData:fd.idData,idType:fd.idType,idName:fd.idName,houseData:fd.houseData,houseType:fd.houseType,houseName:fd.houseName,bankData:fd.bankData,bankType:fd.bankType,bankName:fd.bankName});
-      var sz=body.length/(1024*1024),est=Math.max(sz*3,2)+3,st=Date.now();
-      var ut=setInterval(function(){var p=Math.min(Math.round(((Date.now()-st)/1000/est)*95),95);setUB(p)},300);
-      fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body}).then(function(r){return r.json()}).then(function(r2){
-        clearInterval(ut);setUB(100);hideUB();
+      gasUpload(body,function(p){setUB(p);if(p>=100)$('suc-upload').textContent='⏳ อัปโหลดครบ — กำลังบันทึกไฟล์...'}).then(function(r2){
+        setUB(100);hideUB();
         if(r2&&r2.ok){sb("applications","PATCH",{cred_link:r2.credLink||'',id_link:r2.idLink||'',house_link:r2.houseLink||'',bank_link:r2.bankLink||''},"?id=eq."+id);syncSheet({id:id,cred_link:r2.credLink||'',id_link:r2.idLink||'',house_link:r2.houseLink||'',bank_link:r2.bankLink||''});$('suc-upload').innerHTML='✅ อัปโหลดเรียบร้อย<br>ปิดหน้าต่างได้'}
         else $('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ — ติดต่อ HR';
-      }).catch(function(){clearInterval(ut);hideUB();$('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ'});
+      }).catch(function(){hideUB();$('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ — ติดต่อ HR'});
       // Notify Telegram
       fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'notify',text:"📩 <b>มีพนักงานใหม่!</b>\n\n👤 "+nm+(nick?" ("+nick+")":"")+"\n📱 "+ph+"\n💼 "+pos+"\n🎓 "+(edu||'-')+"\n🏦 "+bk+"\n💳 "+ba+"\n🔖 "+id})}).catch(function(){});
       // Sync to Google Sheets
@@ -2058,18 +2075,23 @@ function adminAddEmp(){
           houseData:ef.house?ef.house.d:'',houseType:ef.house?ef.house.t:'',houseName:ef.house?ef.house.n:'',
           bankData:ef.bank?ef.bank.d:'',bankType:ef.bank?ef.bank.t:'',bankName:ef.bank?ef.bank.n:''
         });
-        fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body}).then(function(r2){return r2.json()}).then(function(r2){
+        $('ae-upload-status').innerHTML='<span style="color:var(--acc)">📤 กำลังอัปโหลด 0%</span>';
+        gasUpload(body,function(p){
+          var msg=p<100?('📤 กำลังอัปโหลด '+p+'%'):'⏳ อัปโหลดครบ — กำลังบันทึกไฟล์...';
+          $('ae-upload-status').innerHTML='<span style="color:var(--acc)">'+msg+'</span>';
+          prog(50+Math.round(p*0.45),p<100?('อัปโหลดเอกสาร '+p+'%'):'กำลังบันทึกไฟล์...');
+        }).then(function(r2){
           if(r2&&r2.ok){
             var patch={};
             if(r2.idLink)patch.id_link=r2.idLink;if(r2.credLink)patch.cred_link=r2.credLink;
             if(r2.houseLink)patch.house_link=r2.houseLink;if(r2.bankLink)patch.bank_link=r2.bankLink;
             if(Object.keys(patch).length){sb("applications","PATCH",patch,"?id=eq."+id);ALL.forEach(function(a){if(a.id===id){for(var k in patch)a[k]=patch[k]}})}
-            $('ae-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย</span>';
-          }else{$('ae-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ</span>'}
+            $('ae-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย (100%)</span>';
+          }else{$('ae-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ — '+esc((r2&&r2.error)||'ระบบปฏิเสธไฟล์')+'</span>'}
           prog(100,'เพิ่มพนักงาน ✅ '+nm);btn.disabled=false;btn.textContent='💾 บันทึกพนักงาน';
           toast('เพิ่ม '+nm+' เรียบร้อย','tok');stats();doFilter();adminClearEmp();
-        }).catch(function(){
-          $('ae-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ</span>';
+        }).catch(function(e){
+          $('ae-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ — '+esc(e.message||e)+'</span>';
           prog(100,'เพิ่มพนักงาน ✅ (อัปโหลดไม่สำเร็จ)');btn.disabled=false;btn.textContent='💾 บันทึกพนักงาน';
           toast('เพิ่ม '+nm+' แล้ว แต่อัปโหลดไม่สำเร็จ','terr');stats();doFilter();
         });
@@ -2910,8 +2932,12 @@ function saveEmp(id){
         bankData:ef.bank?ef.bank.d:'',bankType:ef.bank?ef.bank.t:'',bankName:ef.bank?ef.bank.n:''
       });
       function doUp(attempt){
-        fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body}).then(function(r){return r.text()}).then(function(txt){
-          var r2;try{r2=JSON.parse(txt)}catch(e){throw new Error('ระบบอัปโหลดตอบกลับผิดรูปแบบ ('+txt.substring(0,80)+')')}
+        $('ed-upload-status').innerHTML='<span style="color:var(--acc)">📤 กำลังอัปโหลด 0%</span>';
+        gasUpload(body,function(p){
+          var msg=p<100?('📤 กำลังอัปโหลด '+p+'%'):'⏳ อัปโหลดครบ — กำลังบันทึกไฟล์...';
+          $('ed-upload-status').innerHTML='<span style="color:var(--acc)">'+msg+'</span>';
+          prog(50+Math.round(p*0.45),p<100?('อัปโหลดเอกสาร '+p+'%'):'กำลังบันทึกไฟล์...');
+        }).then(function(r2){
           if(r2&&r2.ok){
             var patch={};
             if(r2.idLink)patch.id_link=r2.idLink;
@@ -2923,7 +2949,7 @@ function saveEmp(id){
                 ALL.forEach(function(a){if(a.id===id){for(var k in patch)a[k]=patch[k]}});
               });
             }
-            $('ed-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย</span>';
+            $('ed-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย (100%)</span>';
             btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
             prog(100,'บันทึกข้อมูลเสร็จ ✅');
             toast('บันทึกเรียบร้อย','tok');stats();doFilter();

@@ -356,6 +356,7 @@ body.hr-mode .hr-hide{display:none!important}
             <button class="btn btn-a btn-s" onclick="showAdminAddEmp()">➕ เพิ่มพนักงาน</button>
             <button class="btn btn-s" onclick="empExport()" style="background:linear-gradient(135deg,#2d5080,#3b82f6);color:#fff">📥 Export</button>
             <button class="btn btn-s" onclick="empExportContact()" style="background:linear-gradient(135deg,#166534,#16a34a);color:#fff">📞 รหัส+เบอร์</button>
+            <button class="btn btn-g btn-s" id="emp-nocode-btn" onclick="empFilterNoCode()" title="กรองคนที่ยังไม่มีรหัส">🏷️ ยังไม่มีรหัส</button>
             <button class="btn btn-g btn-s" onclick="loadAdmin()" title="รีเฟรช">🔄</button>
           </div>
         </div>
@@ -1878,6 +1879,7 @@ function doFilter(){
     if(sf==='scb'&&(!a.bank||a.bank.indexOf('SCB')<0&&a.bank.indexOf('ไทยพาณิชย์')<0))return false;
     if(sf==='other_bank'){var isSCB=a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0);if(!a.bank||isSCB)return false}
     if(sf==='has_email'&&(!a.email||a.email.indexOf('@')<0))return false;
+    if(sf==='nocode'&&a.emp_code&&String(a.emp_code).trim())return false;
     return true;
   });
   window._empFiltered=f;
@@ -2038,6 +2040,18 @@ function nextEmpCode(prefix){
     }
   });
   return prefix+String(maxNum+1).padStart(3,'0');
+}
+function empFilterNoCode(){
+  var n=ALL.filter(function(a){return !a.emp_code||!String(a.emp_code).trim()}).length;
+  window._statFilter=(window._statFilter==='nocode')?'':'nocode';
+  var btn=$('emp-nocode-btn');
+  if(window._statFilter==='nocode'){
+    if(btn){btn.classList.remove('btn-g');btn.classList.add('btn-a');}
+    toast(n?('🏷️ ยังไม่มีรหัส '+n+' คน'):'✅ ทุกคนมีรหัสแล้ว',n?'tok':'tok');
+  }else{
+    if(btn){btn.classList.remove('btn-a');btn.classList.add('btn-g');}
+  }
+  doFilter();
 }
 function adminAddEmp(){
   aeClsAllErr();

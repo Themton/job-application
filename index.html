@@ -207,13 +207,13 @@ body.hr-mode .hr-hide{display:none!important}
   <div class="cd"><div class="cd-t"><span class="dot"></span> แนบเอกสาร</div>
     <div class="g2">
       <div class="fld" id="cred-wrap"><label>วุฒิการศึกษา / Transcript <span class="rq">*</span></label>
-        <div class="uz" id="uz-c"><input type="file" accept="image/*,.pdf" onchange="pickF(this,'c')"><div id="uz-c-e"><div class="ic">📄</div><div class="tx">คลิกอัปโหลด</div><div class="hn">JPG PNG PDF ไม่เกิน 5MB</div></div><div id="uz-c-d" class="fok hide">✅ <span id="uz-c-n"></span> <button class="rm" onclick="rmF(event,'c')">✕</button></div></div>
+        <div class="uz" id="uz-c"><input type="file" accept="image/*,.pdf" onchange="pickF(this,'c')"><div id="uz-c-e"><div class="ic">📄</div><div class="tx">คลิกอัปโหลด</div><div class="hn">JPG PNG PDF ไม่เกิน 10MB</div></div><div id="uz-c-d" class="fok hide">✅ <span id="uz-c-n"></span> <button class="rm" onclick="rmF(event,'c')">✕</button></div></div>
       </div>
       <div class="fld"><label>สำเนาบัตรประชาชน <span class="rq">*</span></label>
-        <div class="uz" id="uz-b"><input type="file" accept="image/*,.pdf" onchange="pickF(this,'b')"><div id="uz-b-e"><div class="ic">🪪</div><div class="tx">คลิกอัปโหลด</div><div class="hn">JPG PNG PDF ไม่เกิน 5MB</div></div><div id="uz-b-d" class="fok hide">✅ <span id="uz-b-n"></span> <button class="rm" onclick="rmF(event,'b')">✕</button></div></div>
+        <div class="uz" id="uz-b"><input type="file" accept="image/*,.pdf" onchange="pickF(this,'b')"><div id="uz-b-e"><div class="ic">🪪</div><div class="tx">คลิกอัปโหลด</div><div class="hn">JPG PNG PDF ไม่เกิน 10MB</div></div><div id="uz-b-d" class="fok hide">✅ <span id="uz-b-n"></span> <button class="rm" onclick="rmF(event,'b')">✕</button></div></div>
       </div>
       <div class="fld"><label>สำเนาทะเบียนบ้าน <span class="rq">*</span></label>
-        <div class="uz" id="uz-h"><input type="file" accept="image/*,.pdf" onchange="pickF(this,'h')"><div id="uz-h-e"><div class="ic">🏠</div><div class="tx">คลิกอัปโหลด</div><div class="hn">JPG PNG PDF ไม่เกิน 5MB</div></div><div id="uz-h-d" class="fok hide">✅ <span id="uz-h-n"></span> <button class="rm" onclick="rmF(event,'h')">✕</button></div></div>
+        <div class="uz" id="uz-h"><input type="file" accept="image/*,.pdf" onchange="pickF(this,'h')"><div id="uz-h-e"><div class="ic">🏠</div><div class="tx">คลิกอัปโหลด</div><div class="hn">JPG PNG PDF ไม่เกิน 10MB</div></div><div id="uz-h-d" class="fok hide">✅ <span id="uz-h-n"></span> <button class="rm" onclick="rmF(event,'h')">✕</button></div></div>
       </div>
     </div>
   </div>
@@ -225,7 +225,7 @@ body.hr-mode .hr-hide{display:none!important}
       </div>
       <div class="fld" id="F5"><label>เลขบัญชี <span class="rq">*</span></label><input id="i-baccount" placeholder="เลขบัญชี" maxlength="15" inputmode="numeric"></div>
       <div class="fld fw"><label>สำเนา Book Bank <span class="rq">*</span></label>
-        <div class="uz" id="uz-k"><input type="file" accept="image/*,.pdf" onchange="pickF(this,'k')"><div id="uz-k-e"><div class="ic">🏦</div><div class="tx">คลิกอัปโหลดรูป Book Bank</div><div class="hn">JPG PNG PDF ไม่เกิน 5MB</div></div><div id="uz-k-d" class="fok hide">✅ <span id="uz-k-n"></span> <button class="rm" onclick="rmF(event,'k')">✕</button></div></div>
+        <div class="uz" id="uz-k"><input type="file" accept="image/*,.pdf" onchange="pickF(this,'k')"><div id="uz-k-e"><div class="ic">🏦</div><div class="tx">คลิกอัปโหลดรูป Book Bank</div><div class="hn">JPG PNG PDF ไม่เกิน 10MB</div></div><div id="uz-k-d" class="fok hide">✅ <span id="uz-k-n"></span> <button class="rm" onclick="rmF(event,'k')">✕</button></div></div>
       </div>
     </div>
   </div>
@@ -1111,7 +1111,7 @@ if(location.search.indexOf('emp')>-1){
           <div id="lr-upload-empty">
             <div style="font-size:30px;margin-bottom:4px">📎</div>
             <div style="font-size:13px;color:var(--txt2)">คลิกเพื่ออัปโหลดใบลา / ใบรับรองแพทย์</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">JPG / PNG / PDF (ไม่เกิน 5MB)</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">JPG / PNG / PDF (ไม่เกิน 10MB)</div>
           </div>
           <div id="lr-upload-preview" style="display:none">
             <div style="display:flex;align-items:center;gap:10px;justify-content:center;flex-wrap:wrap">
@@ -1437,7 +1437,7 @@ function loadPos(){
 }
 
 /* ═══ FILE PICK ═══ */
-function pickF(inp,k){var f=inp.files[0];if(!f)return;if(f.size>5*1024*1024){toast('ไฟล์ใหญ่เกิน 5MB','terr');inp.value='';return}var r=new FileReader();r.onload=function(e){FI[k]={n:f.name,t:f.type,d:e.target.result.split(',')[1]};$('uz-'+k).classList.add('ok');$('uz-'+k+'-e').classList.add('hide');$('uz-'+k+'-d').classList.remove('hide');$('uz-'+k+'-n').textContent=f.name};r.readAsDataURL(f)}
+function pickF(inp,k){var f=inp.files[0];if(!f)return;if(f.size>10*1024*1024){toast('ไฟล์ใหญ่เกิน 10MB','terr');inp.value='';return}var r=new FileReader();r.onload=function(e){FI[k]={n:f.name,t:f.type,d:e.target.result.split(',')[1]};$('uz-'+k).classList.add('ok');$('uz-'+k+'-e').classList.add('hide');$('uz-'+k+'-d').classList.remove('hide');$('uz-'+k+'-n').textContent=f.name};r.readAsDataURL(f)}
 function rmF(e,k){e.stopPropagation();FI[k]=null;$('uz-'+k).classList.remove('ok');$('uz-'+k).querySelector('input').value='';$('uz-'+k+'-e').classList.remove('hide');$('uz-'+k+'-d').classList.add('hide')}
 
 /* ═══ TOGGLE CREDENTIAL ═══ */
@@ -1987,7 +1987,7 @@ function adminClearEmp(){
 
 function aePickFile(inp,key){
   var f=inp.files[0];if(!f)return;
-  if(f.size>5*1024*1024){toast('ไฟล์ใหญ่เกิน 5MB','terr');inp.value='';return}
+  if(f.size>10*1024*1024){toast('ไฟล์ใหญ่เกิน 10MB','terr');inp.value='';return}
   var r=new FileReader();r.onload=function(e){
     if(!window._aeFiles)window._aeFiles={};
     window._aeFiles[key]={n:f.name,t:f.type,d:e.target.result.split(',')[1]};
@@ -2504,7 +2504,7 @@ var LR_FILE=null;  // holds {name, type, data (base64)}
 
 function lrPickFile(inp){
   var f=inp.files[0];if(!f)return;
-  if(f.size>5*1024*1024){toast('ไฟล์ใหญ่เกิน 5MB','terr');inp.value='';return}
+  if(f.size>10*1024*1024){toast('ไฟล์ใหญ่เกิน 10MB','terr');inp.value='';return}
   var ok=['image/jpeg','image/jpg','image/png','application/pdf'];
   if(ok.indexOf(f.type.toLowerCase())<0){
     toast('รับเฉพาะ JPG/PNG/PDF','terr');inp.value='';return;
@@ -2863,7 +2863,7 @@ function cancelEdit(){$('edit-section').innerHTML='';window._edFiles=null}
 
 function edPickFile(inp,key){
   var f=inp.files[0];if(!f)return;
-  if(f.size>5*1024*1024){toast('ไฟล์ใหญ่เกิน 5MB','terr');inp.value='';return}
+  if(f.size>10*1024*1024){toast('ไฟล์ใหญ่เกิน 10MB','terr');inp.value='';return}
   var r=new FileReader();
   r.onload=function(e){
     window._edFiles[key]={n:f.name,t:f.type,d:e.target.result.split(',')[1]};
@@ -2936,7 +2936,7 @@ function saveEmp(id){
           $('ed-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ — '+esc(e.message||e)+'</span>';
           btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
           prog(100,'บันทึกข้อมูลแล้ว ⚠️ อัปโหลดไม่สำเร็จ');
-          toast('บันทึกข้อมูลแล้ว แต่อัปโหลดเอกสารไม่สำเร็จ — ลองไฟล์เล็กลง/PDF ไม่เกิน 5MB','terr');stats();doFilter();
+          toast('บันทึกข้อมูลแล้ว แต่อัปโหลดเอกสารไม่สำเร็จ — ลองไฟล์เล็กลง/PDF ไม่เกิน 10MB','terr');stats();doFilter();
         });
       }
       doUp(1);

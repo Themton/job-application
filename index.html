@@ -1488,7 +1488,7 @@ function doSubmit(){
   var id="EMP-"+Date.now();
   var fd={credData:FI.c?FI.c.d:'',credType:FI.c?FI.c.t:'',credName:FI.c?FI.c.n:'',idData:FI.b?FI.b.d:'',idType:FI.b?FI.b.t:'',idName:FI.b?FI.b.n:'',houseData:FI.h?FI.h.d:'',houseType:FI.h?FI.h.t:'',houseName:FI.h?FI.h.n:'',bankData:FI.k?FI.k.d:'',bankType:FI.k?FI.k.t:'',bankName:FI.k?FI.k.n:''};
 
-  sb("applications","POST",{id:id,name:nm,nickname:nick,phone:ph,email:em,birthday:bday||null,id_card:idcard||null,address:addr||null,emergency_contact:emgName||null,emergency_phone:emgPhone||null,position:pos,education:edu,bank:bk,bank_account:ba,status:"new"}).then(function(r){
+  sb("applications","GET",null,"?select=emp_code").catch(function(){return null}).then(function(rows){var base={id:id,name:nm,nickname:nick,phone:ph,email:em,birthday:bday||null,id_card:idcard||null,address:addr||null,emergency_contact:emgName||null,emergency_phone:emgPhone||null,position:pos,education:edu,bank:bk,bank_account:ba,status:"new"};if(Array.isArray(rows)){var mx=0;rows.forEach(function(a){if(a.emp_code&&String(a.emp_code).toUpperCase().indexOf('MT')===0){var n=parseInt(String(a.emp_code).toUpperCase().replace('MT',''),10);if(!isNaN(n)&&n>mx)mx=n}});base.emp_code='MT'+String(mx+1).padStart(3,'0')}return sb("applications","POST",base)}).then(function(r){
     btn.disabled=false;btn.innerHTML='📩 บันทึกข้อมูล';
     if(r&&r.length){
       $('suc-id').textContent='รหัสพนักงาน: '+id;

@@ -2909,32 +2909,37 @@ function saveEmp(id){
         houseData:ef.house?ef.house.d:'',houseType:ef.house?ef.house.t:'',houseName:ef.house?ef.house.n:'',
         bankData:ef.bank?ef.bank.d:'',bankType:ef.bank?ef.bank.t:'',bankName:ef.bank?ef.bank.n:''
       });
-      fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body}).then(function(r){return r.json()}).then(function(r2){
-        if(r2&&r2.ok){
-          var patch={};
-          if(r2.idLink)patch.id_link=r2.idLink;
-          if(r2.credLink)patch.cred_link=r2.credLink;
-          if(r2.houseLink)patch.house_link=r2.houseLink;
-          if(r2.bankLink)patch.bank_link=r2.bankLink;
-          if(Object.keys(patch).length){
-            sb("applications","PATCH",patch,"?id=eq."+id).then(function(){
-              ALL.forEach(function(a){if(a.id===id){for(var k in patch)a[k]=patch[k]}});
-            });
+      function doUp(attempt){
+        fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body}).then(function(r){return r.text()}).then(function(txt){
+          var r2;try{r2=JSON.parse(txt)}catch(e){throw new Error('ระบบอัปโหลดตอบกลับผิดรูปแบบ ('+txt.substring(0,80)+')')}
+          if(r2&&r2.ok){
+            var patch={};
+            if(r2.idLink)patch.id_link=r2.idLink;
+            if(r2.credLink)patch.cred_link=r2.credLink;
+            if(r2.houseLink)patch.house_link=r2.houseLink;
+            if(r2.bankLink)patch.bank_link=r2.bankLink;
+            if(Object.keys(patch).length){
+              sb("applications","PATCH",patch,"?id=eq."+id).then(function(){
+                ALL.forEach(function(a){if(a.id===id){for(var k in patch)a[k]=patch[k]}});
+              });
+            }
+            $('ed-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย</span>';
+            btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
+            prog(100,'บันทึกข้อมูลเสร็จ ✅');
+            toast('บันทึกเรียบร้อย','tok');stats();doFilter();
+            setTimeout(function(){detail(id)},1500);
+          }else{
+            throw new Error((r2&&r2.error)?r2.error:'ระบบอัปโหลดปฏิเสธไฟล์');
           }
-          $('ed-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย</span>';
-        }else{
-          $('ed-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ</span>';
-        }
-        btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
-        prog(100,'บันทึกข้อมูลเสร็จ ✅');
-        toast('บันทึกเรียบร้อย','tok');stats();doFilter();
-        setTimeout(function(){detail(id)},1500);
-      }).catch(function(){
-        $('ed-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ</span>';
-        btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
-        prog(100,'บันทึกข้อมูลแล้ว ⚠️ อัปโหลดไม่สำเร็จ');
-        toast('บันทึกข้อมูลแล้ว แต่อัปโหลดไม่สำเร็จ','terr');stats();doFilter();
-      });
+        }).catch(function(e){
+          if(attempt<2){$('ed-upload-status').innerHTML='<span style="color:var(--acc)">📤 ลองอัปโหลดอีกครั้ง...</span>';setTimeout(function(){doUp(attempt+1)},1500);return}
+          $('ed-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ — '+esc(e.message||e)+'</span>';
+          btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
+          prog(100,'บันทึกข้อมูลแล้ว ⚠️ อัปโหลดไม่สำเร็จ');
+          toast('บันทึกข้อมูลแล้ว แต่อัปโหลดเอกสารไม่สำเร็จ — ลองไฟล์เล็กลง/PDF ไม่เกิน 5MB','terr');stats();doFilter();
+        });
+      }
+      doUp(1);
     }else{
       btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
       prog(100,'บันทึกข้อมูลเสร็จ ✅');

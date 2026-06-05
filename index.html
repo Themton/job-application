@@ -1189,7 +1189,7 @@ function supaUpload(b64,mime,path,onProgress){
 }
 function _docExt(name,mime){var m=String(name||'').match(/\.[^.]+$/);if(m)return m[0].toLowerCase();if(/pdf/i.test(mime))return '.pdf';if(/png/i.test(mime))return '.png';return '.jpg'}
 function docUploadSeq(id,ef,onProgress){
-  var map=[['id','id_link'],['cred','cred_link'],['house','house_link'],['bank','bank_link']];
+  var map=[['id','id_link'],['cred','cred_link'],['house','house_link'],['bank','bank_link'],['contract','contract_link']];
   var jobs=map.filter(function(m){return ef&&ef[m[0]]});
   var links={},total=jobs.length||1,done=0;
   function up(i){
@@ -2286,6 +2286,7 @@ function detail(id){
     '<div class="dc"><h4>🏦 ข้อมูลธนาคาร</h4><div class="dr"><span class="i">🏦</span> ธนาคาร: '+esc(a.bank||'-')+'</div><div class="dr"><span class="i">💳</span> เลขบัญชี: '+esc(a.bank_account||'-')+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>📄 วุฒิการศึกษา</h4>'+docPrev(a.cred_link,'วุฒิ')+'</div><div class="dc"><h4>🪪 บัตรประชาชน</h4>'+docPrev(a.id_link,'บัตร')+'</div></div>'+
     '<div class="dg"><div class="dc"><h4>🏠 ทะเบียนบ้าน</h4>'+docPrev(a.house_link,'ทะเบียนบ้าน')+'</div><div class="dc"><h4>🏦 Book Bank</h4>'+docPrev(a.bank_link,'Book Bank')+'</div></div>'+
+    '<div class="dg"><div class="dc"><h4>📝 สัญญาจ้าง (PDF)</h4>'+docPrev(a.contract_link,'สัญญา')+'</div></div>'+
     '<div id="edit-section"></div>'+
     '<div class="dc" style="margin-top:16px"><h4 style="display:flex;align-items:center;gap:8px">📋 ระบบลา / ขาดงาน <button class="btn btn-g btn-s" onclick="exportEmpLeave(\''+a.id+'\')" style="font-size:10px;padding:3px 10px">📥 Export</button></h4><div id="lv-area">กำลังโหลด...</div></div>'+
     '<div class="cd" style="margin-top:14px"><div class="cd-t"><span class="dot"></span> 💰 ประวัติเงินเดือน</div><div id="salary-history-'+a.id+'">กำลังโหลด...</div></div>'+
@@ -3006,10 +3007,11 @@ function editEmp(id){
       docRow('วุฒิการศึกษา','📄','cred',a.cred_link)+
       docRow('ทะเบียนบ้าน','🏠','house',a.house_link)+
       docRow('Book Bank','🏦','bank',a.bank_link)+
+      docRow('สัญญาจ้าง (PDF)','📝','contract',a.contract_link)+
     '</div></div>'+
     '<div class="brow" style="margin-top:14px"><button class="btn btn-g btn-s" onclick="cancelEdit()">ยกเลิก</button><button class="btn btn-a" onclick="saveEmp(\''+a.id+'\')" id="ed-save-btn">💾 บันทึกข้อมูล</button></div>'+
     '<div id="ed-upload-status" style="font-size:12px;margin-top:8px"></div></div>';
-  window._edFiles={id:null,cred:null,house:null,bank:null};
+  window._edFiles={id:null,cred:null,house:null,bank:null,contract:null};
   $('edit-section').scrollIntoView({behavior:'smooth'});
 }
 
@@ -3047,7 +3049,7 @@ function saveEmp(id){
 
   // Check if any files need uploading
   var ef=window._edFiles||{};
-  var hasNewFiles=ef.id||ef.cred||ef.house||ef.bank;
+  var hasNewFiles=ef.id||ef.cred||ef.house||ef.bank||ef.contract;
 
   sb("applications","PATCH",d,"?id=eq."+id).then(function(){
     if(d.email)emailSet(d.name,d.email);

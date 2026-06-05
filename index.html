@@ -1173,7 +1173,7 @@ function gasUploadSeq(id,ef,onProgress){
       if(r&&r.ok){
         if(r.idLink)links.id_link=r.idLink;if(r.credLink)links.cred_link=r.credLink;
         if(r.houseLink)links.house_link=r.houseLink;if(r.bankLink)links.bank_link=r.bankLink;
-      }else{throw new Error((r&&r.error)?r.error:'ไฟล์ '+ef[k].n+' อัปโหลดไม่สำเร็จ')}
+      }else{throw new Error((r&&(r.err||r.error))?(r.err||r.error):('ไฟล์ '+ef[k].n+' อัปโหลดไม่สำเร็จ'))}
       done++;return up(i+1);
     });
   }

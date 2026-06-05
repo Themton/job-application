@@ -7098,13 +7098,14 @@ function loadDashboard(){
     $('dash-pending-pay').innerHTML=pp;
   }else{$('dash-pending-pay').innerHTML='<div style="color:var(--ok);font-size:12px">✅ ไม่มีพนักงานรอจ่ายเงินเดือน</div>'}
 
-  // เอกสารยังไม่ครบ (เฉพาะพนักงานที่ยังทำงาน)
-  var reqDocs=[['id_link','บัตร'],['cred_link','วุฒิ'],['house_link','ทะเบียนบ้าน'],['bank_link','BookBank'],['contract_link','สัญญา']];
+  // เอกสารยังไม่ครบ (เฉพาะพนักงานที่ยังทำงาน) — สัญญานับเฉพาะพนักงานประจำ
+  var reqDocs=[['id_link','บัตร'],['cred_link','วุฒิ'],['house_link','ทะเบียนบ้าน'],['bank_link','BookBank']];
   var incomplete=[];
   ALL.forEach(function(a){
     if(a.status==='terminated')return;
     var miss=[];
     reqDocs.forEach(function(d){if(!a[d[0]]||String(a[d[0]]).length<5)miss.push(d[1])});
+    if(a.status==='monthly'&&(!a.contract_link||String(a.contract_link).length<5))miss.push('สัญญา');
     if(miss.length)incomplete.push({id:a.id,name:a.name,nickname:a.nickname,miss:miss});
   });
   if(incomplete.length){

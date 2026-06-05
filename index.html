@@ -2778,21 +2778,7 @@ function doSubmitLeave(type,start,end,half,reason,days,btn){
   if(LR_FILE){
     var ed=localStorage.getItem('emp_data');
     var emp={};try{emp=JSON.parse(ed||'{}')}catch(e){}
-    uploadPromise=fetch(DA,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({
-        action:'upload_leave_evidence',
-        empId:emp.id||'unknown',
-        empName:($('emp-p-name').textContent||'unknown').split(' (')[0],
-        fileName:LR_FILE.name,
-        fileType:LR_FILE.type,
-        fileData:LR_FILE.data
-      })
-    }).then(function(r){return r.json()}).then(function(r){
-      if(!r||!r.ok)throw new Error(r&&r.message?r.message:'อัปโหลดหลักฐานไม่สำเร็จ');
-      return r.url||r.fileLink||'';
-    });
+    uploadPromise=supaUpload(LR_FILE.data,LR_FILE.type,'leaves/'+(emp.id||'unknown')+'_'+Date.now()+_docExt(LR_FILE.name,LR_FILE.type)).then(function(url){return url||''});
   }else{
     uploadPromise=Promise.resolve(null);
   }
@@ -4665,10 +4651,8 @@ function expSave(){
   var fileData=window._expFile;
   if(fileData){
     prog(40,'อัปโหลดเอกสาร...');
-    fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({
-      action:'upload_expense',id:id,fileData:fileData.d,fileType:fileData.t,fileName:fileData.n
-    })}).then(function(r){return r.json()}).then(function(r2){
-      if(r2&&r2.ok&&r2.link)data.file_link=r2.link;
+    supaUpload(fileData.d,fileData.t,'expenses/'+id+_docExt(fileData.n,fileData.t)).then(function(url){
+      data.file_link=url;
       prog(70,'บันทึกข้อมูล...');
       sb("expenses","POST",data).then(function(){
         prog(100,'บันทึกใบเบิก ✅');
@@ -7437,13 +7421,9 @@ function saveWarning(){
   var fileData=window._wfFile;
   if(fileData){
     prog(40,'อัปโหลดไฟล์...');
-    var body=JSON.stringify({
-      action:'upload_warning',id:id,
-      fileData:fileData.d,fileType:fileData.t,fileName:fileData.n
-    });
-    fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body})
-    .then(function(r){return r.json()}).then(function(r2){
-      if(r2&&r2.ok&&r2.link)data.file_link=r2.link;
+    supaUpload(fileData.d,fileData.t,'warnings/'+id+_docExt(fileData.n,fileData.t))
+    .then(function(url){
+      if(url)data.file_link=url;
       prog(70,'บันทึกข้อมูล...');
       sb("warnings","POST",data).then(function(r){
         if(Array.isArray(r)&&r.length){

@@ -1162,6 +1162,46 @@ var DA="https://script.google.com/macros/s/AKfycbzg0fSfE2m_HpnVLJjPDeWsnBZGfKuvZ
 var EM="https://script.google.com/macros/s/AKfycbyDrEQweHxOpdKdZ3TA0niJ7YG02rqFFcyccECtS6LgcRkRZMZnt7Z1xwTfFTXat0GI/exec";
 // อัปโหลดไป Google Apps Script พร้อมรายงาน % ความคืบหน้า (XHR เพราะ fetch ดู % ไม่ได้)
 // อัปโหลดทีละไฟล์ (payload เล็กลง เสถียรกว่าส่งรวมก้อนเดียว — โดยเฉพาะ PDF ที่ไฟล์ใหญ่)
+// ── อัปโหลดไฟล์เข้า Supabase Storage (แทน Google Drive — ไม่ต้องผ่าน Apps Script) ──
+var DOC_BUCKET="employee-docs";
+function supaUpload(b64,mime,path,onProgress){
+  return new Promise(function(resolve,reject){
+    try{
+      var bin=atob(b64),len=bin.length,bytes=new Uint8Array(len);
+      for(var i=0;i<len;i++)bytes[i]=bin.charCodeAt(i);
+      var xhr=new XMLHttpRequest();
+      xhr.open('POST',SB+'/storage/v1/object/'+DOC_BUCKET+'/'+path,true);
+      xhr.setRequestHeader('apikey',SK);
+      xhr.setRequestHeader('Authorization','Bearer '+SK);
+      xhr.setRequestHeader('Content-Type',mime||'application/octet-stream');
+      xhr.setRequestHeader('x-upsert','true');
+      xhr.upload.onprogress=function(e){if(e.lengthComputable&&onProgress)onProgress(Math.round(e.loaded/e.total*100))};
+      xhr.upload.onload=function(){if(onProgress)onProgress(100)};
+      xhr.onload=function(){
+        if(xhr.status>=200&&xhr.status<300){resolve(SB+'/storage/v1/object/public/'+DOC_BUCKET+'/'+path)}
+        else{var msg='HTTP '+xhr.status;try{var j=JSON.parse(xhr.responseText);msg=j.message||j.error||j.statusCode||msg}catch(e){}reject(new Error(msg))}
+      };
+      xhr.onerror=function(){reject(new Error('เชื่อมต่อ Storage ไม่ได้'))};
+      xhr.timeout=120000;xhr.ontimeout=function(){reject(new Error('หมดเวลาอัปโหลด'))};
+      xhr.send(bytes);
+    }catch(e){reject(e)}
+  });
+}
+function _docExt(name,mime){var m=String(name||'').match(/\.[^.]+$/);if(m)return m[0].toLowerCase();if(/pdf/i.test(mime))return '.pdf';if(/png/i.test(mime))return '.png';return '.jpg'}
+function docUploadSeq(id,ef,onProgress){
+  var map=[['id','id_link'],['cred','cred_link'],['house','house_link'],['bank','bank_link']];
+  var jobs=map.filter(function(m){return ef&&ef[m[0]]});
+  var links={},total=jobs.length||1,done=0;
+  function up(i){
+    if(i>=jobs.length){if(onProgress)onProgress(100);return Promise.resolve(links)}
+    var k=jobs[i][0],lk=jobs[i][1],file=ef[k];
+    var path=String(id)+'/'+k+_docExt(file.n,file.t);
+    return supaUpload(file.d,file.t,path,function(p){if(onProgress)onProgress(Math.round((done*100+p)/total))}).then(function(url){
+      links[lk]=url;done++;return up(i+1);
+    });
+  }
+  return up(0);
+}
 function gasUploadSeq(id,ef,onProgress){
   var keys=['id','cred','house','bank'].filter(function(k){return ef&&ef[k]});
   var links={},total=keys.length||1,done=0;
@@ -1512,16 +1552,16 @@ function doSubmit(){
       $('suc-id').textContent='รหัสพนักงาน: '+id;
       $('suc-upload').textContent='📤 กำลังอัปโหลดเอกสาร... กรุณาอย่าปิดหน้าต่าง';
       resetForm();page('success');
-      // Upload files
+      // Upload files → Supabase Storage
       showUB();
-      var body=JSON.stringify({action:'upload_files',id:id,credData:fd.credData,credType:fd.credType,credName:fd.credName,idData:fd.idData,idType:fd.idType,idName:fd.idName,houseData:fd.houseData,houseType:fd.houseType,houseName:fd.houseName,bankData:fd.bankData,bankType:fd.bankType,bankName:fd.bankName});
-      gasUpload(body,function(p){setUB(p);if(p>=100)$('suc-upload').textContent='⏳ อัปโหลดครบ — กำลังบันทึกไฟล์...'}).then(function(r2){
+      var ef={};if(FI.b)ef.id=FI.b;if(FI.c)ef.cred=FI.c;if(FI.h)ef.house=FI.h;if(FI.k)ef.bank=FI.k;
+      docUploadSeq(id,ef,function(p){setUB(p);if(p>=100)$('suc-upload').textContent='⏳ อัปโหลดครบ — กำลังบันทึก...'}).then(function(links){
         setUB(100);hideUB();
-        if(r2&&r2.ok){sb("applications","PATCH",{cred_link:r2.credLink||'',id_link:r2.idLink||'',house_link:r2.houseLink||'',bank_link:r2.bankLink||''},"?id=eq."+id);syncSheet({id:id,cred_link:r2.credLink||'',id_link:r2.idLink||'',house_link:r2.houseLink||'',bank_link:r2.bankLink||''});$('suc-upload').innerHTML='✅ อัปโหลดเรียบร้อย<br>ปิดหน้าต่างได้'}
-        else $('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ — ติดต่อ HR';
-      }).catch(function(){hideUB();$('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ — ติดต่อ HR'});
+        if(links&&Object.keys(links).length){sb("applications","PATCH",links,"?id=eq."+id);syncSheet(Object.assign({id:id},links))}
+        $('suc-upload').innerHTML='✅ อัปโหลดเรียบร้อย<br>ปิดหน้าต่างได้';
+      }).catch(function(e){hideUB();$('suc-upload').innerHTML='⚠️ อัปโหลดไม่สำเร็จ ('+(e.message||e)+') — ติดต่อ HR'});
       // Notify Telegram
-      fetch(DA,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'notify',text:"📩 <b>มีพนักงานใหม่!</b>\n\n👤 "+nm+(nick?" ("+nick+")":"")+"\n📱 "+ph+"\n💼 "+pos+"\n🎓 "+(edu||'-')+"\n🏦 "+bk+"\n💳 "+ba+"\n🔖 "+id})}).catch(function(){});
+      fetch(EM,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'notify',text:"📩 <b>มีพนักงานใหม่!</b>\n\n👤 "+nm+(nick?" ("+nick+")":"")+"\n📱 "+ph+"\n💼 "+pos+"\n🎓 "+(edu||'-')+"\n🏦 "+bk+"\n💳 "+ba+"\n🔖 "+id})}).catch(function(){});
       // Sync to Google Sheets
       syncSheet({id:id,name:nm,nickname:nick,phone:ph,email:em,position:pos,education:edu,bank:bk,bank_account:ba,status:'new'});
     }else{toast('เกิดข้อผิดพลาด','terr');console.log('submit error:',r)}
@@ -2136,7 +2176,7 @@ function adminAddEmp(){
           bankData:ef.bank?ef.bank.d:'',bankType:ef.bank?ef.bank.t:'',bankName:ef.bank?ef.bank.n:''
         });
         $('ae-upload-status').innerHTML='<span style="color:var(--acc)">📤 กำลังอัปโหลด 0%</span>';
-        gasUploadSeq(id,ef,function(p){
+        docUploadSeq(id,ef,function(p){
           var msg=p<100?('📤 กำลังอัปโหลด '+p+'%'):'⏳ อัปโหลดครบ — กำลังบันทึกไฟล์...';
           $('ae-upload-status').innerHTML='<span style="color:var(--acc)">'+msg+'</span>';
           prog(50+Math.round(p*0.45),p<100?('อัปโหลดเอกสาร '+p+'%'):'กำลังบันทึกไฟล์...');
@@ -2981,7 +3021,7 @@ function saveEmp(id){
       $('ed-upload-status').innerHTML='<span style="color:var(--acc)">📤 กำลังอัปโหลด 0%</span>';
       function doUp(attempt){
         $('ed-upload-status').innerHTML='<span style="color:var(--acc)">📤 กำลังอัปโหลด 0%</span>';
-        gasUploadSeq(id,ef,function(p){
+        docUploadSeq(id,ef,function(p){
           var msg=p<100?('📤 กำลังอัปโหลด '+p+'%'):'⏳ อัปโหลดครบ — กำลังบันทึกไฟล์...';
           $('ed-upload-status').innerHTML='<span style="color:var(--acc)">'+msg+'</span>';
           prog(50+Math.round(p*0.45),p<100?('อัปโหลดเอกสาร '+p+'%'):'กำลังบันทึกไฟล์...');

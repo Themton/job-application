@@ -2201,13 +2201,41 @@ function adminAddEmp(){
 
 /* ═══ DOC PREVIEW ═══ */
 function driveId(u){if(!u)return null;var m=u.match(/\/d\/([a-zA-Z0-9_-]+)/);if(m)return m[1];m=u.match(/id=([a-zA-Z0-9_-]+)/);return m?m[1]:null}
+var _pdfjsP=null;
+function _loadPdfJs(){
+  if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);
+  if(_pdfjsP)return _pdfjsP;
+  _pdfjsP=new Promise(function(resolve,reject){
+    var s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload=function(){try{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';resolve(window.pdfjsLib)}catch(e){reject(e)}};
+    s.onerror=function(){reject(new Error('โหลด PDF.js ไม่ได้'))};
+    document.head.appendChild(s);
+  });
+  return _pdfjsP;
+}
+function renderPdfThumb(url,containerId){
+  if(!document.getElementById(containerId))return;
+  _loadPdfJs().then(function(lib){return lib.getDocument(url).promise}).then(function(pdf){return pdf.getPage(1)}).then(function(page){
+    var el=document.getElementById(containerId);if(!el)return;
+    var w=el.clientWidth||220,vp=page.getViewport({scale:1}),vp2=page.getViewport({scale:Math.max(w/vp.width,0.3)});
+    var c=document.createElement('canvas');c.width=vp2.width;c.height=vp2.height;c.style.width='100%';c.style.display='block';
+    return page.render({canvasContext:c.getContext('2d'),viewport:vp2}).promise.then(function(){
+      var e2=document.getElementById(containerId);if(e2){e2.innerHTML='';e2.style.minHeight='';e2.style.background='';e2.appendChild(c);}
+    });
+  }).catch(function(){
+    var e=document.getElementById(containerId);if(e)e.innerHTML='<div style="text-align:center;color:var(--pri2);font-size:11px;padding:16px"><div style="font-size:30px">📄</div>เปิดไฟล์ PDF ↗</div>';
+  });
+}
 function docThumb(u,sz){if(!u)return'';if(u.indexOf('/storage/v1/object/')>=0||/\.(jpe?g|png|webp|gif|pdf)(\?|$)/i.test(u)){return /\.pdf(\?|$)/i.test(u)?'':u}var fid=driveId(u);return fid?('https://drive.google.com/thumbnail?id='+fid+'&sz='+(sz||'w600')):''}
 function docPrev(u,l){
   if(!u||u==='')return'<div class="doc-na">📭 ยังไม่ได้แนบ'+l+'</div>';
   var direct=(u.indexOf('/storage/v1/object/')>=0)||/^https?:\/\/[^ ]+\.(jpe?g|png|webp|gif|pdf)(\?|$)/i.test(u);
   if(direct){
     if(/\.pdf(\?|$)/i.test(u)){
-      return '<div class="doc-box"><div style="padding:22px 10px;text-align:center;cursor:pointer" onclick="window.open(\''+u+'\',\'_blank\')"><div style="font-size:34px">📄</div><div style="font-size:11px;color:var(--pri2)">เปิดไฟล์ PDF ↗</div></div><div class="doc-label"><span>'+esc(l)+'</span><a href="'+u+'" target="_blank">เปิด ↗</a></div></div>';
+      var pid='pdfp_'+Math.random().toString(36).slice(2);
+      setTimeout(function(){renderPdfThumb(u,pid)},60);
+      return '<div class="doc-box"><div id="'+pid+'" onclick="window.open(\''+u+'\',\'_blank\')" style="cursor:pointer;min-height:90px;display:flex;align-items:center;justify-content:center;background:#f3f4f6"><div style="text-align:center;color:var(--muted);font-size:11px"><div style="font-size:28px">📄</div>กำลังโหลดตัวอย่าง...</div></div><div class="doc-label"><span>'+esc(l)+' (PDF)</span><a href="'+u+'" target="_blank">เปิด ↗</a></div></div>';
     }
     return '<div class="doc-box"><img src="'+u+'" onclick="openLB(\''+u+'\')" onerror="this.parentNode.innerHTML=\'<div style=padding:20px;text-align:center><a href='+u+' target=_blank>📥 เปิดไฟล์</a></div>\'"><div class="doc-label"><span>'+esc(l)+'</span><a href="'+u+'" target="_blank">เปิด ↗</a></div></div>';
   }

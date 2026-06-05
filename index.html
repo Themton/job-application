@@ -2201,7 +2201,17 @@ function adminAddEmp(){
 
 /* ═══ DOC PREVIEW ═══ */
 function driveId(u){if(!u)return null;var m=u.match(/\/d\/([a-zA-Z0-9_-]+)/);if(m)return m[1];m=u.match(/id=([a-zA-Z0-9_-]+)/);return m?m[1]:null}
-function docPrev(u,l){if(!u||u==='')return'<div class="doc-na">📭 ยังไม่ได้แนบ'+l+'</div>';var fid=driveId(u);if(!fid)return'<div class="doc-na">📭 ไม่พบไฟล์</div>';var th='https://drive.google.com/thumbnail?id='+fid+'&sz=w600';return'<div class="doc-box"><img src="'+th+'" onclick="openLB(\''+th.replace('w600','w1200')+'\')" onerror="this.parentNode.innerHTML=\'<div style=padding:20px;text-align:center><a href='+u+' target=_blank>📥 เปิดไฟล์</a></div>\'"><div class="doc-label"><span>'+esc(l)+'</span><a href="'+u+'" target="_blank">เปิด ↗</a></div></div>'}
+function docThumb(u,sz){if(!u)return'';if(u.indexOf('/storage/v1/object/')>=0||/\.(jpe?g|png|webp|gif|pdf)(\?|$)/i.test(u)){return /\.pdf(\?|$)/i.test(u)?'':u}var fid=driveId(u);return fid?('https://drive.google.com/thumbnail?id='+fid+'&sz='+(sz||'w600')):''}
+function docPrev(u,l){
+  if(!u||u==='')return'<div class="doc-na">📭 ยังไม่ได้แนบ'+l+'</div>';
+  var direct=(u.indexOf('/storage/v1/object/')>=0)||/^https?:\/\/[^ ]+\.(jpe?g|png|webp|gif|pdf)(\?|$)/i.test(u);
+  if(direct){
+    if(/\.pdf(\?|$)/i.test(u)){
+      return '<div class="doc-box"><div style="padding:22px 10px;text-align:center;cursor:pointer" onclick="window.open(\''+u+'\',\'_blank\')"><div style="font-size:34px">📄</div><div style="font-size:11px;color:var(--pri2)">เปิดไฟล์ PDF ↗</div></div><div class="doc-label"><span>'+esc(l)+'</span><a href="'+u+'" target="_blank">เปิด ↗</a></div></div>';
+    }
+    return '<div class="doc-box"><img src="'+u+'" onclick="openLB(\''+u+'\')" onerror="this.parentNode.innerHTML=\'<div style=padding:20px;text-align:center><a href='+u+' target=_blank>📥 เปิดไฟล์</a></div>\'"><div class="doc-label"><span>'+esc(l)+'</span><a href="'+u+'" target="_blank">เปิด ↗</a></div></div>';
+  }
+  var fid=driveId(u);if(!fid)return'<div class="doc-na">📭 ไม่พบไฟล์</div>';var th='https://drive.google.com/thumbnail?id='+fid+'&sz=w600';return'<div class="doc-box"><img src="'+th+'" onclick="openLB(\''+th.replace('w600','w1200')+'\')" onerror="this.parentNode.innerHTML=\'<div style=padding:20px;text-align:center><a href='+u+' target=_blank>📥 เปิดไฟล์</a></div>\'"><div class="doc-label"><span>'+esc(l)+'</span><a href="'+u+'" target="_blank">เปิด ↗</a></div></div>'}
 function openLB(s){$('lbox-img').src=s;$('lbox').classList.remove('hide');document.body.style.overflow='hidden'}
 function closeLB(){$('lbox').classList.add('hide');$('lbox-img').src='';document.body.style.overflow=''}
 
@@ -2938,8 +2948,7 @@ function editEmp(id){
 
   var docRow=function(label,icon,key,link){
     var has=link&&link.length>5;
-    var fid=has?driveId(link):null;
-    var thumb=fid?'https://drive.google.com/thumbnail?id='+fid+'&sz=w200':'';
+    var thumb=has?docThumb(link,'w200'):'';
     var h='<div style="border:1px solid var(--bdr);border-radius:8px;padding:10px;background:var(--inp)">';
     h+='<div style="font-size:11px;font-weight:600;color:var(--pri);margin-bottom:6px">'+icon+' '+label+'</div>';
     if(has){h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><img src="'+thumb+'" style="width:60px;height:40px;object-fit:cover;border-radius:4px;border:1px solid var(--bdr)" onerror="this.style.display=\'none\'"><a href="'+esc(link)+'" target="_blank" style="font-size:10px;color:var(--pri2)">ดูไฟล์ปัจจุบัน ↗</a></div>'}

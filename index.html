@@ -1730,21 +1730,26 @@ function empExportContact(){
 }
 
 function empExport(){
-  var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value,bank=$('f-bank').value,em=$('f-email').value;
-  var list=ALL.filter(function(a){
-    if(q&&[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)<0)return false;
-    if(st&&a.status!==st)return false;if(pos&&a.position!==pos)return false;if(dept&&a.department!==dept)return false;
-    if(bank==='scb'&&(!a.bank||a.bank.indexOf('SCB')<0&&a.bank.indexOf('ไทยพาณิชย์')<0))return false;
-    if(bank==='other'&&a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))return false;
-    if(em==='has'&&(!a.email||a.email.indexOf('@')<0))return false;
-    if(em==='no'&&a.email&&a.email.indexOf('@')>=0)return false;
-    return true;
-  });
-  // If has selection, export only selected
   var selIds=Object.keys(EMP_SEL);
-  if(selIds.length){list=list.filter(function(a){return EMP_SEL[a.id]})}
+  var list;
+  if(selIds.length){
+    list=ALL.filter(function(a){return EMP_SEL[a.id]});
+  }else{
+    var q=$('i-srch').value.toLowerCase(),st=$('f-st').value,pos=$('f-pos').value,dept=$('f-dept').value,bank=$('f-bank').value,em=$('f-email').value;
+    list=ALL.filter(function(a){
+      if(q&&[a.name,a.nickname,a.phone,a.position,a.department,a.education,a.bank].join(' ').toLowerCase().indexOf(q)<0)return false;
+      if(st==='active'&&(a.status==='terminated'||a.status==='resigned_pending'))return false;
+      if(st&&st!=='active'&&a.status!==st)return false;
+      if(pos&&a.position!==pos)return false;if(dept&&a.department!==dept)return false;
+      if(bank==='scb'&&(!a.bank||a.bank.indexOf('SCB')<0&&a.bank.indexOf('ไทยพาณิชย์')<0))return false;
+      if(bank==='other'&&a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0))return false;
+      if(em==='has'&&(!a.email||a.email.indexOf('@')<0))return false;
+      if(em==='no'&&a.email&&a.email.indexOf('@')>=0)return false;
+      return true;
+    });
+  }
 
-  if(!list.length){toast('ไม่มีข้อมูล','terr');return}
+  if(!list.length){toast('ไม่มีข้อมูล — เลือกพนักงาน หรือปรับตัวกรองก่อน','terr');return}
 
   var h='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"><style>td,th{border:1px solid #ccc;padding:4px 8px;font-size:12px;font-family:sans-serif}th{background:#5c4a1e;color:#fff}.term{background:#ffe0e0;color:#c00;font-weight:bold}.daily{background:#fff8e0}.monthly{background:#e8f5e9}.scb{background:#f0e8ff}</style></head><body><table>';
   h+='<tr><th>รหัสพนักงาน</th><th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>แผนก</th><th>ตำแหน่ง</th><th>ประเภท</th><th>ธนาคาร</th><th>เลขบัญชี</th><th>เบอร์โทร</th><th>อีเมล</th><th>วุฒิ</th><th>วันที่</th></tr>';

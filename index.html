@@ -1161,6 +1161,24 @@ var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ
 var DA="https://script.google.com/macros/s/AKfycbwcTjVoxptk6TSumHxqAtbZ3ULmYUQ2EKk38IRzF8EYazviK9FR_gUIYtw03MKPYl3n/exec";
 var EM="https://script.google.com/macros/s/AKfycbyDrEQweHxOpdKdZ3TA0niJ7YG02rqFFcyccECtS6LgcRkRZMZnt7Z1xwTfFTXat0GI/exec";
 // อัปโหลดไป Google Apps Script พร้อมรายงาน % ความคืบหน้า (XHR เพราะ fetch ดู % ไม่ได้)
+// อัปโหลดทีละไฟล์ (payload เล็กลง เสถียรกว่าส่งรวมก้อนเดียว — โดยเฉพาะ PDF ที่ไฟล์ใหญ่)
+function gasUploadSeq(id,ef,onProgress){
+  var keys=['id','cred','house','bank'].filter(function(k){return ef&&ef[k]});
+  var links={},total=keys.length||1,done=0;
+  function up(i){
+    if(i>=keys.length){if(onProgress)onProgress(100);return Promise.resolve(links)}
+    var k=keys[i],body={action:'upload_files',id:id};
+    body[k+'Data']=ef[k].d;body[k+'Type']=ef[k].t;body[k+'Name']=ef[k].n;
+    return gasUpload(JSON.stringify(body),function(p){if(onProgress)onProgress(Math.round((done*100+p)/total))}).then(function(r){
+      if(r&&r.ok){
+        if(r.idLink)links.id_link=r.idLink;if(r.credLink)links.cred_link=r.credLink;
+        if(r.houseLink)links.house_link=r.houseLink;if(r.bankLink)links.bank_link=r.bankLink;
+      }else{throw new Error((r&&r.error)?r.error:'ไฟล์ '+ef[k].n+' อัปโหลดไม่สำเร็จ')}
+      done++;return up(i+1);
+    });
+  }
+  return up(0);
+}
 function gasUpload(body,onProgress){
   return new Promise(function(resolve,reject){
     var xhr=new XMLHttpRequest();
@@ -2118,24 +2136,19 @@ function adminAddEmp(){
           bankData:ef.bank?ef.bank.d:'',bankType:ef.bank?ef.bank.t:'',bankName:ef.bank?ef.bank.n:''
         });
         $('ae-upload-status').innerHTML='<span style="color:var(--acc)">📤 กำลังอัปโหลด 0%</span>';
-        gasUpload(body,function(p){
+        gasUploadSeq(id,ef,function(p){
           var msg=p<100?('📤 กำลังอัปโหลด '+p+'%'):'⏳ อัปโหลดครบ — กำลังบันทึกไฟล์...';
           $('ae-upload-status').innerHTML='<span style="color:var(--acc)">'+msg+'</span>';
           prog(50+Math.round(p*0.45),p<100?('อัปโหลดเอกสาร '+p+'%'):'กำลังบันทึกไฟล์...');
-        }).then(function(r2){
-          if(r2&&r2.ok){
-            var patch={};
-            if(r2.idLink)patch.id_link=r2.idLink;if(r2.credLink)patch.cred_link=r2.credLink;
-            if(r2.houseLink)patch.house_link=r2.houseLink;if(r2.bankLink)patch.bank_link=r2.bankLink;
-            if(Object.keys(patch).length){sb("applications","PATCH",patch,"?id=eq."+id);ALL.forEach(function(a){if(a.id===id){for(var k in patch)a[k]=patch[k]}})}
-            $('ae-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย (100%)</span>';
-          }else{$('ae-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ — '+esc((r2&&r2.error)||'ระบบปฏิเสธไฟล์')+'</span>'}
+        }).then(function(patch){
+          if(patch&&Object.keys(patch).length){sb("applications","PATCH",patch,"?id=eq."+id);ALL.forEach(function(a){if(a.id===id){for(var k in patch)a[k]=patch[k]}})}
+          $('ae-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย (100%)</span>';
           prog(100,'เพิ่มพนักงาน ✅ '+nm);btn.disabled=false;btn.textContent='💾 บันทึกพนักงาน';
           toast('เพิ่ม '+nm+' ('+newCode+') เรียบร้อย','tok');stats();doFilter();adminClearEmp();
         }).catch(function(e){
           $('ae-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ — '+esc(e.message||e)+'</span>';
           prog(100,'เพิ่มพนักงาน ✅ (อัปโหลดไม่สำเร็จ)');btn.disabled=false;btn.textContent='💾 บันทึกพนักงาน';
-          toast('เพิ่ม '+nm+' แล้ว แต่อัปโหลดไม่สำเร็จ','terr');stats();doFilter();
+          toast('เพิ่ม '+nm+' ('+newCode+') แล้ว แต่อัปโหลดไม่สำเร็จ','terr');stats();doFilter();
         });
       }else{
         prog(100,'เพิ่มพนักงาน ✅ '+nm);btn.disabled=false;btn.textContent='💾 บันทึกพนักงาน';
@@ -2965,40 +2978,24 @@ function saveEmp(id){
 
     if(hasNewFiles){
       prog(50,'อัปโหลดเอกสาร...');
-      $('ed-upload-status').innerHTML='<span style="color:var(--acc)">📤 กำลังอัปโหลดเอกสาร...</span>';
-      var body=JSON.stringify({
-        action:'upload_files',id:id,
-        idData:ef.id?ef.id.d:'',idType:ef.id?ef.id.t:'',idName:ef.id?ef.id.n:'',
-        credData:ef.cred?ef.cred.d:'',credType:ef.cred?ef.cred.t:'',credName:ef.cred?ef.cred.n:'',
-        houseData:ef.house?ef.house.d:'',houseType:ef.house?ef.house.t:'',houseName:ef.house?ef.house.n:'',
-        bankData:ef.bank?ef.bank.d:'',bankType:ef.bank?ef.bank.t:'',bankName:ef.bank?ef.bank.n:''
-      });
+      $('ed-upload-status').innerHTML='<span style="color:var(--acc)">📤 กำลังอัปโหลด 0%</span>';
       function doUp(attempt){
         $('ed-upload-status').innerHTML='<span style="color:var(--acc)">📤 กำลังอัปโหลด 0%</span>';
-        gasUpload(body,function(p){
+        gasUploadSeq(id,ef,function(p){
           var msg=p<100?('📤 กำลังอัปโหลด '+p+'%'):'⏳ อัปโหลดครบ — กำลังบันทึกไฟล์...';
           $('ed-upload-status').innerHTML='<span style="color:var(--acc)">'+msg+'</span>';
           prog(50+Math.round(p*0.45),p<100?('อัปโหลดเอกสาร '+p+'%'):'กำลังบันทึกไฟล์...');
-        }).then(function(r2){
-          if(r2&&r2.ok){
-            var patch={};
-            if(r2.idLink)patch.id_link=r2.idLink;
-            if(r2.credLink)patch.cred_link=r2.credLink;
-            if(r2.houseLink)patch.house_link=r2.houseLink;
-            if(r2.bankLink)patch.bank_link=r2.bankLink;
-            if(Object.keys(patch).length){
-              sb("applications","PATCH",patch,"?id=eq."+id).then(function(){
-                ALL.forEach(function(a){if(a.id===id){for(var k in patch)a[k]=patch[k]}});
-              });
-            }
-            $('ed-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย (100%)</span>';
-            btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
-            prog(100,'บันทึกข้อมูลเสร็จ ✅');
-            toast('บันทึกเรียบร้อย','tok');stats();doFilter();
-            setTimeout(function(){detail(id)},1500);
-          }else{
-            throw new Error((r2&&r2.error)?r2.error:'ระบบอัปโหลดปฏิเสธไฟล์');
+        }).then(function(patch){
+          if(patch&&Object.keys(patch).length){
+            sb("applications","PATCH",patch,"?id=eq."+id).then(function(){
+              ALL.forEach(function(a){if(a.id===id){for(var k in patch)a[k]=patch[k]}});
+            });
           }
+          $('ed-upload-status').innerHTML='<span style="color:var(--ok)">✅ อัปโหลดเอกสารเรียบร้อย (100%)</span>';
+          btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
+          prog(100,'บันทึกข้อมูลเสร็จ ✅');
+          toast('บันทึกเรียบร้อย','tok');stats();doFilter();
+          setTimeout(function(){detail(id)},1500);
         }).catch(function(e){
           if(attempt<2){$('ed-upload-status').innerHTML='<span style="color:var(--acc)">📤 ลองอัปโหลดอีกครั้ง...</span>';setTimeout(function(){doUp(attempt+1)},1500);return}
           $('ed-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ — '+esc(e.message||e)+'</span>';

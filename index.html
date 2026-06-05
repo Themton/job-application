@@ -2148,7 +2148,7 @@ function adminAddEmp(){
         }).catch(function(e){
           $('ae-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ — '+esc(e.message||e)+'</span>';
           prog(100,'เพิ่มพนักงาน ✅ (อัปโหลดไม่สำเร็จ)');btn.disabled=false;btn.textContent='💾 บันทึกพนักงาน';
-          toast('เพิ่ม '+nm+' ('+newCode+') แล้ว แต่อัปโหลดไม่สำเร็จ','terr');stats();doFilter();
+          toast('อัปโหลดเอกสารไม่สำเร็จ: '+(e.message||e),'terr');stats();doFilter();
         });
       }else{
         prog(100,'เพิ่มพนักงาน ✅ '+nm);btn.disabled=false;btn.textContent='💾 บันทึกพนักงาน';
@@ -3001,7 +3001,7 @@ function saveEmp(id){
           $('ed-upload-status').innerHTML='<span style="color:var(--err)">⚠️ อัปโหลดไม่สำเร็จ — '+esc(e.message||e)+'</span>';
           btn.disabled=false;btn.textContent='💾 บันทึกข้อมูล';
           prog(100,'บันทึกข้อมูลแล้ว ⚠️ อัปโหลดไม่สำเร็จ');
-          toast('บันทึกข้อมูลแล้ว แต่อัปโหลดเอกสารไม่สำเร็จ — ลองไฟล์เล็กลง/PDF ไม่เกิน 10MB','terr');stats();doFilter();
+          toast('อัปโหลดเอกสารไม่สำเร็จ: '+(e.message||e),'terr');stats();doFilter();
         });
       }
       doUp(1);

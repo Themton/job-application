@@ -322,6 +322,11 @@ body.hr-mode .hr-hide{display:none!important}
         <div class="cd"><div class="cd-t"><span class="dot"></span> ⏳ รอจ่ายเงินเดือน</div><div id="dash-pending-pay"></div></div>
       </div>
 
+      <!-- Row 4.5: Incomplete documents -->
+      <div style="margin-bottom:16px">
+        <div class="cd"><div class="cd-t"><span class="dot"></span> 📋 เอกสารยังไม่ครบ</div><div id="dash-docs-incomplete"></div></div>
+      </div>
+
       <!-- Row 5: Birthday -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
         <div class="cd"><div class="cd-t"><span class="dot"></span> 🎂 วันเกิดเดือนนี้</div><div id="dash-birthday"></div></div>
@@ -7092,6 +7097,27 @@ function loadDashboard(){
     var pp='';pendingPay.forEach(function(a){pp+='<div style="padding:3px 0;font-size:12px;cursor:pointer" onclick="showTab(\'app\');setTimeout(function(){detail(\''+a.id+'\')},300)"><span style="color:#d97706;font-weight:600">'+esc(a.name)+'</span>'+(a.nickname?' ('+esc(a.nickname)+')':'')+' — '+(a.terminated_at?String(a.terminated_at).substring(0,10):'')+'</div>'});
     $('dash-pending-pay').innerHTML=pp;
   }else{$('dash-pending-pay').innerHTML='<div style="color:var(--ok);font-size:12px">✅ ไม่มีพนักงานรอจ่ายเงินเดือน</div>'}
+
+  // เอกสารยังไม่ครบ (เฉพาะพนักงานที่ยังทำงาน)
+  var reqDocs=[['id_link','บัตร'],['cred_link','วุฒิ'],['house_link','ทะเบียนบ้าน'],['bank_link','BookBank'],['contract_link','สัญญา']];
+  var incomplete=[];
+  ALL.forEach(function(a){
+    if(a.status==='terminated')return;
+    var miss=[];
+    reqDocs.forEach(function(d){if(!a[d[0]]||String(a[d[0]]).length<5)miss.push(d[1])});
+    if(miss.length)incomplete.push({id:a.id,name:a.name,nickname:a.nickname,miss:miss});
+  });
+  if(incomplete.length){
+    incomplete.sort(function(x,y){return y.miss.length-x.miss.length});
+    var dh='<div style="font-size:12px;color:var(--err);font-weight:700;margin-bottom:8px">⚠️ '+incomplete.length+' คนเอกสารไม่ครบ</div><div style="max-height:320px;overflow:auto">';
+    incomplete.forEach(function(c){
+      dh+='<div style="padding:6px 0;border-bottom:1px solid var(--bdr);font-size:12px;cursor:pointer" onclick="showTab(\'app\');setTimeout(function(){detail(\''+c.id+'\')},300)">'
+        +'<span style="font-weight:600;color:var(--pri)">'+esc(c.name)+'</span>'+(c.nickname?' ('+esc(c.nickname)+')':'')
+        +'<div style="margin-top:2px">'+c.miss.map(function(m){return '<span style="display:inline-block;background:#fee2e2;color:#c00;font-size:10px;padding:1px 7px;border-radius:8px;margin:1px 2px 1px 0">ขาด '+m+'</span>'}).join('')+'</div></div>';
+    });
+    dh+='</div>';
+    $('dash-docs-incomplete').innerHTML=dh;
+  }else{$('dash-docs-incomplete').innerHTML='<div style="color:var(--ok);font-size:12px">✅ เอกสารพนักงานครบทุกคน</div>'}
 
   // Latest payroll summary
   sb("payroll","GET",null,"?select=month,salary,total_income,total_ded,net&order=month.desc&limit=50").then(function(r){

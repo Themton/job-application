@@ -324,7 +324,7 @@ body.hr-mode .hr-hide{display:none!important}
 
       <!-- Row 4.5: Incomplete documents -->
       <div style="margin-bottom:16px">
-        <div class="cd"><div class="cd-t"><span class="dot"></span> 📋 เอกสารยังไม่ครบ</div><div id="dash-docs-incomplete"></div></div>
+        <div class="cd"><div class="cd-t"><span class="dot"></span> 📋 เอกสารยังไม่ครบ (Telesale)</div><div id="dash-docs-incomplete"></div></div>
       </div>
 
       <!-- Row 5: Birthday -->
@@ -7087,6 +7087,7 @@ function loadDashboard(){
   var incomplete=[];
   ALL.forEach(function(a){
     if(a.status==='terminated')return;
+    if(String(a.position||'').toLowerCase().indexOf('telesale')<0)return; // แจ้งเตือนเฉพาะพนักงาน Telesale
     var miss=[];
     reqDocs.forEach(function(d){if(!a[d[0]]||String(a[d[0]]).length<5)miss.push(d[1])});
     if(a.status==='monthly'&&(!a.contract_link||String(a.contract_link).length<5))miss.push('สัญญา');
@@ -7102,7 +7103,7 @@ function loadDashboard(){
     });
     dh+='</div>';
     $('dash-docs-incomplete').innerHTML=dh;
-  }else{$('dash-docs-incomplete').innerHTML='<div style="color:var(--ok);font-size:12px">✅ เอกสารพนักงานครบทุกคน</div>'}
+  }else{$('dash-docs-incomplete').innerHTML='<div style="color:var(--ok);font-size:12px">✅ เอกสารพนักงาน Telesale ครบทุกคน</div>'}
 
   // Latest payroll summary
   sb("payroll","GET",null,"?select=month,salary,total_income,total_ded,net&order=month.desc&limit=50").then(function(r){

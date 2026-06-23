@@ -2974,7 +2974,7 @@ function reinstate(id){
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
 function delA(id){if(!confirm('ลบข้อมูลพนักงานนี้?'))return;sb("applications","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}).catch(function(e){toast('Error: '+e,'terr')})}
-function setF(id,field,val){var patch={};patch[field]=val;sb("applications","PATCH",patch,"?id=eq."+id).then(function(){toast('บันทึกแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a[field]=val})}).catch(function(e){toast('Error: '+e,'terr')})}
+function setF(id,field,val){var patch={};patch[field]=val;sb("applications","PATCH",patch,"?id=eq."+id).then(function(){toast('บันทึกแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a[field]=val});if(['contract_period','start_date','birthday'].indexOf(field)>-1){var det=document.getElementById('A-det');if(det&&!det.classList.contains('hide'))detail(id)}}).catch(function(e){toast('Error: '+e,'terr')})}
 
 /* ═══ EDIT EMPLOYEE ═══ */
 function editEmp(id){

@@ -1884,7 +1884,7 @@ function empExport(){
     h+='<td>'+esc(a.phone||'')+'</td>';
     h+='<td>'+esc(a.email||'')+'</td>';
     h+='<td>'+esc(a.education||'')+'</td>';
-    h+='<td>'+String(a.created_at||'').substring(0,10)+'</td>';
+    h+='<td>'+beDate(a.created_at)+'</td>';
     h+='</tr>';
   });
   h+='</table></body></html>';
@@ -2305,7 +2305,7 @@ function closeLB(){$('lbox').classList.add('hide');$('lbox-img').src='';document
 function detail(id){
   var a;ALL.forEach(function(x){if(x.id===id)a=x});if(!a)return;
   var opts='';Object.keys(ST).forEach(function(k){opts+='<option value="'+k+'"'+(k===a.status?' selected':'')+'>'+ST[k].l+'</option>'});
-  var dt=String(a.created_at||'').substring(0,16).replace('T',' ');
+  var dt=beDate(a.created_at);
   var isTerm=a.status==='terminated';
   var isResigned=a.status==='resigned_pending';
   var termDateStr=a.terminated_date||a.terminated_at?String(a.terminated_date||a.terminated_at).substring(0,10):'';
@@ -2364,7 +2364,7 @@ function detail(id){
     if(!w.length){$('warn-history-'+a.id).innerHTML='<div style="color:var(--muted);font-size:12px">ไม่มีบันทึก</div>';return}
     var h='';w.forEach(function(wr){
       var color=WARN_TYPE_COLOR[wr.warn_type]||'#888';
-      h+='<div style="padding:8px 0;border-bottom:1px solid var(--bdr);font-size:12px"><span style="background:'+color+'18;color:'+color+';padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600">'+esc(WARN_TYPE_LABEL[wr.warn_type]||wr.warn_type)+'</span> <span style="color:var(--muted)">'+esc(String(wr.warn_date||wr.created_at||'').substring(0,10))+'</span><div style="margin-top:4px">'+esc(wr.detail||'')+'</div></div>';
+      h+='<div style="padding:8px 0;border-bottom:1px solid var(--bdr);font-size:12px"><span style="background:'+color+'18;color:'+color+';padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600">'+esc(WARN_TYPE_LABEL[wr.warn_type]||wr.warn_type)+'</span> <span style="color:var(--muted)">'+esc(beDate(wr.warn_date||wr.created_at))+'</span><div style="margin-top:4px">'+esc(wr.detail||'')+'</div></div>';
     });
     $('warn-history-'+a.id).innerHTML=h;
   }).catch(function(){});
@@ -2531,7 +2531,7 @@ function renderLeaveRequestsAdmin(rows){
     h+='<span style="background:'+color+'1f;color:'+color+';font-weight:600;padding:2px 10px;border-radius:6px">'+esc(LR_TYPE_LABEL[r.leave_type]||r.leave_type)+'</span>';
     h+='<span style="color:var(--muted)">📅 '+range+(r.half_day?' <span style="color:#f59e0b">(ครึ่งวัน)</span>':'')+'</span>';
     h+='<span style="font-weight:700;color:var(--pri)">'+r.days+' วัน</span>';
-    if(r.submitted_at)h+='<span style="color:var(--muted);font-size:11px">ส่ง '+esc(String(r.submitted_at).substring(0,10))+'</span>';
+    if(r.submitted_at)h+='<span style="color:var(--muted);font-size:11px">ส่ง '+esc(beDate(r.submitted_at))+'</span>';
     h+='</div>';
     if(r.reason)h+='<div style="font-size:12px;background:var(--inp);border-radius:8px;padding:8px 10px;margin-bottom:10px">📝 '+esc(r.reason)+'</div>';
     if(r.review_note)h+='<div style="font-size:11px;color:var(--muted);margin-bottom:9px">หมายเหตุ: '+esc(r.review_note)+(r.reviewed_by_name?' (โดย '+esc(r.reviewed_by_name)+')':'')+'</div>';
@@ -3297,7 +3297,7 @@ function renderLeaves(empId,list){
     list.forEach(function(l){
       var bg=l.type==='personal'?'b-new':l.type==='sick'?'b-daily':'b-terminated';
       var dLabel=(l.days||1)===0.5?'<span style="color:#f59e0b;font-weight:600">½ วัน</span>':'<span style="color:var(--ok)">1 วัน</span>';
-      h+='<tr><td>'+esc(l.date)+'</td><td><span class="bg '+bg+'">'+esc(LV_LABELS[l.type]||l.type)+'</span></td><td>'+dLabel+'</td><td>'+esc(l.note||'-')+'</td><td><button class="lv-del" onclick="delLeave(\''+l.id+'\',\''+empId+'\')">✕</button></td></tr>';
+      h+='<tr><td>'+esc(beDate(l.date))+'</td><td><span class="bg '+bg+'">'+esc(LV_LABELS[l.type]||l.type)+'</span></td><td>'+dLabel+'</td><td>'+esc(l.note||'-')+'</td><td><button class="lv-del" onclick="delLeave(\''+l.id+'\',\''+empId+'\')">✕</button></td></tr>';
     });
     h+='</tbody></table></div></div>';
   }
@@ -3405,7 +3405,7 @@ function exportEmpLeave(empId,empName){
         var typeBg=l.type==='personal'?'p-bg':l.type==='sick'?'s-bg':'a-bg';
         var typeLabel=l.type==='personal'?'ลากิจ':l.type==='sick'?'ลาป่วย':'ขาดงาน';
         var dLabel=(l.days||1)===0.5?'½ วัน':'1 วัน';
-        h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(l.date)+'</td><td class="c '+typeBg+'">'+typeLabel+'</td><td class="c">'+dLabel+'</td><td>'+esc(l.note||'-')+'</td></tr>';
+        h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(beDate(l.date))+'</td><td class="c '+typeBg+'">'+typeLabel+'</td><td class="c">'+dLabel+'</td><td>'+esc(l.note||'-')+'</td></tr>';
       });
       h+='</table>';
     }else{
@@ -4217,7 +4217,7 @@ function evalLoad(){
     h+='<th style="text-align:center">คะแนน</th><th>เกรด</th><th></th></tr></thead><tbody>';
 
     filtered.forEach(function(e){
-      var dt=String(e.created_at||'').substring(0,10);
+      var dt=beDate(e.created_at);
       var gradeIdx=EVAL_GRADE_LABELS.indexOf(e.grade);
       var gc=gradeIdx>0?EVAL_GRADE_COLORS[gradeIdx]:'#666';
       h+='<tr>';
@@ -4465,7 +4465,7 @@ function attShowTab(key){
         if(l.nickname)h+=' <span style="color:var(--muted);font-size:11px">('+esc(l.nickname)+')</span>';
         h+='</div>';
         h+='<div style="display:flex;gap:8px;align-items:center">';
-        h+='<span style="font-size:11px;color:var(--muted)">'+esc(l.date)+'</span>';
+        h+='<span style="font-size:11px;color:var(--muted)">'+esc(beDate(l.date))+'</span>';
         h+='<span style="background:'+color+'15;color:'+color+';padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600">'+(l.days===0.5?'ครึ่งวัน':l.days+' วัน')+'</span>';
         if(l.note)h+='<span style="font-size:10px;color:var(--muted)">'+esc(l.note)+'</span>';
         h+='</div></div>';
@@ -4730,7 +4730,7 @@ function expLoad(){
 
     var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>พนักงาน</th><th>ประเภท</th><th>รายละเอียด</th><th style="text-align:right">จำนวน</th><th>📎</th><th></th></tr></thead><tbody>';
     r.forEach(function(e){
-      h+='<tr><td style="font-size:11px;white-space:nowrap">'+esc(e.date)+'</td>';
+      h+='<tr><td style="font-size:11px;white-space:nowrap">'+esc(beDate(e.date))+'</td>';
       h+='<td style="font-weight:600;font-size:12px">'+esc(e.emp_name)+'</td>';
       h+='<td style="font-size:11px">'+(typeLabels[e.type]||e.type)+'</td>';
       h+='<td style="font-size:11px;color:var(--muted)">'+esc(e.description||'-')+'</td>';
@@ -6771,7 +6771,7 @@ function renderHolidays(){
     var dt=new Date(d.date+'T00:00:00');
     var dn=dayNames[dt.getDay()]||'';
     var isSun=dt.getDay()===0;
-    h+='<tr><td>'+esc(d.date)+'</td><td style="color:'+(isSun?'var(--err)':'var(--muted)')+'">'+dn+(isSun?' (หยุดอยู่แล้ว)':'')+'</td><td>'+esc(d.name||'-')+'</td><td><button class="lv-del" onclick="delHoliday(\''+d.id+'\')">✕</button></td></tr>';
+    h+='<tr><td>'+esc(beDate(d.date))+'</td><td style="color:'+(isSun?'var(--err)':'var(--muted)')+'">'+dn+(isSun?' (หยุดอยู่แล้ว)':'')+'</td><td>'+esc(d.name||'-')+'</td><td><button class="lv-del" onclick="delHoliday(\''+d.id+'\')">✕</button></td></tr>';
   });
   h+='</tbody></table></div>';
   $('hol-list').innerHTML=h;
@@ -7321,7 +7321,7 @@ function loadDashAttendance(){
       items.forEach(function(l){
         var emp=empMap[l.emp_id]||{name:l.emp_id,nickname:''};
         h+='<div style="padding:3px 0;font-size:12px;display:flex;gap:8px;align-items:center">';
-        h+='<span style="color:var(--muted);min-width:65px">'+esc(l.date)+'</span>';
+        h+='<span style="color:var(--muted);min-width:65px">'+esc(beDate(l.date))+'</span>';
         h+='<span style="font-weight:600;color:var(--pri)">'+esc(emp.name)+'</span>';
         if(emp.nickname)h+='<span style="color:var(--muted)">('+esc(emp.nickname)+')</span>';
         h+='<span style="color:var(--muted);font-size:10px">'+(l.days===0.5?'ครึ่งวัน':l.days+' วัน')+'</span>';
@@ -7410,7 +7410,7 @@ function renderWarnings(){
     var color=WARN_TYPE_COLOR[w.warn_type]||'#888';
     var label=WARN_TYPE_LABEL[w.warn_type]||w.warn_type;
     h+='<tr>';
-    h+='<td style="font-size:11px;white-space:nowrap">'+esc(String(w.warn_date||w.created_at||'').substring(0,10))+'</td>';
+    h+='<td style="font-size:11px;white-space:nowrap">'+esc(beDate(w.warn_date||w.created_at))+'</td>';
     h+='<td><b>'+esc(w.emp_name||'')+'</b></td>';
     h+='<td><span style="background:'+color+'18;color:'+color+';padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">'+label+'</span></td>';
     h+='<td style="font-size:12px;max-width:300px">'+esc(w.detail||'')+'</td>';
@@ -7674,7 +7674,7 @@ function accExportXLS(data,title){
     h+='<td>'+esc(a.bank_account||'')+'</td>';
     h+='<td>'+esc(a.education||'')+'</td>';
     h+='<td class="'+cls+'">'+stLabel+'</td>';
-    h+='<td>'+String(a.created_at||'').substring(0,10)+'</td>';
+    h+='<td>'+beDate(a.created_at)+'</td>';
     h+='</tr>';
   });
   h+='</table></body></html>';
@@ -7810,7 +7810,7 @@ function loadEmpPortal(){
         var lh='<div style="font-size:13px;font-weight:700;margin:14px 0 8px;color:var(--pri)">📜 ประวัติการลา ('+leaves.length+' รายการ)</div>';
         lh+='<div class="tw"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>วัน</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead><tbody>';
         leaves.forEach(function(l){
-          lh+='<tr><td style="font-size:12px;white-space:nowrap">'+esc(l.date)+(l.end_date&&l.end_date!==l.date?'<br>ถึง '+esc(l.end_date):'')+'</td>'
+          lh+='<tr><td style="font-size:12px;white-space:nowrap">'+esc(beDate(l.date))+(l.end_date&&l.end_date!==l.date?'<br>ถึง '+esc(beDate(l.end_date)):'')+'</td>'
             +'<td><span style="color:'+(lvColors[l.type]||'#888')+';font-weight:600">'+(lvLabels[l.type]||l.type)+'</span></td>'
             +'<td style="text-align:center;font-weight:600">'+(l.days||1)+'</td>'
             +'<td style="font-size:11px">'+(stLabels2[l.status]||l.status||'')+'</td>'
@@ -8100,8 +8100,8 @@ function renderTermList(){
     h+='<td class="nm">'+esc(a.name)+(a.nickname?' ('+esc(a.nickname)+')':'')+'</td>';
     h+='<td>'+esc(a.position||'-')+'</td>';
     h+='<td>'+esc(a.department||'-')+'</td>';
-    h+='<td style="font-size:11px">'+startDate+'</td>';
-    h+='<td style="font-size:11px;font-weight:600;color:var(--err)">'+endDate+'</td>';
+    h+='<td style="font-size:11px">'+beDate(startDate)+'</td>';
+    h+='<td style="font-size:11px;font-weight:600;color:var(--err)">'+(endDate?beDate(endDate):'-')+'</td>';
     h+='<td style="font-size:11px">'+duration+'</td>';
     h+='<td><span style="color:'+stColor+';font-weight:600;font-size:11px">'+stLabel+'</span></td>';
     h+='<td><button class="btn btn-a btn-s" onclick="termPrintOne(\''+a.id+'\')" style="padding:2px 8px;font-size:10px">📄 พิมพ์ประกาศ</button></td>';
@@ -8167,7 +8167,7 @@ function termPrint(){
   list.forEach(function(a,i){
     var sd=a.start_date||a.created_at?String(a.start_date||a.created_at).substring(0,10):'';
     var ed=a.terminated_date||a.terminated_at?String(a.terminated_date||a.terminated_at).substring(0,10):'';
-    html+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(a.name)+'</td><td>'+esc(a.position||'')+'</td><td>'+esc(a.department||'')+'</td><td>'+sd+'</td><td>'+ed+'</td><td>'+(a.status==='terminated'?'พ้นสภาพ':'ลาออก-รอจ่าย')+'</td></tr>';
+    html+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(a.name)+'</td><td>'+esc(a.position||'')+'</td><td>'+esc(a.department||'')+'</td><td>'+beDate(sd)+'</td><td>'+(ed?beDate(ed):'-')+'</td><td>'+(a.status==='terminated'?'พ้นสภาพ':'ลาออก-รอจ่าย')+'</td></tr>';
   });
   html+='</table></body></html>';
   var iframe=document.createElement('iframe');iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1200px;height:900px';
@@ -8183,7 +8183,7 @@ function termExport(){
   list.forEach(function(a,i){
     var sd=a.start_date||a.created_at?String(a.start_date||a.created_at).substring(0,10):'';
     var ed=a.terminated_date||a.terminated_at?String(a.terminated_date||a.terminated_at).substring(0,10):'';
-    csv+=(i+1)+',"'+esc(a.name)+'","'+esc(a.nickname||'')+'","'+esc(a.position||'')+'","'+esc(a.department||'')+'","'+sd+'","'+ed+'","'+(a.status==='terminated'?'พ้นสภาพ':'ลาออก-รอจ่าย')+'"\n';
+    csv+=(i+1)+',"'+esc(a.name)+'","'+esc(a.nickname||'')+'","'+esc(a.position||'')+'","'+esc(a.department||'')+'","'+beDate(sd)+'","'+(ed?beDate(ed):'-')+'","'+(a.status==='terminated'?'พ้นสภาพ':'ลาออก-รอจ่าย')+'"\n';
   });
   var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});var url=URL.createObjectURL(blob);
   var a2=document.createElement('a');a2.href=url;a2.download='ประกาศพ้นสภาพ_'+new Date().toISOString().substring(0,10)+'.csv';

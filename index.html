@@ -1212,6 +1212,24 @@ function contractUpload(id,inp){
   r.readAsDataURL(f);
 }
 function _docExt(name,mime){var m=String(name||'').match(/\.[^.]+$/);if(m)return m[0].toLowerCase();if(/pdf/i.test(mime))return '.pdf';if(/png/i.test(mime))return '.png';return '.jpg'}
+function _ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+// วันสิ้นสุดสัญญา: ใช้ contract_end ถ้ามี ไม่งั้นคิดจากระยะ (contract_period) + วันเริ่ม/ต่อสัญญา
+function contractEndDate(a){
+  if(a&&a.contract_end)return new Date(a.contract_end+'T00:00:00');
+  if(a&&a.contract_period&&(a.contract_renew_date||a.start_date)){
+    var base=new Date((a.contract_renew_date||a.start_date)+'T00:00:00');
+    var ms={'1m':1,'3m':3,'6m':6,'1y':12},am=ms[a.contract_period]||0;
+    if(am){var ed=new Date(base);ed.setMonth(ed.getMonth()+am);return ed;}
+  }
+  return null;
+}
+// ปุ่มเติมเร็ว: คำนวณวันสิ้นสุด = วันเริ่ม + n เดือน
+function renewQuick(id,months){
+  var s=document.getElementById('renew-start-'+id),e=document.getElementById('renew-end-'+id);
+  if(!s||!s.value){toast('เลือกวันเริ่มสัญญาก่อน','terr');return;}
+  var d=new Date(s.value+'T00:00:00');d.setMonth(d.getMonth()+months);
+  if(e)e.value=_ymd(d);
+}
 function docUploadSeq(id,ef,onProgress){
   var map=[['id','id_link'],['cred','cred_link'],['house','house_link'],['bank','bank_link'],['contract','contract_link']];
   var jobs=map.filter(function(m){return ef&&ef[m[0]]});
@@ -1396,7 +1414,7 @@ function audit(action,targetType,targetId,details){
     p_detail:details||''}).catch(function(){});
 }
 function _empNm(id){var n=id;ALL.forEach(function(a){if(a.id===id)n=a.name});return n;}
-var AUDIT_FIELD_TH={emp_code:'รหัสพนักงาน',salary:'ฐานเงินเดือน',loan:'หัก กยศ.',leave_quota:'สิทธิ์ลากิจ',contract_period:'ระยะสัญญา',contract_renew_date:'วันต่อสัญญา',start_date:'วันเริ่มงาน',birthday:'วันเกิด',position:'ตำแหน่ง',department:'แผนก',bank:'ธนาคาร',bank_account:'เลขบัญชี',phone:'โทรศัพท์',email:'อีเมล',name:'ชื่อ-สกุล',nickname:'ชื่อเล่น'};
+var AUDIT_FIELD_TH={emp_code:'รหัสพนักงาน',salary:'ฐานเงินเดือน',loan:'หัก กยศ.',leave_quota:'สิทธิ์ลากิจ',contract_period:'ระยะสัญญา',contract_renew_date:'วันต่อสัญญา',contract_start:'วันเริ่มสัญญา',contract_end:'วันสิ้นสุดสัญญา',start_date:'วันเริ่มงาน',birthday:'วันเกิด',position:'ตำแหน่ง',department:'แผนก',bank:'ธนาคาร',bank_account:'เลขบัญชี',phone:'โทรศัพท์',email:'อีเมล',name:'ชื่อ-สกุล',nickname:'ชื่อเล่น'};
 /* poll ทุก 60 วินาทีว่า session ยังใช้ได้ไหม — ถ้าหมดอายุ auto logout */
 var _secPoll=null;
 function startSecPoll(needType){
@@ -2046,13 +2064,11 @@ function doFilter(){
     h+='<td style="text-align:center;padding:4px"><button onclick="empToggle2('+idx+',this)" style="background:'+(sel?'var(--acc)':'none')+';border:2px solid '+(sel?'var(--acc)':'#ccc')+';border-radius:4px;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:16px;color:'+(sel?'#fff':'transparent')+'">✓</button></td>';
     h+='<td style="font-size:11px;font-weight:700;color:var(--pri);text-align:center">'+(a.emp_code?esc(a.emp_code):'<span style="color:var(--muted);font-size:9px">—</span>')+'</td>';
     h+='<td class="nm" data-detail="'+idx+'" style="cursor:pointer">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'');
-    if(a.contract_period&&a.start_date){
-      var _cb=a.contract_renew_date||a.start_date;
-      var _sd=new Date(_cb+'T00:00:00'),_ms={'1m':1,'3m':3,'6m':6,'1y':12},_am=_ms[a.contract_period]||0;
-      if(_am){var _ed=new Date(_sd);_ed.setMonth(_ed.getMonth()+_am);var _dl=Math.ceil((_ed-new Date())/(864e5));
-        if(_dl<0)h+=' <span style="background:#fee2e2;color:#c00;font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700">หมดสัญญา</span>';
-        else if(_dl<=30)h+=' <span style="background:#fef3c7;color:#92400e;font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700">⏳'+_dl+'วัน</span>';
-      }
+    var _ced=contractEndDate(a);
+    if(_ced){
+      var _dl=Math.ceil((_ced-new Date())/(864e5));
+      if(_dl<0)h+=' <span style="background:#fee2e2;color:#c00;font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700">หมดสัญญา</span>';
+      else if(_dl<=30)h+=' <span style="background:#fef3c7;color:#92400e;font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700">⏳'+_dl+'วัน</span>';
     }
     h+='</td>';
     h+='<td style="font-size:12px" data-detail="'+idx+'">'+esc(a.position||'—')+'</td>';
@@ -2317,22 +2333,19 @@ function detail(id){
   var termDateStr=a.terminated_date||a.terminated_at?String(a.terminated_date||a.terminated_at).substring(0,10):'';
   // Contract expiry calculation
   var contractInfo='',contractEndStr='',contractRenewedNote='';
-  if(a.contract_period&&a.start_date){
-    var cbase=a.contract_renew_date||a.start_date;
-    var sd=new Date(cbase+'T00:00:00');
-    var cmonths={'1m':1,'3m':3,'6m':6,'1y':12};
-    var addM=cmonths[a.contract_period]||0;
-    if(addM){
-      var ced=new Date(sd);ced.setMonth(ced.getMonth()+addM);
-      var ctoday=new Date();
-      var daysLeft=Math.ceil((ced-ctoday)/(1000*60*60*24));
-      var edStr=ced.getFullYear()+'-'+String(ced.getMonth()+1).padStart(2,'0')+'-'+String(ced.getDate()).padStart(2,'0');
-      contractEndStr=edStr;
-      if(daysLeft<0)contractInfo='<div style="font-size:10px;color:var(--err);font-weight:700;margin-top:4px">⚠️ หมดสัญญาแล้ว ('+edStr+')</div>';
-      else if(daysLeft<=30)contractInfo='<div style="font-size:10px;color:#f59e0b;font-weight:700;margin-top:4px">⏳ เหลือ '+daysLeft+' วัน ('+edStr+')</div>';
-      else contractInfo='<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ถึง '+edStr+' (เหลือ '+daysLeft+' วัน)</div>';
-    }
-    if(a.contract_renew_date)contractRenewedNote='<div style="font-size:10px;color:var(--pri2);font-weight:600;margin-top:3px">🔄 ต่อสัญญาล่าสุด: '+beDate(a.contract_renew_date)+'</div>';
+  var _cend=contractEndDate(a);
+  if(_cend){
+    var daysLeft=Math.ceil((_cend-new Date())/(864e5));
+    var edStr=_ymd(_cend);
+    contractEndStr=edStr;
+    if(daysLeft<0)contractInfo='<div style="font-size:10px;color:var(--err);font-weight:700;margin-top:4px">⚠️ หมดสัญญาแล้ว ('+edStr+')</div>';
+    else if(daysLeft<=30)contractInfo='<div style="font-size:10px;color:#f59e0b;font-weight:700;margin-top:4px">⏳ เหลือ '+daysLeft+' วัน ('+edStr+')</div>';
+    else contractInfo='<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ถึง '+edStr+' (เหลือ '+daysLeft+' วัน)</div>';
+  }
+  if(a.contract_start||a.contract_end){
+    contractRenewedNote='<div style="font-size:10px;color:var(--pri2);font-weight:600;margin-top:3px">📋 สัญญาปัจจุบัน: '+(a.contract_start?beDate(a.contract_start):'-')+' → '+(a.contract_end?beDate(a.contract_end):'-')+'</div>';
+  }else if(a.contract_renew_date){
+    contractRenewedNote='<div style="font-size:10px;color:var(--pri2);font-weight:600;margin-top:3px">🔄 ต่อสัญญาล่าสุด: '+beDate(a.contract_renew_date)+'</div>';
   }
   // กล่องแนบไฟล์สัญญา (อยู่ในการ์ดสัญญาจ้างเลย)
   var _cl=a.contract_link||'';
@@ -2340,24 +2353,30 @@ function detail(id){
     +(_cl?'<a href="'+_cl+'" target="_blank" style="font-size:11px;color:var(--pri2);font-weight:700">📎 ดูไฟล์สัญญา ↗</a>':'<span style="font-size:10px;color:var(--muted)">ยังไม่ได้แนบไฟล์สัญญา</span>')
     +'<label style="display:block;margin-top:5px;font-size:10px;color:var(--pri);font-weight:600;cursor:pointer">📤 '+(_cl?'เปลี่ยนไฟล์สัญญา':'แนบไฟล์สัญญา (PDF)')+'<input type="file" accept=".pdf,image/*" onchange="contractUpload(\''+a.id+'\',this)" style="display:block;font-size:10px;margin-top:3px;font-weight:400"></label>'
     +'<div id="contract-up-'+a.id+'" style="font-size:10px;margin-top:3px"></div></div>';
-  // กล่อง "ต่อสัญญา" — ตั้งวันต่อสัญญาใหม่ + คำนวณวันหมดใหม่
-  var _tn=new Date(),_tnStr=_tn.getFullYear()+'-'+String(_tn.getMonth()+1).padStart(2,'0')+'-'+String(_tn.getDate()).padStart(2,'0');
-  var _defRenew=contractEndStr||_tnStr;
-  var contractRenew=(a.contract_period&&a.start_date)?('<div style="margin-top:8px;border-top:1px dashed var(--bdr);padding-top:7px">'
+  // กล่อง "ต่อสัญญา / กำหนดสัญญา" — กำหนดวันเริ่ม-สิ้นสุดเอง + แนบไฟล์สัญญาในที่เดียว
+  var _tn=new Date(),_tnStr=_ymd(_tn);
+  var _curStart=a.contract_start||a.contract_renew_date||a.start_date||_tnStr;
+  var _curEnd=a.contract_end||contractEndStr||'';
+  var contractRenew='<div style="margin-top:8px;border-top:1px dashed var(--bdr);padding-top:7px">'
     +contractRenewedNote
-    +'<button onclick="toggleRenew(\''+a.id+'\')" style="background:#eff6ff;border:1px solid #3b82f6;color:#1d4ed8;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-top:3px">🔄 ต่อสัญญา</button>'
+    +'<button onclick="toggleRenew(\''+a.id+'\')" style="background:#eff6ff;border:1px solid #3b82f6;color:#1d4ed8;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-top:3px">🔄 ต่อสัญญา / กำหนดสัญญา</button>'
     +'<div id="renew-form-'+a.id+'" style="display:none;margin-top:7px;background:#f8fafc;border:1px solid var(--bdr);border-radius:8px;padding:8px">'
-      +'<div style="font-size:10px;color:var(--muted);margin-bottom:3px">📅 วันเริ่มสัญญาใหม่</div>'
-      +'<input type="date" id="renew-date-'+a.id+'" value="'+_defRenew+'" class="ssel" style="width:100%;font-size:13px">'
-      +'<div style="font-size:10px;color:var(--muted);margin:6px 0 3px">📝 ระยะสัญญาใหม่</div>'
-      +'<select id="renew-period-'+a.id+'" class="ssel" style="width:100%;font-size:13px">'
-        +'<option value="1m"'+(a.contract_period==='1m'?' selected':'')+'>1 เดือน</option>'
-        +'<option value="3m"'+(a.contract_period==='3m'?' selected':'')+'>3 เดือน</option>'
-        +'<option value="6m"'+(a.contract_period==='6m'?' selected':'')+'>6 เดือน</option>'
-        +'<option value="1y"'+(a.contract_period==='1y'?' selected':'')+'>1 ปี</option>'
-      +'</select>'
-      +'<button onclick="renewContract(\''+a.id+'\')" style="background:#16a34a;border:none;color:#fff;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;margin-top:7px;width:100%">✅ ยืนยันต่อสัญญา</button>'
-    +'</div></div>'):'';
+      +'<div style="font-size:10px;color:var(--muted);margin-bottom:3px">📅 วันเริ่มสัญญา</div>'
+      +'<input type="date" id="renew-start-'+a.id+'" value="'+_curStart+'" class="ssel" style="width:100%;font-size:13px">'
+      +'<div style="font-size:10px;color:var(--muted);margin:6px 0 3px">📅 วันสิ้นสุดสัญญา</div>'
+      +'<input type="date" id="renew-end-'+a.id+'" value="'+_curEnd+'" class="ssel" style="width:100%;font-size:13px">'
+      +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;align-items:center">'
+        +'<span style="font-size:10px;color:var(--muted)">เติมเร็ว:</span>'
+        +'<button type="button" onclick="renewQuick(\''+a.id+'\',1)" style="font-size:10px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;cursor:pointer">+1ด.</button>'
+        +'<button type="button" onclick="renewQuick(\''+a.id+'\',3)" style="font-size:10px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;cursor:pointer">+3ด.</button>'
+        +'<button type="button" onclick="renewQuick(\''+a.id+'\',6)" style="font-size:10px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;cursor:pointer">+6ด.</button>'
+        +'<button type="button" onclick="renewQuick(\''+a.id+'\',12)" style="font-size:10px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;cursor:pointer">+1ปี</button>'
+      +'</div>'
+      +'<div style="font-size:10px;color:var(--muted);margin:7px 0 3px">📤 แนบไฟล์สัญญา (PDF/รูป) — ไม่บังคับ</div>'
+      +'<input type="file" id="renew-file-'+a.id+'" accept=".pdf,image/*" style="font-size:10px;width:100%">'
+      +'<button onclick="renewContract(\''+a.id+'\')" style="background:#16a34a;border:none;color:#fff;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;margin-top:8px;width:100%">✅ ยืนยันต่อสัญญา</button>'
+      +'<div id="renew-status-'+a.id+'" style="font-size:10px;margin-top:4px"></div>'
+    +'</div></div>';
   $('A-det').innerHTML=
     '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;align-items:center"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button><button class="btn btn-a btn-s" onclick="editEmp(\''+a.id+'\')">✏️ แก้ไขข้อมูล</button><button class="btn btn-g btn-s" onclick="resetEmpPass(\''+a.id+'\',\''+esc(a.name)+'\')" style="background:#fef3c7;border-color:#fbbf24;color:#92400e">🔑 รีเซ็ตรหัสผ่าน</button>'+(isTerm?'<span class="bg b-terminated" style="padding:6px 14px;font-size:12px">⛔ พ้นสภาพแล้ว — <input type="date" value="'+esc(termDateStr)+'" onchange="setTermDate(\''+a.id+'\',this.value)" style="border:1px solid #ccc;border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;background:#fff"></span> <button class="btn btn-g btn-s" onclick="reinstate(\''+a.id+'\')" style="background:#d4edda;border-color:#28a745;color:#155724">↩️ คืนสถานะพนักงาน</button>':isResigned?'<span class="bg b-resigned" style="padding:6px 14px;font-size:12px">⏳ ลาออก-รอจ่ายเงินเดือน</span> <button class="btn btn-a btn-s" onclick="confirmPaid(\''+a.id+'\')" style="background:#d4edda;border-color:#28a745;color:#155724">💰 จ่ายแล้ว → พ้นสภาพ</button> <button class="btn btn-g btn-s" onclick="reinstate(\''+a.id+'\')" style="background:#fef3c7;border-color:#f59e0b;color:#92400e">↩️ คืนสถานะ</button>':'<button class="tmbtn tmbtn-warn" onclick="terminate(\''+a.id+'\')">⛔ พ้นสภาพพนักงาน</button>')+'<button class="btn btn-d btn-s hr-hide" style="margin-left:auto" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
     '<div class="dt"><div class="av">'+esc(a.name).charAt(0)+'</div><div style="flex:1"><div class="dn-nm">'+esc(a.name)+(a.nickname?' <span style="font-size:14px;color:var(--acc)">('+esc(a.nickname)+')</span>':'')+'</div></div><div><select class="ssel" onchange="chgSt(\''+a.id+'\',this.value)">'+opts+'</select></div></div>'+
@@ -3055,17 +3074,19 @@ function reinstate(id){
 function delA(id){if(!confirm('ลบข้อมูลพนักงานนี้?'))return;var _nm=_empNm(id);sb("applications","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');audit('emp_delete','employee',id,'ลบพนักงาน: '+_nm);ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}).catch(function(e){toast('Error: '+e,'terr')})}
 function toggleRenew(id){var el=document.getElementById('renew-form-'+id);if(el)el.style.display=(el.style.display==='none'||!el.style.display)?'block':'none';}
 function renewContract(id){
-  var d=document.getElementById('renew-date-'+id),p=document.getElementById('renew-period-'+id);
-  if(!d||!d.value){toast('กรุณาเลือกวันเริ่มสัญญาใหม่','terr');return;}
-  var patch={contract_renew_date:d.value};
-  if(p&&p.value)patch.contract_period=p.value;
+  var s=document.getElementById('renew-start-'+id),e=document.getElementById('renew-end-'+id),f=document.getElementById('renew-file-'+id);
+  if(!s||!s.value){toast('กรุณาเลือกวันเริ่มสัญญา','terr');return;}
+  if(!e||!e.value){toast('กรุณาเลือกวันสิ้นสุดสัญญา','terr');return;}
+  if(e.value<s.value){toast('วันสิ้นสุดต้องไม่ก่อนวันเริ่ม','terr');return;}
+  var hasFile=f&&f.files&&f.files[0];
+  var st=document.getElementById('renew-status-'+id);if(st)st.innerHTML='<span style="color:var(--acc)">⏳ กำลังบันทึก...</span>';
+  var patch={contract_start:s.value,contract_end:e.value,contract_renew_date:s.value};
   sb("applications","PATCH",patch,"?id=eq."+id).then(function(){
-    toast('🔄 ต่อสัญญาเรียบร้อย','tok');
-    audit('contract_renew','employee',id,'ต่อสัญญาเริ่ม '+d.value+(p&&p.value?' ระยะ '+p.value:'')+' ('+_empNm(id)+')');
-    ALL.forEach(function(a){if(a.id===id){a.contract_renew_date=d.value;if(p&&p.value)a.contract_period=p.value;}});
-    detail(id);
-    if(typeof stats==='function')stats();
-  }).catch(function(e){toast('Error: '+e,'terr')});
+    ALL.forEach(function(a){if(a.id===id){a.contract_start=s.value;a.contract_end=e.value;a.contract_renew_date=s.value;}});
+    audit('contract_renew','employee',id,'ต่อสัญญา '+s.value+' ถึง '+e.value+' ('+_empNm(id)+')');
+    if(hasFile){contractUpload(id,f);} // contractUpload จะ toast + re-render เอง
+    else{toast('🔄 ต่อสัญญาเรียบร้อย','tok');detail(id);if(typeof stats==='function')stats();}
+  }).catch(function(err){toast('Error: '+err,'terr');if(st)st.innerHTML='<span style="color:var(--err)">❌ '+esc(err.message||err)+'</span>';});
 }
 function setF(id,field,val){var patch={};patch[field]=val;sb("applications","PATCH",patch,"?id=eq."+id).then(function(){toast('บันทึกแล้ว','tok');audit('emp_update','employee',id,'แก้ '+(AUDIT_FIELD_TH[field]||field)+' = '+val+' ('+_empNm(id)+')');ALL.forEach(function(a){if(a.id===id)a[field]=val});if(['contract_period','start_date','birthday'].indexOf(field)>-1){var det=document.getElementById('A-det');if(det&&!det.classList.contains('hide'))detail(id)}}).catch(function(e){toast('Error: '+e,'terr')})}
 
@@ -7138,15 +7159,11 @@ function loadDashboard(){
     else if(a.status==='resigned_pending')resigned++;
     else if(a.status==='terminated')term++;
 
-    if(a.contract_period&&a.start_date&&a.status!=='terminated'){
-      var sd=new Date((a.contract_renew_date||a.start_date)+'T00:00:00');
-      var addM=cmonths[a.contract_period]||0;
-      if(addM){
-        var ed=new Date(sd);ed.setMonth(ed.getMonth()+addM);
-        var dl=Math.ceil((ed-today)/(864e5));
-        if(dl<0)contractExpired.push({name:a.name,nickname:a.nickname,days:dl,id:a.id});
-        else if(dl<=30)contractExpiring.push({name:a.name,nickname:a.nickname,days:dl,id:a.id});
-      }
+    var _cend=contractEndDate(a);
+    if(_cend&&a.status!=='terminated'){
+      var dl=Math.ceil((_cend-today)/(864e5));
+      if(dl<0)contractExpired.push({name:a.name,nickname:a.nickname,days:dl,id:a.id});
+      else if(dl<=30)contractExpiring.push({name:a.name,nickname:a.nickname,days:dl,id:a.id});
     }
   });
 

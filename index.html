@@ -5025,10 +5025,8 @@ function payDBLoad(){
     var daysInMonth=lastDay2; // จำนวนวันของเดือนนั้น (หักขาดพนักงานประจำ)
     var baseUpdated=0,absentApplied=0,loanUpdated=0;
     PAYDB2.forEach(function(e){
-      if(e.status==='daily'&&!e._saved){
-        e.work_days=defaultWorkDays;
-        e.salary=Math.round(e.daily_rate*e.work_days*100)/100;
-      }
+      // รายวัน: ไม่เติมจำนวนวันทำงานอัตโนมัติแล้ว — ให้กรอกเอง
+      // (ดูจำนวนวันมาตรฐานของรอบ 26→25 ได้ที่ป้ายตัดรอบด้านบนเป็นค่าอ้างอิง)
       // พนักงานประจำที่บันทึกแล้ว: ถ้าฐานเงินเดือนถูกแก้ใหม่ → ดึงค่าล่าสุดมาใช้ (ยกเว้นลาออก-รอจ่าย ให้กรอกเองอิสระ)
       if(e._saved&&e.status!=='daily'&&e.status!=='monthly_daily'&&e.status!=='resigned_pending'&&e.status!=='terminated'&&e.baseSalary>0&&e.baseSalary!==e.salary){
         e.salary=e.baseSalary;
@@ -5139,6 +5137,10 @@ function payDBRender(){
     filtered.push({e:e,idx:i});
   });
 
+  // ค่าอ้างอิงจำนวนวันทำงานของรอบ (26→25) ใช้เป็น hint ในช่องกรอกรายวัน — แต่ยังต้องกรอกเอง
+  var _pm=($('paydb2-month')&&$('paydb2-month').value)?$('paydb2-month').value.split('-'):null;
+  var _refWD=_pm?dailyPayCycle(parseInt(_pm[0],10),parseInt(_pm[1],10)).workDays:'';
+
   var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0,tAbsDays=0;
   filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tAbsDays+=(e._absentDays||0);if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated')tWD+=e.work_days});
 
@@ -5213,7 +5215,7 @@ function payDBRender(){
     var isDaily=(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated');
     if(isDaily){
       h+='<td style="background:#f3e8ff;text-align:center;font-weight:bold;color:#7c3aed;font-size:12px">'+e.daily_rate+'</td>';
-      h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="0" style="color:#7c3aed;font-weight:bold"></td>';
+      h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="'+(_refWD||'0')+'" title="กรอกจำนวนวันทำงานเอง (รอบนี้ '+(_refWD||'-')+' วัน)" style="color:#7c3aed;font-weight:bold"></td>';
     }else{
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';

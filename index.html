@@ -2043,7 +2043,8 @@ function doFilter(){
     h+='<td style="font-size:11px;font-weight:700;color:var(--pri);text-align:center">'+(a.emp_code?esc(a.emp_code):'<span style="color:var(--muted);font-size:9px">—</span>')+'</td>';
     h+='<td class="nm" data-detail="'+idx+'" style="cursor:pointer">'+esc(a.name)+(a.nickname?' <span class="em">('+esc(a.nickname)+')</span>':'');
     if(a.contract_period&&a.start_date){
-      var _sd=new Date(a.start_date+'T00:00:00'),_ms={'1m':1,'3m':3,'6m':6,'1y':12},_am=_ms[a.contract_period]||0;
+      var _cb=a.contract_renew_date||a.start_date;
+      var _sd=new Date(_cb+'T00:00:00'),_ms={'1m':1,'3m':3,'6m':6,'1y':12},_am=_ms[a.contract_period]||0;
       if(_am){var _ed=new Date(_sd);_ed.setMonth(_ed.getMonth()+_am);var _dl=Math.ceil((_ed-new Date())/(864e5));
         if(_dl<0)h+=' <span style="background:#fee2e2;color:#c00;font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700">หมดสัญญา</span>';
         else if(_dl<=30)h+=' <span style="background:#fef3c7;color:#92400e;font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700">⏳'+_dl+'วัน</span>';
@@ -2310,9 +2311,10 @@ function detail(id){
   var isResigned=a.status==='resigned_pending';
   var termDateStr=a.terminated_date||a.terminated_at?String(a.terminated_date||a.terminated_at).substring(0,10):'';
   // Contract expiry calculation
-  var contractInfo='';
+  var contractInfo='',contractEndStr='',contractRenewedNote='';
   if(a.contract_period&&a.start_date){
-    var sd=new Date(a.start_date+'T00:00:00');
+    var cbase=a.contract_renew_date||a.start_date;
+    var sd=new Date(cbase+'T00:00:00');
     var cmonths={'1m':1,'3m':3,'6m':6,'1y':12};
     var addM=cmonths[a.contract_period]||0;
     if(addM){
@@ -2320,10 +2322,12 @@ function detail(id){
       var ctoday=new Date();
       var daysLeft=Math.ceil((ced-ctoday)/(1000*60*60*24));
       var edStr=ced.getFullYear()+'-'+String(ced.getMonth()+1).padStart(2,'0')+'-'+String(ced.getDate()).padStart(2,'0');
+      contractEndStr=edStr;
       if(daysLeft<0)contractInfo='<div style="font-size:10px;color:var(--err);font-weight:700;margin-top:4px">⚠️ หมดสัญญาแล้ว ('+edStr+')</div>';
       else if(daysLeft<=30)contractInfo='<div style="font-size:10px;color:#f59e0b;font-weight:700;margin-top:4px">⏳ เหลือ '+daysLeft+' วัน ('+edStr+')</div>';
       else contractInfo='<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ถึง '+edStr+' (เหลือ '+daysLeft+' วัน)</div>';
     }
+    if(a.contract_renew_date)contractRenewedNote='<div style="font-size:10px;color:var(--pri2);font-weight:600;margin-top:3px">🔄 ต่อสัญญาล่าสุด: '+beDate(a.contract_renew_date)+'</div>';
   }
   // กล่องแนบไฟล์สัญญา (อยู่ในการ์ดสัญญาจ้างเลย)
   var _cl=a.contract_link||'';
@@ -2331,10 +2335,28 @@ function detail(id){
     +(_cl?'<a href="'+_cl+'" target="_blank" style="font-size:11px;color:var(--pri2);font-weight:700">📎 ดูไฟล์สัญญา ↗</a>':'<span style="font-size:10px;color:var(--muted)">ยังไม่ได้แนบไฟล์สัญญา</span>')
     +'<label style="display:block;margin-top:5px;font-size:10px;color:var(--pri);font-weight:600;cursor:pointer">📤 '+(_cl?'เปลี่ยนไฟล์สัญญา':'แนบไฟล์สัญญา (PDF)')+'<input type="file" accept=".pdf,image/*" onchange="contractUpload(\''+a.id+'\',this)" style="display:block;font-size:10px;margin-top:3px;font-weight:400"></label>'
     +'<div id="contract-up-'+a.id+'" style="font-size:10px;margin-top:3px"></div></div>';
+  // กล่อง "ต่อสัญญา" — ตั้งวันต่อสัญญาใหม่ + คำนวณวันหมดใหม่
+  var _tn=new Date(),_tnStr=_tn.getFullYear()+'-'+String(_tn.getMonth()+1).padStart(2,'0')+'-'+String(_tn.getDate()).padStart(2,'0');
+  var _defRenew=contractEndStr||_tnStr;
+  var contractRenew=(a.contract_period&&a.start_date)?('<div style="margin-top:8px;border-top:1px dashed var(--bdr);padding-top:7px">'
+    +contractRenewedNote
+    +'<button onclick="toggleRenew(\''+a.id+'\')" style="background:#eff6ff;border:1px solid #3b82f6;color:#1d4ed8;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-top:3px">🔄 ต่อสัญญา</button>'
+    +'<div id="renew-form-'+a.id+'" style="display:none;margin-top:7px;background:#f8fafc;border:1px solid var(--bdr);border-radius:8px;padding:8px">'
+      +'<div style="font-size:10px;color:var(--muted);margin-bottom:3px">📅 วันเริ่มสัญญาใหม่</div>'
+      +'<input type="date" id="renew-date-'+a.id+'" value="'+_defRenew+'" class="ssel" style="width:100%;font-size:13px">'
+      +'<div style="font-size:10px;color:var(--muted);margin:6px 0 3px">📝 ระยะสัญญาใหม่</div>'
+      +'<select id="renew-period-'+a.id+'" class="ssel" style="width:100%;font-size:13px">'
+        +'<option value="1m"'+(a.contract_period==='1m'?' selected':'')+'>1 เดือน</option>'
+        +'<option value="3m"'+(a.contract_period==='3m'?' selected':'')+'>3 เดือน</option>'
+        +'<option value="6m"'+(a.contract_period==='6m'?' selected':'')+'>6 เดือน</option>'
+        +'<option value="1y"'+(a.contract_period==='1y'?' selected':'')+'>1 ปี</option>'
+      +'</select>'
+      +'<button onclick="renewContract(\''+a.id+'\')" style="background:#16a34a;border:none;color:#fff;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;margin-top:7px;width:100%">✅ ยืนยันต่อสัญญา</button>'
+    +'</div></div>'):'';
   $('A-det').innerHTML=
     '<div style="display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;align-items:center"><button class="btn btn-g btn-s" onclick="backList()">← กลับ</button><button class="btn btn-a btn-s" onclick="editEmp(\''+a.id+'\')">✏️ แก้ไขข้อมูล</button><button class="btn btn-g btn-s" onclick="resetEmpPass(\''+a.id+'\',\''+esc(a.name)+'\')" style="background:#fef3c7;border-color:#fbbf24;color:#92400e">🔑 รีเซ็ตรหัสผ่าน</button>'+(isTerm?'<span class="bg b-terminated" style="padding:6px 14px;font-size:12px">⛔ พ้นสภาพแล้ว — <input type="date" value="'+esc(termDateStr)+'" onchange="setTermDate(\''+a.id+'\',this.value)" style="border:1px solid #ccc;border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;background:#fff"></span> <button class="btn btn-g btn-s" onclick="reinstate(\''+a.id+'\')" style="background:#d4edda;border-color:#28a745;color:#155724">↩️ คืนสถานะพนักงาน</button>':isResigned?'<span class="bg b-resigned" style="padding:6px 14px;font-size:12px">⏳ ลาออก-รอจ่ายเงินเดือน</span> <button class="btn btn-a btn-s" onclick="confirmPaid(\''+a.id+'\')" style="background:#d4edda;border-color:#28a745;color:#155724">💰 จ่ายแล้ว → พ้นสภาพ</button> <button class="btn btn-g btn-s" onclick="reinstate(\''+a.id+'\')" style="background:#fef3c7;border-color:#f59e0b;color:#92400e">↩️ คืนสถานะ</button>':'<button class="tmbtn tmbtn-warn" onclick="terminate(\''+a.id+'\')">⛔ พ้นสภาพพนักงาน</button>')+'<button class="btn btn-d btn-s hr-hide" style="margin-left:auto" onclick="delA(\''+a.id+'\')">🗑️ ลบ</button></div>'+
     '<div class="dt"><div class="av">'+esc(a.name).charAt(0)+'</div><div style="flex:1"><div class="dn-nm">'+esc(a.name)+(a.nickname?' <span style="font-size:14px;color:var(--acc)">('+esc(a.nickname)+')</span>':'')+'</div></div><div><select class="ssel" onchange="chgSt(\''+a.id+'\',this.value)">'+opts+'</select></div></div>'+
-    '<div class="emp-grid"><div class="dc"><h4>💼 ตำแหน่ง</h4><div style="font-size:14px;font-weight:600;color:var(--pri);margin-top:6px">'+esc(a.position||'-')+'</div></div><div class="dc"><h4>📅 วันที่เริ่มทำงาน</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.start_date||'')+'" onchange="setF(\''+a.id+'\',\'start_date\',this.value);var b=document.getElementById(\'sd-be-'+a.id+'\');if(b)b.textContent=this.value?(\'พ.ศ. \'+beDate(this.value)):\'\'"><div id="sd-be-'+a.id+'" style="font-size:10px;color:var(--pri);margin-top:4px;font-weight:600">'+(a.start_date?'พ.ศ. '+beDate(a.start_date):'')+'</div></div><div class="dc"><h4>🎂 วันเกิด</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.birthday||'')+'" onchange="setF(\''+a.id+'\',\'birthday\',this.value)">'+(a.birthday?'<div style="font-size:10px;color:var(--muted);margin-top:4px">อายุ '+calcAge(a.birthday)+' ปี</div>':'')+'</div><div class="dc"><h4>👷 สถานะ</h4><div style="margin-top:6px"><span class="bg '+(ST[a.status]||ST.new).c+'" style="padding:4px 12px;font-size:12px">'+(ST[a.status]||ST.new).l+'</span></div></div><div class="dc"><h4>📝 สัญญาจ้าง</h4><select class="ssel" style="width:100%;margin-top:4px;font-size:14px;font-weight:600" onchange="setF(\''+a.id+'\',\'contract_period\',this.value)"><option value="">-- เลือก --</option><option value="1m"'+(a.contract_period==='1m'?' selected':'')+'>1 เดือน</option><option value="3m"'+(a.contract_period==='3m'?' selected':'')+'>3 เดือน</option><option value="6m"'+(a.contract_period==='6m'?' selected':'')+'>6 เดือน</option><option value="1y"'+(a.contract_period==='1y'?' selected':'')+'>1 ปี</option></select>'+contractInfo+contractBox+'</div><div class="dc" style="border:2px solid var(--acc)"><h4>💰 ฐานเงินเดือน (ประจำ)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:var(--pri)" value="'+(a.salary||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'salary\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.salary?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ล็อคแล้ว — ใช้ในระบบคิดเงินเดือนอัตโนมัติ</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกเงินเดือนเพื่อล็อค ไม่ต้องกรอกซ้ำทุกเดือน</div>')+'</div><div class="dc"><h4>🎓 หัก กยศ. (บาท/เดือน)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:#92400e" value="'+(a.loan||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'loan\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.loan?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ หัก '+payFmt(a.loan)+' ทุกเดือน</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกยอด กยศ. ระบบหักให้อัตโนมัติ</div>')+'</div></div>'+
+    '<div class="emp-grid"><div class="dc"><h4>💼 ตำแหน่ง</h4><div style="font-size:14px;font-weight:600;color:var(--pri);margin-top:6px">'+esc(a.position||'-')+'</div></div><div class="dc"><h4>📅 วันที่เริ่มทำงาน</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.start_date||'')+'" onchange="setF(\''+a.id+'\',\'start_date\',this.value);var b=document.getElementById(\'sd-be-'+a.id+'\');if(b)b.textContent=this.value?(\'พ.ศ. \'+beDate(this.value)):\'\'"><div id="sd-be-'+a.id+'" style="font-size:10px;color:var(--pri);margin-top:4px;font-weight:600">'+(a.start_date?'พ.ศ. '+beDate(a.start_date):'')+'</div></div><div class="dc"><h4>🎂 วันเกิด</h4><input type="date" class="ssel" style="width:100%;margin-top:4px" value="'+(a.birthday||'')+'" onchange="setF(\''+a.id+'\',\'birthday\',this.value)">'+(a.birthday?'<div style="font-size:10px;color:var(--muted);margin-top:4px">อายุ '+calcAge(a.birthday)+' ปี</div>':'')+'</div><div class="dc"><h4>👷 สถานะ</h4><div style="margin-top:6px"><span class="bg '+(ST[a.status]||ST.new).c+'" style="padding:4px 12px;font-size:12px">'+(ST[a.status]||ST.new).l+'</span></div></div><div class="dc"><h4>📝 สัญญาจ้าง</h4><select class="ssel" style="width:100%;margin-top:4px;font-size:14px;font-weight:600" onchange="setF(\''+a.id+'\',\'contract_period\',this.value)"><option value="">-- เลือก --</option><option value="1m"'+(a.contract_period==='1m'?' selected':'')+'>1 เดือน</option><option value="3m"'+(a.contract_period==='3m'?' selected':'')+'>3 เดือน</option><option value="6m"'+(a.contract_period==='6m'?' selected':'')+'>6 เดือน</option><option value="1y"'+(a.contract_period==='1y'?' selected':'')+'>1 ปี</option></select>'+contractInfo+contractRenew+contractBox+'</div><div class="dc" style="border:2px solid var(--acc)"><h4>💰 ฐานเงินเดือน (ประจำ)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:var(--pri)" value="'+(a.salary||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'salary\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.salary?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ ล็อคแล้ว — ใช้ในระบบคิดเงินเดือนอัตโนมัติ</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกเงินเดือนเพื่อล็อค ไม่ต้องกรอกซ้ำทุกเดือน</div>')+'</div><div class="dc"><h4>🎓 หัก กยศ. (บาท/เดือน)</h4><input type="number" class="ssel" style="width:100%;margin-top:4px;font-size:16px;font-weight:700;color:#92400e" value="'+(a.loan||'')+'" placeholder="0" onchange="setF(\''+a.id+'\',\'loan\',parseFloat(this.value)||0)" inputmode="numeric">'+(a.loan?'<div style="font-size:10px;color:var(--ok);margin-top:4px">✅ หัก '+payFmt(a.loan)+' ทุกเดือน</div>':'<div style="font-size:10px;color:var(--muted);margin-top:4px">กรอกยอด กยศ. ระบบหักให้อัตโนมัติ</div>')+'</div></div>'+
     '<div class="dg"><div class="dc"><h4>📋 ข้อมูลส่วนตัว</h4><div class="dr"><span class="i">🏷️</span> รหัสพนักงาน: <input class="ssel" style="width:80px;font-weight:700;color:var(--pri);text-transform:uppercase" value="'+esc(a.emp_code||'')+'" placeholder="MT001" onchange="setF(\''+a.id+'\',\'emp_code\',this.value.toUpperCase())"></div><div class="dr"><span class="i">📋</span> สิทธิ์ลากิจ: <select class="ssel" style="width:100px;font-weight:700" onchange="setF(\''+a.id+'\',\'leave_quota\',parseInt(this.value))"><option value="6"'+((!a.leave_quota||a.leave_quota==6)?' selected':'')+'>6 วัน/ปี</option><option value="3"'+((a.leave_quota==3)?' selected':'')+'>3 วัน/ปี</option></select></div><div class="dr"><span class="i">👤</span> ชื่อ-สกุล: '+esc(a.name)+'</div>'+(a.nickname?'<div class="dr"><span class="i">😊</span> ชื่อเล่น: '+esc(a.nickname)+'</div>':'')+'<div class="dr"><span class="i">📱</span> โทรศัพท์: '+esc(a.phone)+'</div>'+(a.email?'<div class="dr"><span class="i">📧</span> อีเมล: '+esc(a.email)+'</div>':'')+(a.birthday?'<div class="dr"><span class="i">🎂</span> วันเกิด: '+esc(a.birthday)+'</div>':'')+(a.id_card?'<div class="dr"><span class="i">🪪</span> บัตร ปชช.: '+esc(a.id_card)+'</div>':'')+'<div class="dr"><span class="i">💼</span> ตำแหน่ง: '+esc(a.position||'-')+'</div></div>'+
     '<div class="dc"><h4>📅 ข้อมูลการทำงาน</h4><div class="dr"><span class="i">📅</span> วันที่สมัคร: '+esc(dt)+'</div>'+(a.start_date?'<div class="dr"><span class="i">🗓️</span> เริ่มงาน: '+esc(beDate(a.start_date))+' (พ.ศ.)</div>':'')+'<div class="dr"><span class="i">👷</span> สถานะ: '+(ST[a.status]||ST.new).l+'</div></div></div>'+
     '<div class="dg"><div class="dc"><h4>🪪 บัตรประชาชน + ที่อยู่</h4><div style="margin-top:6px"><label style="font-size:10px;color:var(--muted)">เลขบัตรประชาชน</label><input class="ssel" style="width:100%;margin-top:2px" value="'+esc(a.id_card||'')+'" placeholder="X-XXXX-XXXXX-XX-X" onchange="setF(\''+a.id+'\',\'id_card\',this.value)"></div>'+
@@ -3008,6 +3030,19 @@ function reinstate(id){
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
 function delA(id){if(!confirm('ลบข้อมูลพนักงานนี้?'))return;sb("applications","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');ALL=ALL.filter(function(a){return a.id!==id});stats();doFilter();backList()}).catch(function(e){toast('Error: '+e,'terr')})}
+function toggleRenew(id){var el=document.getElementById('renew-form-'+id);if(el)el.style.display=(el.style.display==='none'||!el.style.display)?'block':'none';}
+function renewContract(id){
+  var d=document.getElementById('renew-date-'+id),p=document.getElementById('renew-period-'+id);
+  if(!d||!d.value){toast('กรุณาเลือกวันเริ่มสัญญาใหม่','terr');return;}
+  var patch={contract_renew_date:d.value};
+  if(p&&p.value)patch.contract_period=p.value;
+  sb("applications","PATCH",patch,"?id=eq."+id).then(function(){
+    toast('🔄 ต่อสัญญาเรียบร้อย','tok');
+    ALL.forEach(function(a){if(a.id===id){a.contract_renew_date=d.value;if(p&&p.value)a.contract_period=p.value;}});
+    detail(id);
+    if(typeof stats==='function')stats();
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
 function setF(id,field,val){var patch={};patch[field]=val;sb("applications","PATCH",patch,"?id=eq."+id).then(function(){toast('บันทึกแล้ว','tok');ALL.forEach(function(a){if(a.id===id)a[field]=val});if(['contract_period','start_date','birthday'].indexOf(field)>-1){var det=document.getElementById('A-det');if(det&&!det.classList.contains('hide'))detail(id)}}).catch(function(e){toast('Error: '+e,'terr')})}
 
 /* ═══ EDIT EMPLOYEE ═══ */
@@ -7065,7 +7100,7 @@ function loadDashboard(){
     else if(a.status==='terminated')term++;
 
     if(a.contract_period&&a.start_date&&a.status!=='terminated'){
-      var sd=new Date(a.start_date+'T00:00:00');
+      var sd=new Date((a.contract_renew_date||a.start_date)+'T00:00:00');
       var addM=cmonths[a.contract_period]||0;
       if(addM){
         var ed=new Date(sd);ed.setMonth(ed.getMonth()+addM);

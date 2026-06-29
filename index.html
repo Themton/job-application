@@ -4871,24 +4871,33 @@ function payDBBuildFilters(){
   $('paydb2-filters').classList.remove('hide');$('paydb2-filters').style.display='flex';
 }
 
+// รอบจ่ายรายวัน: ตัดรอบวันที่ 25 → รอบ = 26 เดือนก่อน ถึง 25 เดือนที่เลือก
+// ที่เหลือ (26–สิ้นเดือน) ทบไปจ่ายรอบเดือนหน้า · นับวันทำงาน = ไม่นับวันอาทิตย์
+function dailyPayCycle(y,m){ // m = 1-based
+  var start=new Date(y,m-2,26),end=new Date(y,m-1,25);
+  var work=0;for(var d=new Date(start);d<=end;d.setDate(d.getDate()+1)){if(d.getDay()!==0)work++;}
+  var lastDay=new Date(y,m,0).getDate();
+  var carry=0;for(var c=26;c<=lastDay;c++){if(new Date(y,m-1,c).getDay()!==0)carry++;}
+  return{start:start,end:end,workDays:work,carryDays:carry,lastDay:lastDay};
+}
+
 function payShowCutoff(){
   var month=$('paydb2-month').value;
   if(!month){$('paydb2-cutoff').style.display='none';return}
   var parts=month.split('-');
   var y=parseInt(parts[0]),m=parseInt(parts[1]);
   var thM=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  var lastDay=new Date(y,m,0).getDate();
-  // นับวันทำงานทั้งเดือน (ไม่นับอาทิตย์)
-  var workDays=0;
-  for(var d=new Date(y,m-1,1);d<=new Date(y,m-1,lastDay);d.setDate(d.getDate()+1)){if(d.getDay()!==0)workDays++}
+  var cyc=dailyPayCycle(y,m);
+  var sD=cyc.start.getDate(),sM=cyc.start.getMonth()+1,sY=cyc.start.getFullYear();
+  var eD=cyc.end.getDate(),eM=cyc.end.getMonth()+1,eY=cyc.end.getFullYear();
   var el=$('paydb2-cutoff');
   el.style.display='block';
   el.innerHTML='<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">'
-    +'<div><span style="font-weight:700;color:var(--pri)">📅 รอบเงินเดือน (รายวัน)</span></div>'
-    +'<div style="font-weight:600">1 '+thM[m]+' '+(y+543)+' — '+lastDay+' '+thM[m]+' '+(y+543)+' <span style="color:var(--muted);font-weight:400">(ทั้งเดือน)</span></div>'
-    +'<div><span style="background:var(--acc);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">'+workDays+' วันทำงาน</span> <span style="color:var(--muted);font-size:10px">(ไม่นับอาทิตย์)</span></div>'
+    +'<div><span style="font-weight:700;color:var(--pri)">📅 รอบเงินเดือน (รายวัน) — ตัดรอบวันที่ 25</span></div>'
+    +'<div style="font-weight:600">'+sD+' '+thM[sM]+' '+(sY+543)+' — '+eD+' '+thM[eM]+' '+(eY+543)+'</div>'
+    +'<div><span style="background:var(--acc);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">'+cyc.workDays+' วันทำงาน</span> <span style="color:var(--muted);font-size:10px">(ไม่นับอาทิตย์)</span></div>'
     +'</div>'
-    +'<div style="font-size:10px;color:var(--muted);margin-top:6px">* เฉพาะพนักงานรายวันที่ยังทำงานอยู่ &nbsp; * ถ้าลาออกก่อน → นับแค่วันที่ทำจริง</div>';
+    +'<div style="font-size:10px;color:var(--muted);margin-top:6px">* วันที่ 26–'+cyc.lastDay+' ('+cyc.carryDays+' วันทำงาน) ทบไปจ่ายรอบเดือนหน้า &nbsp; * เฉพาะพนักงานรายวันที่ยังทำงานอยู่ &nbsp; * ถ้าลาออกก่อน → นับแค่วันที่ทำจริง</div>';
 }
 
 function payDBToggleTerm(){
@@ -4978,14 +4987,12 @@ function payDBLoad(){
     var prefilled=PAYDB2.filter(function(e){return e.salary>0}).length;
     var savedCount=saved.length;
 
-    // รอบรายวัน: ทั้งเดือนปฏิทินที่เลือก (1 — สิ้นเดือน) ไม่ตัดรอบ 25 ไม่ยกยอด
+    // รอบรายวัน: ตัดรอบวันที่ 25 (26 เดือนก่อน → 25 เดือนที่เลือก) ที่เหลือ(26–สิ้นเดือน)ทบไปเดือนหน้า
     var mp=month.split('-'),cutY=parseInt(mp[0]),cutM=parseInt(mp[1]);
     var lastDay2=new Date(cutY,cutM,0).getDate();
-    var cutStart=new Date(cutY,cutM-1,1);
-    var cutEnd=new Date(cutY,cutM-1,lastDay2);
-    var defaultWorkDays=0;
-    for(var dd=new Date(cutStart);dd<=cutEnd;dd.setDate(dd.getDate()+1)){if(dd.getDay()!==0)defaultWorkDays++}
-    window._carryDays=0;
+    var _cyc=dailyPayCycle(cutY,cutM);
+    var defaultWorkDays=_cyc.workDays;
+    window._carryDays=_cyc.carryDays;
 
     var daysInMonth=lastDay2; // จำนวนวันของเดือนนั้น (หักขาดพนักงานประจำ)
     var baseUpdated=0,absentApplied=0,loanUpdated=0;

@@ -4321,21 +4321,9 @@ function attUpload(inp){
       // Parse month for holiday/weekend detection
       var parts2=monthVal.split('-');
       var year=parseInt(parts2[0]),month=parseInt(parts2[1]);
-      var totalDays=new Date(year,month,0).getDate();
 
-      // Find weekends & holidays
-      var weekendDays={};
-      for(var d=1;d<=totalDays;d++){
-        var dow=new Date(year,month-1,d).getDay();
-        if(dow===0||dow===6)weekendDays[d]=true;
-      }
-
-      // Work days from file columns
-      var workDaySet={};
-      dateCols.forEach(function(dc){workDaySet[dc.day]=true});
-
-      var START_MIN=9*60; // 09:00
-      var lateList=[],absentList=[],onTimeList=[];
+      var nonWork=attNonWorkDays(year,month,dateCols,data,hdrIdx);
+      var lateList=[],absentList=[],onTimeList=[],unmatched=[];
 
       // Parse each employee row
       for(var r2=hdrIdx+1;r2<data.length;r2++){
@@ -4343,32 +4331,22 @@ function attUpload(inp){
         if(!row||!row[1])continue;
         var empName=String(row[1]).trim();
 
-        var lateDays=[],absentDays=[],presentDays=0;
+        var lateDays=[],absentDays=[],presentDays=0,halfCount=0;
 
         dateCols.forEach(function(dc){
-          var cell=String(row[dc.col]||'').trim();
-          if(!cell){
-            // No record = absent
-            absentDays.push(dc.day);
-            return;
-          }
-          // Parse check-in time
-          var stamps=cell.replace(/\r/g,'').split('\n').map(function(s){return s.trim()}).filter(function(s){return s.match(/^\d{1,2}:\d{2}$/)});
-          if(!stamps.length){absentDays.push(dc.day);return}
-
-          var checkIn=stamps[0];
-          var tp=checkIn.split(':');
-          var totalMin=parseInt(tp[0])*60+parseInt(tp[1]);
+          if(nonWork[dc.day])return; // ข้ามเสาร์-อาทิตย์ / วันหยุด / วันที่ทุกคนว่าง
+          var ci=attCheckInMin(row[dc.col]);
+          if(ci==null){absentDays.push(dc.day);return;}
           presentDays++;
-
-          if(totalMin>START_MIN){
-            var lateMin=totalMin-START_MIN;
-            lateDays.push({day:dc.day,time:checkIn,mins:lateMin});
-          }
+          var le=attLateEval(ci);
+          if(le){if(le.half)halfCount++;lateDays.push({day:dc.day,time:attMinToHM(ci),mins:le.late,half:le.half,ded:le.ded});}
         });
 
+        // จับคู่กับพนักงานในระบบ — เตือนถ้าจับคู่ไม่ได้
+        if((lateDays.length||absentDays.length)&&attFindEmp(empName,ALL)==null)unmatched.push(empName);
+
         if(lateDays.length>0){
-          lateList.push({name:empName,days:lateDays,totalMins:lateDays.reduce(function(s,d){return s+d.mins},0)});
+          lateList.push({name:empName,days:lateDays,totalMins:lateDays.reduce(function(s,d){return s+d.mins;},0),halfCount:halfCount});
         }
         if(absentDays.length>0){
           absentList.push({name:empName,days:absentDays,count:absentDays.length});
@@ -4380,7 +4358,7 @@ function attUpload(inp){
 
       // Fetch leaves from DB for this month
       var ids=ALL.filter(function(a){return a.status!=='terminated'}).map(function(a){return a.id});
-      var startDate=monthVal+'-01',endDate=monthVal+'-'+String(totalDays).padStart(2,'0');
+      var startDate=monthVal+'-01',endDate=monthVal+'-'+String(new Date(year,month,0).getDate()).padStart(2,'0');
 
       sb("leaves","GET",null,"?emp_id=in.("+ids.join(',')+")"+"&date=gte."+startDate+"&date=lte."+endDate+"&select=emp_id,type,date,days,note&order=date").catch(function(){return[]}).then(function(leaves){
         leaves=Array.isArray(leaves)?leaves:[];
@@ -4401,7 +4379,7 @@ function attUpload(inp){
           workDays:dateCols.length,totalEmps:data.length-hdrIdx-1,
           lateList:lateList,absentList:absentList,onTimeList:onTimeList,
           leaveByType:leaveByType,leaveLabels:leaveLabels,leaveColors:leaveColors,
-          totalLeaves:leaves.length
+          totalLeaves:leaves.length,unmatched:unmatched
         });
         $('att-file-status').innerHTML='✅ วิเคราะห์เสร็จ — <b>'+f.name+'</b>';
       });
@@ -4431,6 +4409,9 @@ function attRenderResults(d){
     h+='</button>';
   });
   h+='</div>';
+  if(d.unmatched&&d.unmatched.length){
+    h+='<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:10px 14px;font-size:12px;color:#92400e;margin-bottom:10px">⚠ มี '+d.unmatched.length+' ชื่อในไฟล์ที่จับคู่กับพนักงานในระบบไม่ได้ (จะไม่ถูกบันทึก): '+d.unmatched.map(function(n){return esc(n);}).join(', ')+'</div>';
+  }
   $('att-summary').innerHTML=h;
 
   // Show save area
@@ -4462,7 +4443,7 @@ function attShowTab(key){
         h+='</div>';
         h+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
         e.days.forEach(function(dd){
-          h+='<span style="background:var(--inp);padding:4px 10px;border-radius:6px;font-size:11px">วันที่ '+dd.day+' <b>'+dd.time+'</b> <span style="color:#f59e0b">('+dd.mins+' น.)</span></span>';
+          h+='<span style="background:var(--inp);padding:4px 10px;border-radius:6px;font-size:11px">วันที่ '+dd.day+' <b>'+dd.time+'</b> <span style="color:#f59e0b">('+dd.mins+' น.'+(dd.half?' → ½วัน':'')+')</span></span>';
         });
         h+='</div></div>';
       });
@@ -4531,61 +4512,61 @@ function attSaveToDB(){
   var parts2=monthVal.split('-');
   var year=parseInt(parts2[0]),month=parseInt(parts2[1]);
 
-  // Find emp IDs by name
-  var empByName={};
-  ALL.forEach(function(a){empByName[a.name.trim()]=a.id});
+  var records=[],newIds={},skipped={};
+  function pushRec(empName,type,day,extra){
+    var emp=attFindEmp(empName,ALL);
+    if(!emp){skipped[empName]=true;return;}
+    var dateStr=monthVal+'-'+String(day).padStart(2,'0');
+    var id='LV-att-'+emp.id+'-'+dateStr+'-'+type;
+    var rec={id:id,emp_id:emp.id,type:type,date:dateStr};
+    for(var k in extra)rec[k]=extra[k];
+    records.push(rec);newIds[id]=true;
+  }
 
-  var records=[];
-
-  // Save absent records
   d.absentList.forEach(function(e){
-    var empId=empByName[e.name];if(!empId)return;
-    e.days.forEach(function(day){
-      var dateStr=monthVal+'-'+String(day).padStart(2,'0');
-      records.push({
-        id:'LV-'+Date.now()+'-'+Math.random().toString(36).substr(2,6),
-        emp_id:empId,type:'absent',date:dateStr,days:1,note:'ขาด (จากไฟล์ลงเวลา)'
-      });
-    });
+    e.days.forEach(function(day){pushRec(e.name,'absent',day,{days:1,note:'ขาด (จากไฟล์ลงเวลา)'});});
   });
-
-  // Save late records
   d.lateList.forEach(function(e){
-    var empId=empByName[e.name];if(!empId)return;
-    e.days.forEach(function(dd){
-      var dateStr=monthVal+'-'+String(dd.day).padStart(2,'0');
-      records.push({
-        id:'LV-'+Date.now()+'-'+Math.random().toString(36).substr(2,6),
-        emp_id:empId,type:'late',date:dateStr,days:0,note:'มาสาย '+dd.mins+' น. (เข้า '+dd.time+')'
-      });
-    });
+    e.days.forEach(function(dd){pushRec(e.name,'late',dd.day,{days:0,note:'มาสาย '+dd.mins+' น. (เข้า '+dd.time+')'+(dd.half?' — หักครึ่งวัน':'')});});
   });
 
-  if(!records.length){toast('ไม่มีข้อมูลขาด/มาสายให้บันทึก','terr');return}
+  var skipNames=Object.keys(skipped);
+  if(!records.length){toast('ไม่มีข้อมูลขาด/มาสายให้บันทึก'+(skipNames.length?' (จับคู่ชื่อไม่ได้ '+skipNames.length+' คน)':''),'terr');return}
+  if(skipNames.length&&!confirm('⚠ มี '+skipNames.length+' ชื่อที่จับคู่พนักงานในระบบไม่ได้ และจะไม่ถูกบันทึก:\n'+skipNames.join(', ')+'\n\nบันทึกเฉพาะที่จับคู่ได้ต่อไหม?'))return;
 
   $('att-save-status').textContent='⏳ กำลังบันทึก '+records.length+' รายการ...';
 
-  // Delete existing records for this month first
+  var empIds=ALL.filter(function(a){return a.status!=='terminated'}).map(function(a){return a.id});
   var startDate=monthVal+'-01';
   var endDay=new Date(year,month,0).getDate();
   var endDate=monthVal+'-'+String(endDay).padStart(2,'0');
-  var empIds=ALL.filter(function(a){return a.status!=='terminated'}).map(function(a){return a.id});
 
-  sb("leaves","DELETE",null,"?emp_id=in.("+empIds.join(',')+")"+"&type=in.(absent,late)&date=gte."+startDate+"&date=lte."+endDate).then(function(){
-    // Insert in chunks
-    var chunk=30,i=0;
-    function next(){
-      var batch=records.slice(i,i+chunk);
-      if(!batch.length){
-        $('att-save-status').innerHTML='✅ บันทึก <b>'+records.length+'</b> รายการเรียบร้อย';
-        toast('บันทึก ขาด/มาสาย '+records.length+' รายการ','tok');
-        audit('att_save','attendance','','บันทึก ขาด/มาสาย เดือน '+monthVal+' — '+records.length+' รายการ');
-        return;
-      }
-      sb("leaves","POST",batch).then(function(){i+=chunk;next()}).catch(function(e){toast('Error: '+e,'terr');$('att-save-status').textContent='❌ Error'});
-    }
-    next();
-  }).catch(function(e){toast('Error: '+e,'terr');$('att-save-status').textContent='❌ Error'});
+  function finish(){
+    $('att-save-status').innerHTML='✅ บันทึก <b>'+records.length+'</b> รายการเรียบร้อย'+(skipNames.length?' <span style="color:#b45309">(ข้าม '+skipNames.length+' คนที่จับคู่ไม่ได้)</span>':'');
+    toast('บันทึก ขาด/มาสาย '+records.length+' รายการ','tok');
+    audit('att_save','attendance','','บันทึก ขาด/มาสาย เดือน '+monthVal+' — '+records.length+' รายการ');
+  }
+  // ลบของเก่าที่ไม่อยู่ในชุดใหม่ (เช่น วันที่เปลี่ยนจากขาด→สาย หรือ record รุ่นเก่า)
+  function cleanupStale(){
+    sb("leaves","GET",null,"?emp_id=in.("+empIds.join(',')+")&type=in.(absent,late)&date=gte."+startDate+"&date=lte."+endDate+"&select=id").then(function(ex){
+      ex=Array.isArray(ex)?ex:[];
+      var stale=ex.filter(function(x){return !newIds[x.id]}).map(function(x){return x.id});
+      if(!stale.length){finish();return;}
+      var di=0;
+      (function delNext(){
+        var b=stale.slice(di,di+50);
+        if(!b.length){finish();return;}
+        sb("leaves","DELETE",null,"?id=in.("+b.join(',')+")").then(function(){di+=50;delNext();}).catch(function(){finish();});
+      })();
+    }).catch(function(){finish();});
+  }
+  // เขียนแบบปลอดภัย: upsert ก่อน (idempotent) แล้วค่อยลบของเก่าที่ตกค้าง — ไม่มีช่วงข้อมูลหาย
+  var chunk=30,i=0;
+  (function insertNext(){
+    var batch=records.slice(i,i+chunk);
+    if(!batch.length){cleanupStale();return;}
+    sbUpsert("leaves",batch).then(function(){i+=chunk;insertNext();}).catch(function(e){toast('Error: '+e,'terr');$('att-save-status').textContent='❌ Error — กดบันทึกใหม่ได้ทันที (ปลอดภัย ไม่ซ้ำ)';});
+  })();
 }
 
 /* ═══ OT OVERTIME SYSTEM ═══ */
@@ -5350,7 +5331,71 @@ function payDBCalcAll(){
 
 /* ═══ LATE DETECTION ═══ */
 var LATE_RATE=50; // บาท/นาที
-var LATE_HALF_THRESHOLD=30; // นาที
+var LATE_HALF_THRESHOLD=30; // นาที (สายเกินกี่นาที = หักครึ่งวัน)
+
+/* ═══ ระบบ ขาด/ลา/มาสาย — ตั้งค่ากลาง + ตัวช่วยใช้ร่วมกันทุก parser ═══ */
+var ATT_WORK_START='09:00'; // เวลาเข้างานมาตรฐาน (แก้ได้ที่นี่)
+var ATT_GRACE_MIN=0;        // ผ่อนผันมาสาย (นาที): เข้าไม่เกิน workStart+grace = ไม่ถือว่าสาย (ตั้ง 0 = เหมือนเดิม)
+function attStartMin(){var p=String(ATT_WORK_START).split(':');return (parseInt(p[0],10)||0)*60+(parseInt(p[1],10)||0);}
+function attStamps(cell){return String(cell==null?'':cell).replace(/\r/g,'').split(/\n/).map(function(s){return s.trim();}).filter(function(s){return /^\d{1,2}:\d{2}$/.test(s);});}
+function attCheckInMin(cell){var st=attStamps(cell);if(!st.length)return null;var mins=st.map(function(s){var p=s.split(':');return (parseInt(p[0],10)||0)*60+(parseInt(p[1],10)||0);});mins.sort(function(a,b){return a-b;});return mins[0];}
+function attMinToHM(min){var h=Math.floor(min/60),m=min%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
+// ประเมินมาสายจากเวลาเข้า (นาทีตั้งแต่เที่ยงคืน) → null ถ้าไม่สาย, หรือ {late,half,ded}
+function attLateEval(ci){
+  if(ci==null)return null;
+  var start=attStartMin();
+  if(ci<=start+ATT_GRACE_MIN)return null;
+  var late=ci-start;
+  if(late>LATE_HALF_THRESHOLD)return{late:late,half:true,ded:'halfday'};
+  return{late:late,half:false,ded:late*LATE_RATE};
+}
+// normalize ชื่อ (ตัดขีด/ช่องว่างซ้ำ)
+function attNorm(s){return String(s==null?'':s).replace(/\s*-\s*/g,' ').replace(/\s+/g,' ').trim();}
+// จับคู่ชื่อกับ pool [{name,nickname,...}] → emp หรือ null; ถ้ากำกวม(เสมอกันหลายคน) คืน null เพื่อกันหักผิดคน
+function attFindEmp(name,pool){
+  var target=attNorm(name);if(!target||!pool||!pool.length)return null;
+  for(var i=0;i<pool.length;i++){if(attNorm(pool[i].name)===target)return pool[i];}
+  var tp=target.split(' ').filter(function(p){return p.length>1;});
+  var best=null,bestScore=0,tie=false;
+  for(var i=0;i<pool.length;i++){
+    var pn=attNorm(pool[i].name),pp=pn.split(' ').filter(function(p){return p.length>1;});
+    var mc=0;tp.forEach(function(p){if(pn.indexOf(p)>=0)mc++;});
+    var mc2=0;pp.forEach(function(p){if(target.indexOf(p)>=0)mc2++;});
+    var score=mc>mc2?mc:mc2;
+    var need=tp.length<=1?1:2;
+    if(score>=need){
+      if(score>bestScore){bestScore=score;best=pool[i];tie=false;}
+      else if(score===bestScore&&best&&pool[i]!==best){tie=true;}
+    }
+  }
+  if(!best){
+    if(name){for(var i=0;i<pool.length;i++){if(pool[i].nickname&&target.indexOf(attNorm(pool[i].nickname))>=0)return pool[i];}}
+    return null;
+  }
+  return tie?null:best;
+}
+// set ของ "วันที่ไม่ใช่วันทำงาน" ในเดือน = เสาร์-อาทิตย์ + วันหยุด(HOLIDAYS) + คอลัมน์ที่ทุกคนว่าง
+function attNonWorkDays(year,month,dateCols,rows,hdrIdx){
+  var nw={},totalDays=new Date(year,month,0).getDate();
+  for(var d=1;d<=totalDays;d++){var dow=new Date(year,month-1,d).getDay();if(dow===0||dow===6)nw[d]=true;}
+  var mm=String(month).padStart(2,'0');
+  (typeof HOLIDAYS!=='undefined'?HOLIDAYS:[]).forEach(function(hl){
+    if(!hl||!hl.date)return;var p=String(hl.date).substring(0,10).split('-');
+    if(p[0]==String(year)&&p[1]==mm)nw[parseInt(p[2],10)]=true;
+  });
+  dateCols.forEach(function(dc){
+    var anyone=false;
+    for(var r=hdrIdx+1;r<rows.length;r++){var row=rows[r];if(!row||!row[1])continue;if(attStamps(row[dc.col]).length){anyone=true;break;}}
+    if(!anyone)nw[dc.day]=true;
+  });
+  return nw;
+}
+// upsert ปลอดภัย (idempotent) — ใช้ id ที่กำหนดเอง ทับของเดิมได้ ไม่ซ้ำ
+function sbUpsert(t,b){
+  var h={"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Prefer":"return=minimal,resolution=merge-duplicates"};
+  var tk=localStorage.getItem('mt_tok');if(tk)h["X-Session-Token"]=tk;
+  return fetch(SB+"/rest/v1/"+t,{method:'POST',headers:h,body:JSON.stringify(b)}).then(function(r){if(!r.ok)return r.text().then(function(x){throw new Error(r.status+': '+x);});return r.status===204?[]:r.json();});
+}
 
 function payDBLateDetect(inp){
   var f=inp.files[0];if(!f)return;
@@ -5389,37 +5434,14 @@ function payDBLateDetect(inp){
         var lateDays=[],totalLateMins=0,totalDed=0,halfDayCount=0;
 
         dateCols.forEach(function(dc){
-          var cell=String(row[dc.col]||'').trim();
-          if(!cell)return;
-
-          // Parse timestamps — get first one (check-in)
-          var stamps=cell.replace(/\r/g,'').split('\n').map(function(s){return s.trim()}).filter(function(s){return s.match(/^\d{1,2}:\d{2}$/)});
-          if(!stamps.length){
-            // Try datetime.time format from Excel
-            if(typeof row[dc.col]==='object'&&row[dc.col]){return}
-            return;
-          }
-
-          var checkIn=stamps[0];
-          var parts=checkIn.split(':');
-          var h=parseInt(parts[0]),m=parseInt(parts[1]);
-          var totalMin=h*60+m;
-          var startMin=9*60; // 09:00
-
-          if(totalMin>startMin){
-            var late=totalMin-startMin;
-            var ded;
-            if(late>LATE_HALF_THRESHOLD){
-              // หักครึ่งวัน
-              ded='halfday';
-              halfDayCount++;
-            }else{
-              ded=late*LATE_RATE;
-              totalDed+=ded;
-            }
-            totalLateMins+=late;
-            lateDays.push({day:dc.day,time:checkIn,mins:late,ded:ded});
-          }
+          var ci=attCheckInMin(row[dc.col]);
+          if(ci==null)return;
+          var le=attLateEval(ci);
+          if(!le)return;
+          if(le.half){halfDayCount++;}
+          else{totalDed+=le.ded;}
+          totalLateMins+=le.late;
+          lateDays.push({day:dc.day,time:attMinToHM(ci),mins:le.late,ded:le.ded});
         });
 
         if(lateDays.length>0){
@@ -5429,39 +5451,10 @@ function payDBLateDetect(inp){
 
       // Calculate half-day deduction amounts per employee
       results.forEach(function(r){
-        // Find matching employee to get salary
-        var emp=null;
-        PAYDB2.forEach(function(e){
-          if(emp)return;
-          var n1=e.name.replace(/\s+/g,''),n2=r.name.replace(/\s+/g,'');
-          if(n1===n2){emp=e;return}
-          var parts1=e.name.split(/\s+/).filter(function(p){return p.length>1});
-          var parts2=r.name.split(/\s+/).filter(function(p){return p.length>1});
-          var mc=0;parts2.forEach(function(p){if(e.name.indexOf(p)>=0)mc++});
-          if(mc>=2)emp=e;
-          else{
-            var mc2=0;parts1.forEach(function(p){if(r.name.indexOf(p)>=0)mc2++});
-            if(mc2>=2)emp=e;
-            else if(e.nickname&&r.name.indexOf(e.nickname)>=0&&mc>=1)emp=e;
-          }
-        });
-        // Check if terminated (search in ALL which includes terminated)
-        var termEmp=null;
-        if(!emp){
-          ALL.forEach(function(a){
-            if(termEmp)return;
-            if(a.status!=='terminated')return;
-            var parts2=r.name.split(/\s+/).filter(function(p){return p.length>1});
-            var mc=0;parts2.forEach(function(p){if(a.name.indexOf(p)>=0)mc++});
-            if(mc>=2)termEmp=a;
-            else{
-              var parts1=a.name.split(/\s+/).filter(function(p){return p.length>1});
-              var mc2=0;parts1.forEach(function(p){if(r.name.indexOf(p)>=0)mc2++});
-              if(mc2>=2)termEmp=a;
-              else if(a.nickname&&r.name.indexOf(a.nickname)>=0&&mc>=1)termEmp=a;
-            }
-          });
-        }
+        // จับคู่พนักงานปัจจุบันด้วยตัวจับคู่กลาง (กำกวม = ไม่จับ กันหักผิดคน)
+        var emp=attFindEmp(r.name,PAYDB2);
+        // ถ้าไม่เจอในรายชื่อปัจจุบัน ลองหาในกลุ่มพ้นสภาพ
+        var termEmp=emp?null:attFindEmp(r.name,ALL.filter(function(a){return a.status==='terminated';}));
         r.isTerminated=!!termEmp;
         r.termName=termEmp?termEmp.name:'';
         var halfDayAmt=emp&&emp.salary>0?Math.round(emp.salary/26/2):200;

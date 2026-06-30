@@ -1372,7 +1372,12 @@ function sbRpc(fn,params){
   }
   if(fn==='admin_create_user'){
     var uid='USR-'+Date.now();
-    return sb("users","POST",{id:uid,username:params.p_username||'',display_name:params.p_display_name||'',password:params.p_password||'',role:params.p_role||'admin'}).then(function(){return{ok:true}}).catch(function(e){return{ok:false,message:String(e)}});
+    var uname=String(params.p_username||'').trim();
+    if(!uname)return Promise.resolve({ok:false,error:'username_required'});
+    return sb("users","GET",null,"?select=id&username=eq."+encodeURIComponent(uname)).then(function(ex){
+      if(Array.isArray(ex)&&ex.length)return{ok:false,error:'username_exists'};
+      return sb("users","POST",{id:uid,username:uname,display_name:params.p_display_name||'',password:params.p_password||'',role:params.p_role||'admin'}).then(function(){return{ok:true,id:uid}}).catch(function(e){return{ok:false,error:'create_failed',message:String(e)}});
+    }).catch(function(e){return{ok:false,error:'create_failed',message:String(e)}});
   }
   if(fn==='admin_update_user'){
     var patch={};if(params.p_display_name)patch.display_name=params.p_display_name;if(params.p_role)patch.role=params.p_role;if(params.p_password)patch.password=params.p_password;
@@ -3558,9 +3563,10 @@ function saveU(){
       p_display_name:dn||un,p_role:rl
     }).then(function(r){
       if(!r||!r.ok){
-        var m=r&&r.error==='username_exists'?'ชื่อผู้ใช้นี้มีอยู่แล้ว':
+        var m=r&&r.error==='username_exists'?'⚠️ ชื่อผู้ใช้นี้มีอยู่แล้ว — ใช้ชื่ออื่น':
+              r&&r.error==='username_required'?'กรุณากรอกชื่อผู้ใช้':
               r&&r.error==='password_too_short'?'รหัสสั้นเกินไป':
-              'เพิ่มไม่สำเร็จ';
+              ('เพิ่มไม่สำเร็จ'+(r&&r.message?': '+r.message:''));
         toast(m,'terr');return;
       }
       toast('เพิ่มแล้ว','tok');

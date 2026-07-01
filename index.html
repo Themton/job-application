@@ -5032,6 +5032,12 @@ function payDBLoad(){
         loan:hasSaved?p.loan:(a.loan||0),
         baseLoan:a.loan||0,
         advance:p.advance||0,
+        adv3_deducted:(function(){
+          if(!hasSaved)return false;
+          var inc=p.total_income||0,adv=p.advance||0,t3=p.tax3||0;
+          if(adv>0){var full=Math.round(inc*0.03*100)/100,reduced=Math.round((inc-adv)*0.03*100)/100;if(Math.abs(t3-reduced)<0.5&&Math.abs(full-reduced)>=0.5)return true;}
+          return false;
+        })(),
         commission:p.commission||0,
         totalIncome:p.total_income||0,totalDed:p.total_ded||0,net:p.net||0,
         _saved:hasSaved,
@@ -5254,6 +5260,12 @@ function payDBRender(){
         return;
       }
       var v=e[c.k]||0;
+      if(c.k==='advance'){
+        var taxable3=(e.status==='daily')||((e.status==='resigned_pending'||e.status==='terminated')&&(e.prevStatus==='daily'||(!e.prevStatus&&e.work_days>0)));
+        var chk=taxable3?('<label style="font-size:9px;color:#7c3aed;cursor:pointer;display:flex;align-items:center;gap:3px;margin-top:3px" title="ยอดเบิกนี้ถูกหักภาษี 3% ไปแล้วตอนเบิก — ระบบจะไม่คิด 3% ซ้ำ"><input type="checkbox" '+(e.adv3_deducted?'checked':'')+' onchange="payDBToggleAdv3('+i+',this.checked)" style="width:12px;height:12px;margin:0;flex:none"> เบิกหัก 3% แล้ว</label>'):'';
+        h+='<td><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'advance\',this.value)" onkeydown="payDBNav(event,'+ri+',\'advance\')" data-r="'+ri+'" data-c="advance" data-i="'+i+'" placeholder="0">'+chk+'</td>';
+        return;
+      }
       var auto=(c.k==='tax3'||c.k==='ss5')||(isDaily&&c.k==='salary'&&e.work_days>0);
       var refreshed=(c.k==='salary'&&e._baseUpdated);
       var absentAuto=(c.k==='absent_ded'&&e._absentDays>0);
@@ -5295,7 +5307,9 @@ function payDBCalcRow(e){
     else isResignedDaily=(e.work_days>0);
   }
   if(e.status==='daily'||isResignedDaily){
-    e.tax3=Math.round(e.totalIncome*0.03*100)/100;
+    // ถ้ายอดเบิกล่วงหน้าถูกหัก 3% ไปแล้วตอนเบิก → ไม่คิด 3% ซ้ำบนก้อนที่เบิก
+    var base3=e.adv3_deducted?Math.max(0,e.totalIncome-(e.advance||0)):e.totalIncome;
+    e.tax3=Math.round(base3*0.03*100)/100;
     e.ss5=0;
   }else if(e.status==='monthly_daily'){
     e.tax3=0;
@@ -5319,6 +5333,12 @@ function payDBSetPrevStatus(i,val){
   payDBUpdateFooter();
 }
 
+function payDBToggleAdv3(i,checked){
+  var e=PAYDB2[i];if(!e)return;
+  e.adv3_deducted=!!checked;
+  payDBCalcRow(e);
+  payDBRender();
+}
 function payDBCell(i,field,val){
   PAYDB2[i][field]=parseFloat(val)||0;
   var e=PAYDB2[i];
@@ -5332,6 +5352,8 @@ function payDBCell(i,field,val){
     return;
   }else if(field==='salary'||field==='diligence'){
     payDBCalcRow(e);
+  }else if(field==='advance'&&e.adv3_deducted){
+    payDBCalcRow(e); // ยอดเบิกเปลี่ยน + ติ๊กหัก3%แล้ว → คิดภาษี 3% ใหม่จาก (เงินได้ − เบิก)
   }else{
     e.totalIncome=e.salary+e.diligence;
     e.totalDed=e.late+e.absent_ded+e.tax3+e.ss5+e.loan+e.advance;
@@ -5340,7 +5362,7 @@ function payDBCell(i,field,val){
 
   var t3inp=$('paydb2-table').querySelector('input[data-i="'+i+'"][data-c="tax3"]');
   var s5inp=$('paydb2-table').querySelector('input[data-i="'+i+'"][data-c="ss5"]');
-  if(field==='salary'||field==='diligence'||field==='work_days'){
+  if(field==='salary'||field==='diligence'||field==='work_days'||field==='advance'){
     if(t3inp)t3inp.value=e.tax3||'';
     if(s5inp)s5inp.value=e.ss5||'';
   }

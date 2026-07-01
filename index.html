@@ -5248,7 +5248,7 @@ function payDBRender(){
     var isDaily=(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated');
     if(isDaily){
       h+='<td style="background:#f3e8ff;text-align:center;font-weight:bold;color:#7c3aed;font-size:12px">'+e.daily_rate+'</td>';
-      h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="'+(_refWD||'0')+'" title="กรอกจำนวนวันทำงานเอง (รอบนี้ '+(_refWD||'-')+' วัน)" style="color:#7c3aed;font-weight:bold"></td>';
+      h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="" title="กรอกจำนวนวันทำงานเอง (รอบนี้มาตรฐาน '+(_refWD||'-')+' วัน)" style="color:#7c3aed;font-weight:bold"></td>';
     }else{
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';

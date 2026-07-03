@@ -548,14 +548,11 @@ body.hr-mode .hr-hide{display:none!important}
       <div id="iv-form" class="cd hide" style="margin-bottom:14px;border:2px solid var(--acc)">
         <div class="cd-t"><span class="dot"></span> <span id="iv-form-title">เพิ่มนัดสัมภาษณ์</span></div>
         <div class="g2">
-          <div class="fld"><label>ชื่อผู้สมัคร *</label><input id="iv-name" placeholder="ชื่อ-สกุล"></div>
-          <div class="fld"><label>ตำแหน่งที่สมัคร</label><select id="iv-position"><option value="">-- เลือกตำแหน่ง --</option></select></div>
-          <div class="fld"><label>เบอร์โทร</label><input id="iv-phone" placeholder="08XXXXXXXX" maxlength="10" inputmode="tel"></div>
-          <div class="fld"><label>อีเมล</label><input id="iv-email" placeholder="email@gmail.com"></div>
-          <div class="fld"><label>วันที่สัมภาษณ์ *</label><input id="iv-date" type="date"></div>
-          <div class="fld"><label>เวลา *</label><input id="iv-time" type="time" value="10:00"></div>
-          <div class="fld"><label>สถานที่</label><input id="iv-location" placeholder="ห้องประชุม / ออนไลน์"></div>
-          <div class="fld"><label>ผู้สัมภาษณ์</label><input id="iv-interviewer" placeholder="ชื่อผู้สัมภาษณ์"></div>
+          <div class="fld"><label>ชื่อผู้สมัคร <span class="rq">*</span></label><input id="iv-name" placeholder="ชื่อ-สกุล"></div>
+          <div class="fld"><label>ตำแหน่งที่สมัคร <span class="rq">*</span></label><select id="iv-position"><option value="">-- เลือกตำแหน่ง --</option></select></div>
+          <div class="fld"><label>เบอร์โทร <span class="rq">*</span></label><input id="iv-phone" placeholder="08XXXXXXXX" maxlength="10" inputmode="tel"></div>
+          <div class="fld"><label>วันที่สัมภาษณ์ <span class="rq">*</span></label><input id="iv-date" type="date"></div>
+          <div class="fld"><label>เวลา <span class="rq">*</span></label><input id="iv-time" type="time" value="10:00"></div>
         </div>
         <div class="fld" style="margin-top:8px"><label>หมายเหตุ</label><textarea id="iv-note" rows="2" style="width:100%;padding:8px 12px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:13px;background:var(--inp)" placeholder="หมายเหตุเพิ่มเติม..."></textarea></div>
         <div class="brow" style="margin-top:10px">
@@ -8157,7 +8154,7 @@ function renderInterviews(){
     {l:'ทั้งหมด',v:IV_ALL.length,c:'var(--muted)',ic:'📊'}
   ].map(function(s){return'<div class="st"><div class="ic">'+s.ic+'</div><div class="l">'+s.l+'</div><div class="v" style="color:'+s.c+'">'+s.v+'</div></div>'}).join('');
 
-  var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>เวลา</th><th style="min-width:120px">ชื่อผู้สมัคร</th><th>ตำแหน่ง</th><th>เบอร์โทร</th><th>สถานที่</th><th>ผู้สัมภาษณ์</th><th>สถานะ</th><th>หมายเหตุ</th><th style="min-width:160px">จัดการ</th></tr></thead><tbody>';
+  var h='<div class="tw"><table><thead><tr><th>วันที่</th><th>เวลา</th><th style="min-width:120px">ชื่อผู้สมัคร</th><th>ตำแหน่ง</th><th>เบอร์โทร</th><th>สถานะ</th><th>หมายเหตุ</th><th style="min-width:160px">จัดการ</th></tr></thead><tbody>';
 
   if(!list.length)h+='<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted)">📭 ไม่มีข้อมูล</td></tr>';
 
@@ -8170,8 +8167,6 @@ function renderInterviews(){
     h+='<td class="nm">'+esc(iv.name||'')+'</td>';
     h+='<td>'+esc(iv.position||'')+'</td>';
     h+='<td style="font-size:12px">'+(iv.phone?'<a href="tel:'+esc(iv.phone)+'">'+esc(iv.phone)+'</a>':'')+'</td>';
-    h+='<td style="font-size:12px">'+esc(iv.location||'')+'</td>';
-    h+='<td style="font-size:12px">'+esc(iv.interviewer||'')+'</td>';
     h+='<td><span style="color:'+st.c+';font-weight:600;font-size:12px">'+st.l+'</span></td>';
     h+='<td style="font-size:11px;color:var(--muted)">'+esc(iv.note||'')+'</td>';
     h+='<td style="white-space:nowrap">';
@@ -8193,7 +8188,7 @@ function renderInterviews(){
 function showAddInterview(){
   $('iv-form').classList.remove('hide');
   $('iv-form-title').textContent='เพิ่มนัดสัมภาษณ์';
-  ['iv-name','iv-phone','iv-email','iv-location','iv-interviewer','iv-note'].forEach(function(x){$(x).value=''});
+  ['iv-name','iv-phone','iv-note'].forEach(function(x){$(x).value=''});
   var _ivp=$('iv-position');if(_ivp)_ivp.innerHTML='<option value="">-- เลือกตำแหน่ง --</option>'+POS.map(function(p){return '<option value="'+esc(p.title)+'">'+esc(p.title)+'</option>';}).join('');
   $('iv-date').value=new Date().toISOString().substring(0,10);
   $('iv-time').value='10:00';
@@ -8203,22 +8198,24 @@ function showAddInterview(){
 
 function saveInterview(){
   var name=$('iv-name').value.trim(),pos=$('iv-position').value.trim();
-  var phone=$('iv-phone').value.trim(),email=$('iv-email').value.trim();
+  var phone=$('iv-phone').value.trim();
   var date=$('iv-date').value,time=$('iv-time').value;
-  var loc=$('iv-location').value.trim(),interviewer=$('iv-interviewer').value.trim();
   var note=$('iv-note').value.trim();
   if(!name){toast('กรอกชื่อผู้สมัคร','terr');return}
+  if(!pos){toast('เลือกตำแหน่งที่สมัคร','terr');return}
+  if(!phone){toast('กรอกเบอร์โทร','terr');return}
   if(!date){toast('เลือกวันที่สัมภาษณ์','terr');return}
+  if(!time){toast('เลือกเวลา','terr');return}
 
   var id='IV-'+Date.now();
-  var data={id:id,name:name,position:pos,phone:phone,email:email,interview_date:date,interview_time:time||'10:00',location:loc,interviewer:interviewer,note:note,status:'scheduled',created_at:new Date().toISOString()};
+  var data={id:id,name:name,position:pos,phone:phone,interview_date:date,interview_time:time,note:note,status:'scheduled',created_at:new Date().toISOString()};
 
   prog(20,'บันทึกนัดสัมภาษณ์...');
   sb("interviews","POST",data).then(function(r){
     prog(100,'บันทึกนัดสัมภาษณ์ ✅');
     toast('📅 เพิ่มนัดสัมภาษณ์ '+name+' วันที่ '+date+' '+time,'tok');
     $('iv-form').classList.add('hide');
-    tgSend('📅 <b>นัดสัมภาษณ์ใหม่</b>\n\n👤 ชื่อ: <b>'+esc(name)+'</b>\n💼 ตำแหน่ง: '+esc(pos||'-')+'\n📅 วันที่: '+date+' เวลา '+time+'\n📍 สถานที่: '+esc(loc||'-')+'\n👔 ผู้สัมภาษณ์: '+esc(interviewer||'-')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+    tgSend('\ud83d\udcc5 <b>นัดสัมภาษณ์ใหม่</b>\n\n\ud83d\udc64 ชื่อ: <b>'+esc(name)+'</b>\n\ud83d\udcbc ตำแหน่ง: '+esc(pos||'-')+'\n\ud83d\udcde เบอร์: '+esc(phone||'-')+'\n\ud83d\udcc5 วันที่: '+date+' เวลา '+time+'\n\n\ud83c\udfe2 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
     loadInterviews();
   }).catch(function(e){prog(-1);toast('บันทึกไม่สำเร็จ: '+e,'terr')});
 }

@@ -549,7 +549,7 @@ body.hr-mode .hr-hide{display:none!important}
         <div class="cd-t"><span class="dot"></span> <span id="iv-form-title">เพิ่มนัดสัมภาษณ์</span></div>
         <div class="g2">
           <div class="fld"><label>ชื่อผู้สมัคร *</label><input id="iv-name" placeholder="ชื่อ-สกุล"></div>
-          <div class="fld"><label>ตำแหน่งที่สมัคร</label><input id="iv-position" placeholder="ตำแหน่ง"></div>
+          <div class="fld"><label>ตำแหน่งที่สมัคร</label><select id="iv-position"><option value="">-- เลือกตำแหน่ง --</option></select></div>
           <div class="fld"><label>เบอร์โทร</label><input id="iv-phone" placeholder="08XXXXXXXX" maxlength="10" inputmode="tel"></div>
           <div class="fld"><label>อีเมล</label><input id="iv-email" placeholder="email@gmail.com"></div>
           <div class="fld"><label>วันที่สัมภาษณ์ *</label><input id="iv-date" type="date"></div>
@@ -8244,7 +8244,8 @@ function renderInterviews(){
 function showAddInterview(){
   $('iv-form').classList.remove('hide');
   $('iv-form-title').textContent='เพิ่มนัดสัมภาษณ์';
-  ['iv-name','iv-position','iv-phone','iv-email','iv-location','iv-interviewer','iv-note'].forEach(function(x){$(x).value=''});
+  ['iv-name','iv-phone','iv-email','iv-location','iv-interviewer','iv-note'].forEach(function(x){$(x).value=''});
+  var _ivp=$('iv-position');if(_ivp)_ivp.innerHTML='<option value="">-- เลือกตำแหน่ง --</option>'+POS.map(function(p){return '<option value="'+esc(p.title)+'">'+esc(p.title)+'</option>';}).join('');
   $('iv-date').value=new Date().toISOString().substring(0,10);
   $('iv-time').value='10:00';
   $('iv-save-btn').onclick=function(){saveInterview()};

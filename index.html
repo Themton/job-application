@@ -1112,25 +1112,6 @@ if(location.search.indexOf('emp')>-1){
       <div class="fld"><label>วันเริ่มลา <span class="rq">*</span></label><input type="date" id="lr-start" onchange="lrCalcDays()"></div>
       <div class="fld"><label>วันสิ้นสุด <span class="rq">*</span></label><input type="date" id="lr-end" onchange="lrCalcDays()"></div>
       <div class="fld" style="grid-column:1/-1"><label>เหตุผล <span class="rq">*</span></label><textarea id="lr-reason" rows="2" style="resize:vertical" placeholder="ระบุเหตุผลการลา"></textarea></div>
-      <div class="fld" style="grid-column:1/-1">
-        <label id="lr-evidence-label">หลักฐาน <span style="font-size:11px;color:var(--muted)">(ลาป่วย = <span class="rq">บังคับ</span> แนบใบรับรองแพทย์)</span></label>
-        <div id="lr-upload-zone" style="border:2px dashed var(--bdr);border-radius:10px;padding:14px;text-align:center;background:var(--inp);cursor:pointer;transition:.2s" onclick="document.getElementById('lr-file-input').click()">
-          <input type="file" id="lr-file-input" accept="image/jpeg,image/jpg,image/png,application/pdf" style="display:none" onchange="lrPickFile(this)">
-          <div id="lr-upload-empty">
-            <div style="font-size:30px;margin-bottom:4px">📎</div>
-            <div style="font-size:13px;color:var(--txt2)">คลิกเพื่ออัปโหลดใบลา / ใบรับรองแพทย์</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">JPG / PNG / PDF (ไม่เกิน 10MB)</div>
-          </div>
-          <div id="lr-upload-preview" style="display:none">
-            <div style="display:flex;align-items:center;gap:10px;justify-content:center;flex-wrap:wrap">
-              <span id="lr-upload-icon" style="font-size:26px">📄</span>
-              <span id="lr-upload-name" style="font-size:13px;font-weight:600;color:var(--pri)"></span>
-              <button type="button" class="btn btn-d btn-s" style="padding:3px 10px;font-size:11px" onclick="event.stopPropagation();lrClearFile()">✕ ลบ</button>
-            </div>
-            <img id="lr-upload-thumb" style="max-width:200px;max-height:150px;margin-top:8px;border-radius:6px;display:none">
-          </div>
-        </div>
-      </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:10px;background:var(--inp);border-radius:8px">
       <div style="font-size:13px;color:var(--txt2)">จำนวน: <strong id="lr-days-display" style="color:var(--acc);font-size:16px">-</strong></div>
@@ -2787,42 +2768,6 @@ function lrCalcDays(){
   return days;
 }
 
-/* ═══ LEAVE EVIDENCE FILE UPLOAD ═══ */
-var LR_FILE=null;  // holds {name, type, data (base64)}
-
-function lrPickFile(inp){
-  var f=inp.files[0];if(!f)return;
-  if(f.size>10*1024*1024){toast('ไฟล์ใหญ่เกิน 10MB','terr');inp.value='';return}
-  var ok=['image/jpeg','image/jpg','image/png','application/pdf'];
-  if(ok.indexOf(f.type.toLowerCase())<0){
-    toast('รับเฉพาะ JPG/PNG/PDF','terr');inp.value='';return;
-  }
-  var r=new FileReader();
-  r.onload=function(e){
-    LR_FILE={name:f.name,type:f.type,data:e.target.result.split(',')[1]};
-    $('lr-upload-empty').style.display='none';
-    $('lr-upload-preview').style.display='block';
-    $('lr-upload-name').textContent=f.name+' ('+(f.size/1024).toFixed(0)+' KB)';
-    $('lr-upload-icon').textContent=f.type==='application/pdf'?'📄':'🖼️';
-    // Thumbnail สำหรับรูปภาพ
-    if(f.type.indexOf('image/')===0){
-      $('lr-upload-thumb').src=e.target.result;
-      $('lr-upload-thumb').style.display='block';
-    }else{
-      $('lr-upload-thumb').style.display='none';
-    }
-  };
-  r.readAsDataURL(f);
-}
-
-function lrClearFile(){
-  LR_FILE=null;
-  $('lr-file-input').value='';
-  $('lr-upload-empty').style.display='block';
-  $('lr-upload-preview').style.display='none';
-  $('lr-upload-thumb').style.display='none';
-}
-
 function submitLeaveRequest(){
   var type=$('lr-type').value,start=$('lr-start').value,end=$('lr-end').value;
   var half=$('lr-half').value==='true';
@@ -2832,16 +2777,6 @@ function submitLeaveRequest(){
   if(!reason||reason.length<3){toast('กรุณาระบุเหตุผล (อย่างน้อย 3 ตัวอักษร)','terr');return}
   var days=lrCalcDays();
   if(!days||days<=0){toast('จำนวนวันไม่ถูกต้อง','terr');return}
-
-  // บังคับแนบหลักฐานสำหรับลาป่วย + ลากิจ
-  if(type==='sick'&&!LR_FILE){
-    toast('ลาป่วยต้องแนบใบรับรองแพทย์','terr');
-    return;
-  }
-  if(type==='personal'&&!LR_FILE){
-    toast('ลากิจต้องแนบรูปหลักฐาน','terr');
-    return;
-  }
 
   // ตรวจสอบสิทธิ์ลากิจ (ตามที่กำหนดให้แต่ละคน)
   if(type==='personal'){
@@ -2875,17 +2810,8 @@ function submitLeaveRequest(){
 function doSubmitLeave(type,start,end,half,reason,days,btn){
   if(btn){btn.disabled=true;btn.innerHTML='⏳ กำลังส่ง...';}
 
-  // ถ้ามีไฟล์ → อัปโหลดก่อน แล้วค่อย submit request
-  var uploadPromise;
-  if(LR_FILE){
-    var ed=localStorage.getItem('emp_data');
-    var emp={};try{emp=JSON.parse(ed||'{}')}catch(e){}
-    uploadPromise=supaUpload(LR_FILE.data,LR_FILE.type,'leaves/'+(emp.id||'unknown')+'_'+Date.now()+_docExt(LR_FILE.name,LR_FILE.type)).then(function(url){return url||''});
-  }else{
-    uploadPromise=Promise.resolve(null);
-  }
-
-  uploadPromise.then(function(evidenceUrl){
+  // พนักงานไม่ต้องแนบเอกสาร — HR จะอัปโหลดให้ภายหลัง
+  Promise.resolve(null).then(function(evidenceUrl){
     return sbRpc('leave_submit',{
       p_token:TOK(),
       p_leave_type:type,
@@ -2909,7 +2835,6 @@ function doSubmitLeave(type,start,end,half,reason,days,btn){
     $('lr-reason').value='';
     $('lr-start').value='';$('lr-end').value='';
     $('lr-days-display').textContent='-';
-    lrClearFile();
     loadMyLeaveRequests();
     loadEmpNotifs();
   }).catch(function(e){

@@ -220,10 +220,10 @@ body.hr-mode .hr-hide{display:none!important}
 
   <div class="cd"><div class="cd-t"><span class="dot"></span> ข้อมูลธนาคาร</div>
     <div class="g2">
-      <div class="fld" id="F4"><label>ธนาคาร <span class="rq">*</span></label>
+      <div class="fld" id="F4"><label>ธนาคาร <span style="font-size:10px;color:var(--muted);font-weight:400">(กรอกภายหลังได้)</span></label>
         <select id="i-bank"><option value="">-- เลือกธนาคาร --</option><option>กสิกรไทย (KBANK)</option><option>กรุงเทพ (BBL)</option><option>กรุงไทย (KTB)</option><option>ไทยพาณิชย์ (SCB)</option><option>กรุงศรีอยุธยา (BAY)</option><option>ทหารไทยธนชาต (TTB)</option><option>ออมสิน (GSB)</option><option>ธ.ก.ส. (BAAC)</option><option>เกียรตินาคินภัทร (KKP)</option><option>ซีไอเอ็มบี (CIMB)</option><option>ทิสโก้ (TISCO)</option><option>ยูโอบี (UOB)</option></select>
       </div>
-      <div class="fld" id="F5"><label>เลขบัญชี <span class="rq">*</span></label><input id="i-baccount" placeholder="เลขบัญชี" maxlength="15" inputmode="numeric"></div>
+      <div class="fld" id="F5"><label>เลขบัญชี <span style="font-size:10px;color:var(--muted);font-weight:400">(กรอกภายหลังได้)</span></label><input id="i-baccount" placeholder="เลขบัญชี" maxlength="15" inputmode="numeric"></div>
       <div class="fld fw"><label>สำเนา Book Bank <span style="font-size:10px;color:var(--muted);font-weight:400">(แนบภายหลังได้)</span></label>
         <div class="uz" id="uz-k"><input type="file" accept="image/*,.pdf" onchange="pickF(this,'k')"><div id="uz-k-e"><div class="ic">🏦</div><div class="tx">คลิกอัปโหลดรูป Book Bank</div><div class="hn">JPG PNG PDF ไม่เกิน 10MB</div></div><div id="uz-k-d" class="fok hide">✅ <span id="uz-k-n"></span> <button class="rm" onclick="rmF(event,'k')">✕</button></div></div>
       </div>
@@ -1609,9 +1609,7 @@ function doSubmit(){
   if(!ph){$('F2').classList.add('er');toast('กรุณากรอกเบอร์โทร','terr');bad=true}
   else{var dg=ph.replace(/\D/g,'');if(dg.length!==10){$('F2').classList.add('er');toast('เบอร์โทรต้อง 10 หลัก','terr');bad=true}}
   if(!pos){$('F6').classList.add('er');toast('กรุณาเลือกตำแหน่ง','terr');bad=true}
-  // เอกสาร (วุฒิ/บัตร/ทะเบียนบ้าน/Book Bank) ไม่บังคับแนบแล้ว — บันทึกได้แม้ไม่ครบ (ระบบจะแจ้งเตือนที่ Dashboard)
-  if(!bk){$('F4').classList.add('er');toast('กรุณาเลือกธนาคาร','terr');bad=true}
-  if(!ba){$('F5').classList.add('er');toast('กรุณากรอกเลขบัญชี','terr');bad=true}
+  // เอกสาร + ธนาคาร/เลขบัญชี ไม่บังคับแล้ว — บันทึกได้แม้ไม่ครบ (ระบบจะแจ้งเตือนที่ Dashboard ว่าขาดอะไร)
   if(bad)return;
 
   var btn=$('btnSub');btn.disabled=true;btn.innerHTML='<span class="sp"></span> กำลังบันทึก...';
@@ -7335,6 +7333,7 @@ function loadDashboard(){
     if(!relevant)return;
     var miss=[];
     reqDocs.forEach(function(d){if(!a[d[0]]||String(a[d[0]]).length<5)miss.push(d[1])});
+    if(!a.bank_account||String(a.bank_account).replace(/\D/g,'').length<4)miss.push('เลขบัญชี');
     if(a.status==='monthly'&&(!a.contract_link||String(a.contract_link).length<5))miss.push('สัญญา');
     if(miss.length)incomplete.push({id:a.id,name:a.name,nickname:a.nickname,miss:miss});
   });

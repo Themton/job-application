@@ -398,8 +398,8 @@ body.hr-mode .hr-hide{display:none!important}
           <div class="fld" id="ae-fld-pos"><label>ตำแหน่ง <span class="rq">*</span></label><select id="ae-pos" onfocus="aeClsErr(this)"><option value="">-- เลือก --</option></select></div>
           <div class="fld"><label>ประเภท <span class="rq">*</span></label><select id="ae-status"><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="monthly_daily">ประจำ(รายวัน)+ปกส.</option><option value="new">ใหม่</option></select></div>
           <div class="fld"><label>วุฒิการศึกษา</label><select id="ae-edu"><option value="">-- เลือก --</option><option>ไม่มีวุฒิการศึกษา</option><option>ประถมศึกษา</option><option>มัธยมศึกษาตอนต้น (ม.3)</option><option>มัธยมศึกษาตอนปลาย (ม.6)</option><option>ปวช.</option><option>ปวส.</option><option>อนุปริญญา</option><option>ปริญญาตรี</option><option>ปริญญาโท</option><option>ปริญญาเอก</option></select></div>
-          <div class="fld" id="ae-fld-bank"><label>ธนาคาร <span class="rq">*</span></label><select id="ae-bank" onfocus="aeClsErr(this)"><option value="">-- เลือก --</option><option>กสิกรไทย (KBANK)</option><option>กรุงเทพ (BBL)</option><option>กรุงไทย (KTB)</option><option>ไทยพาณิชย์ (SCB)</option><option>กรุงศรีอยุธยา (BAY)</option><option>ทหารไทยธนชาต (TTB)</option><option>ออมสิน (GSB)</option><option>ธ.ก.ส. (BAAC)</option></select></div>
-          <div class="fld" id="ae-fld-account"><label>เลขบัญชี <span class="rq">*</span></label><input id="ae-account" placeholder="เลขบัญชี" maxlength="15" inputmode="numeric" onfocus="aeClsErr(this)"></div>
+          <div class="fld" id="ae-fld-bank"><label>ธนาคาร <span style="font-size:10px;color:var(--muted);font-weight:400">(กรอกภายหลังได้)</span></label><select id="ae-bank" onfocus="aeClsErr(this)"><option value="">-- เลือก --</option><option>กสิกรไทย (KBANK)</option><option>กรุงเทพ (BBL)</option><option>กรุงไทย (KTB)</option><option>ไทยพาณิชย์ (SCB)</option><option>กรุงศรีอยุธยา (BAY)</option><option>ทหารไทยธนชาต (TTB)</option><option>ออมสิน (GSB)</option><option>ธ.ก.ส. (BAAC)</option></select></div>
+          <div class="fld" id="ae-fld-account"><label>เลขบัญชี <span style="font-size:10px;color:var(--muted);font-weight:400">(กรอกภายหลังได้)</span></label><input id="ae-account" placeholder="เลขบัญชี" maxlength="15" inputmode="numeric" onfocus="aeClsErr(this)"></div>
         </div>
         <div style="margin-top:14px"><div class="cd-t"><span class="dot"></span> 📎 แนบเอกสาร / รูปภาพ</div>
         <div class="g2" style="margin-top:8px">
@@ -2202,8 +2202,7 @@ function adminAddEmp(){
   if(!nm){errors.push('กรุณากรอกชื่อ-สกุล');aeSetErr('ae-fld-name','* จำเป็น')}
   if(!ph||ph.replace(/\D/g,'').length!==10){errors.push('เบอร์โทรต้อง 10 หลัก');aeSetErr('ae-fld-phone','* 10 หลัก')}
   if(!pos){errors.push('กรุณาเลือกตำแหน่ง');aeSetErr('ae-fld-pos','* จำเป็น')}
-  if(!bk){errors.push('กรุณาเลือกธนาคาร');aeSetErr('ae-fld-bank','* จำเป็น')}
-  if(!ba){errors.push('กรุณากรอกเลขบัญชี');aeSetErr('ae-fld-account','* จำเป็น')}
+  // ธนาคาร + เลขบัญชี ไม่บังคับ — บันทึกได้แม้ไม่มี (Dashboard จะแจ้งเตือน 'ขาด เลขบัญชี')
 
   if(errors.length){
     $('ae-errors').innerHTML='⚠️ กรุณาตรวจสอบข้อมูล:<br>• '+errors.join('<br>• ');

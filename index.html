@@ -1518,6 +1518,10 @@ function page(p){
   var target=$('P-'+p);
   if(target){target.classList.remove('hide');target.style.display='block'}
   var hdr=document.querySelector('.hdr');if(hdr)hdr.style.display=(p==='admin')?'none':'';
+  // หน้าพนักงาน: ล็อกอินแล้วซ่อนแถบนำทางบนสุดทั้งหมด (ไม่ให้เห็นเจ้าหน้าที่/บัญชี/ส่วนอื่น) · หน้าล็อกอินพนักงานซ่อนเฉพาะลิงก์เจ้าหน้าที่
+  var _nb=document.getElementById('nav-btns');if(_nb)_nb.style.display=(p==='emp')?'none':'';
+  if(p==='emp'||p==='emp-login'){document.querySelectorAll('.nav-staff').forEach(function(el){el.style.display='none'});}
+  else if(p!=='admin'&&p!=='acc'&&p!=='acc-login'){document.querySelectorAll('.nav-staff').forEach(function(el){el.style.display=''});document.querySelectorAll('.nav-emp').forEach(function(el){el.style.display=''});}
   if(p==='admin'){if(isHR())document.body.classList.add('hr-mode');else document.body.classList.remove('hr-mode');loadAdmin()}
   if(p==='acc')loadAcc();
   if(p==='form'){loadPos();initBdayDropdowns('i')}

@@ -163,7 +163,7 @@ body.hr-mode .hr-hide{display:none!important}
   <div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><div><h1>ระบบข้อมูลพนักงาน</h1><small>บริษัทเดอะเอ็มที</small></div></div>
   <div id="nav-btns" style="display:flex;gap:5px;flex-wrap:wrap">
     <!-- Employee links -->
-    <a href="." class="nbtn nav-emp nav-pub" style="text-decoration:none">📝 กรอกข้อมูล</a>
+    <a href="." class="nbtn nav-emp nav-pub nav-fillform" style="text-decoration:none">📝 กรอกข้อมูล</a>
     <a href="?emp" class="nbtn nav-emp nav-pub" style="text-decoration:none">🔑 พนักงาน</a>
     <!-- Staff links -->
     <a href="?admin" class="nbtn nav-staff nav-pub" style="text-decoration:none">👤 เจ้าหน้าที่</a>
@@ -1042,7 +1042,7 @@ body.hr-mode .hr-hide{display:none!important}
 <script>
 if(location.search.indexOf('emp')>-1){
   document.getElementById('P-form').style.display='none';
-  document.querySelectorAll('.nav-staff').forEach(function(el){el.style.display='none'});
+  document.querySelectorAll('.nav-staff,.nav-fillform').forEach(function(el){el.style.display='none'});
 }else if(location.search.indexOf('admin')>-1||location.search.indexOf('acc')>-1){
   document.querySelectorAll('.nav-emp').forEach(function(el){el.style.display='none'});
 }
@@ -1520,7 +1520,7 @@ function page(p){
   var hdr=document.querySelector('.hdr');if(hdr)hdr.style.display=(p==='admin')?'none':'';
   // หน้าพนักงาน: ล็อกอินแล้วซ่อนแถบนำทางบนสุดทั้งหมด (ไม่ให้เห็นเจ้าหน้าที่/บัญชี/ส่วนอื่น) · หน้าล็อกอินพนักงานซ่อนเฉพาะลิงก์เจ้าหน้าที่
   var _nb=document.getElementById('nav-btns');if(_nb)_nb.style.display=(p==='emp')?'none':'';
-  if(p==='emp'||p==='emp-login'){document.querySelectorAll('.nav-staff').forEach(function(el){el.style.display='none'});}
+  if(p==='emp'||p==='emp-login'){document.querySelectorAll('.nav-staff,.nav-fillform').forEach(function(el){el.style.display='none'});}
   else if(p!=='admin'&&p!=='acc'&&p!=='acc-login'){document.querySelectorAll('.nav-staff').forEach(function(el){el.style.display=''});document.querySelectorAll('.nav-emp').forEach(function(el){el.style.display=''});}
   if(p==='admin'){if(isHR())document.body.classList.add('hr-mode');else document.body.classList.remove('hr-mode');loadAdmin()}
   if(p==='acc')loadAcc();

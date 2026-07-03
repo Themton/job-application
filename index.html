@@ -263,7 +263,7 @@ body.hr-mode .hr-hide{display:none!important}
         <button class="sb-item" id="tab-interview" onclick="showTab('interview')"><span class="sb-ic">📅</span><span class="sb-tx">นัดสัมภาษณ์งาน</span></button>
         <button class="sb-item" id="tab-dept" onclick="showTab('dept')"><span class="sb-ic">🏢</span><span class="sb-tx">แผนก</span></button>
         <button class="sb-item" id="tab-pos" onclick="showTab('pos')"><span class="sb-ic">💼</span><span class="sb-tx">ตำแหน่ง</span></button>
-        <button class="sb-item" id="tab-usr" onclick="showTab('usr')"><span class="sb-ic">👤</span><span class="sb-tx">ผู้ใช้ / สิทธิ์</span></button>
+        <button class="sb-item hr-hide" id="tab-usr" onclick="showTab('usr')"><span class="sb-ic">👤</span><span class="sb-tx">ผู้ใช้ / สิทธิ์</span></button>
         <button class="sb-item" id="tab-rpt" onclick="showTab('rpt')"><span class="sb-ic">📊</span><span class="sb-tx">รายงาน / ตรวจสอบ</span></button>
         <button class="sb-item" id="tab-lv" onclick="showTab('lv')"><span class="sb-ic">🗓️</span><span class="sb-tx">อนุมัติการลา <span id="lv-pending-dot" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;margin-left:4px"></span></span></button>
         <button class="sb-item" id="tab-warn" onclick="showTab('warn')"><span class="sb-ic">⚠️</span><span class="sb-tx">ใบเตือน / บันทึก</span></button>
@@ -1523,6 +1523,8 @@ function page(p){
 var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',interview:'📅 นัดสัมภาษณ์งาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',warn:'⚠️ ใบเตือน',termlist:'📢 ประกาศพ้นสภาพ',eval:'📝 ประเมินผล',att:'📋 ขาด/ลา/มาสาย',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',exp:'🧾 เบิกค่าใช้จ่าย',paydb:'🗂️ รายงานรวม',cert:'📜 หนังสือรับรอง',tax:'📄 ภาษี/ปกส.',labor:'📋 ทะเบียนลูกจ้าง'};
 
 function showTab(t){
+  // HR ไม่มีสิทธิ์เข้าเมนูจัดการผู้ใช้ — เด้งกลับหน้าพนักงาน
+  if(t==='usr'&&isHR()){t='app';toast('เมนูนี้เฉพาะผู้ดูแลระบบ','terr');}
   ['dash','app','interview','dept','pos','usr','rpt','lv','warn','termlist','eval','att','pay','comm','exp','paydb','cert','tax','labor'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   if(t==='lv'){

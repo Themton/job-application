@@ -357,6 +357,7 @@ body.hr-mode .hr-hide{display:none!important}
           <select class="fsel" id="f-st" onchange="window._statFilter='';doFilter()"><option value="active">ทำงานอยู่ (ซ่อนพ้นสภาพ)</option><option value="">ทุกสถานะ</option><option value="new">ใหม่</option><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="monthly_daily">ประจำ(รายวัน)</option><option value="resigned_pending">ลาออก-รอจ่าย</option><option value="terminated">พ้นสภาพ</option></select>
           <select class="fsel" id="f-bank" onchange="doFilter()"><option value="">ทุกธนาคาร</option><option value="scb">ไทยพาณิชย์ (SCB)</option><option value="other">ธนาคารอื่น</option></select>
           <select class="fsel" id="f-email" onchange="doFilter()"><option value="">ทุกอีเมล</option><option value="has">มีอีเมล</option><option value="no">ไม่มีอีเมล</option></select>
+          <button class="fsel" onclick="bulkPayModal()" style="cursor:pointer;background:#dcfce7;border-color:#16a34a;color:#15803d;font-weight:700">💰 จ่ายเงินหลายคน</button>
           <div class="emp-actions">
             <button class="btn btn-a btn-s" onclick="showAdminAddEmp()">➕ เพิ่มพนักงาน</button>
             <button class="btn btn-s" onclick="empExport()" style="background:linear-gradient(135deg,#2d5080,#3b82f6);color:#fff">📥 Export</button>
@@ -3010,7 +3011,121 @@ function markNotifRead(id){
 
 
 function chgSt(id,st){sb("applications","PATCH",{status:st},"?id=eq."+id).then(function(){toast('อัปเดตแล้ว','tok');audit('status_change','employee',id,'เปลี่ยนสถานะเป็น '+st+' ('+_empNm(id)+')');ALL.forEach(function(a){if(a.id===id)a.status=st});stats();doFilter();syncSheet({id:id,status:st})}).catch(function(e){toast('Error: '+e,'terr')})}
-function terminate(id){
+/* ═══ Modal สวย ๆ ใช้ซ้ำได้ ═══ */
+function mtModalClose(){var m=document.getElementById('mt-modal');if(m)m.remove();document.removeEventListener('keydown',_mtEsc);}
+function _mtEsc(e){if(e.key==='Escape')mtModalClose();}
+function mtModal(opts){
+  mtModalClose();
+  var ov=document.createElement('div');ov.id='mt-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick=function(e){if(e.target===ov)mtModalClose();};
+  ov.innerHTML='<div style="background:#fff;border-radius:16px;max-width:'+(opts.width||420)+'px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden;font-family:inherit">'
+    +'<div style="padding:16px 20px;font-weight:800;font-size:16px;color:#1f2937;border-bottom:1px solid #f0f0f0">'+(opts.title||'')+'</div>'
+    +'<div style="padding:20px;max-height:60vh;overflow:auto">'+(opts.body||'')+'</div>'
+    +'<div style="padding:12px 20px;border-top:1px solid #f0f0f0;display:flex;gap:8px;justify-content:flex-end">'
+    +(opts.hideCancel?'':'<button id="mt-modal-cancel" style="padding:9px 18px;border:1px solid #d1d5db;background:#fff;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">'+(opts.cancelText||'ยกเลิก')+'</button>')
+    +'<button id="mt-modal-ok" style="padding:9px 18px;border:none;background:'+(opts.okColor||'#16a34a')+';color:#fff;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">'+(opts.okText||'ยืนยัน')+'</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  var cb=document.getElementById('mt-modal-cancel');if(cb)cb.onclick=function(){mtModalClose();if(opts.onCancel)opts.onCancel();};
+  document.getElementById('mt-modal-ok').onclick=function(){if(opts.onOk)opts.onOk();};
+  document.addEventListener('keydown',_mtEsc);
+}
+
+function openTerminateModal(id,name){
+  var emp=null;ALL.forEach(function(a){if(a.id===id)emp=a});
+  var nm=name||(emp?emp.name:'');
+  var today=new Date().toISOString().substring(0,10);
+  var defDate=(emp&&emp.terminated_date)?String(emp.terminated_date).substring(0,10):today;
+  var body='<div style="font-size:13px;color:#374151;margin-bottom:14px">พนักงาน: <b>'+esc(nm)+'</b></div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">'
+    +'<label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid #f59e0b;border-radius:10px;cursor:pointer;background:#fffbeb"><input type="radio" name="tm-type" value="resigned_pending" checked style="width:16px;height:16px"><div><div style="font-weight:700;color:#92400e;font-size:13px">⏳ ลาออก — รอจ่ายเงินเดือน</div><div style="font-size:11px;color:#a16207">ยังอยู่ในระบบจนกว่าจะจ่ายงวดสุดท้าย</div></div></label>'
+    +'<label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer"><input type="radio" name="tm-type" value="terminated" style="width:16px;height:16px"><div><div style="font-weight:700;color:#374151;font-size:13px">⛔ พ้นสภาพทันที</div><div style="font-size:11px;color:#9ca3af">ออกจากระบบเลย (จ่ายยอดค้างแล้ว)</div></div></label>'
+    +'</div>'
+    +'<div style="font-size:12px;color:#6b7280;margin-bottom:5px">📅 วันที่ออกจากงาน</div>'
+    +'<input type="date" id="tm-date" value="'+defDate+'" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:9px;font-size:14px;font-family:inherit">';
+  mtModal({title:'⛔ ลาออก / พ้นสภาพ',body:body,okText:'ยืนยัน',okColor:'#dc2626',onOk:function(){
+    var st=(document.querySelector('input[name="tm-type"]:checked')||{}).value||'resigned_pending';
+    var dt=document.getElementById('tm-date').value;
+    if(!dt){toast('เลือกวันที่','terr');return;}
+    mtModalClose();doTerminate(id,nm,st,dt);
+  }});
+}
+function doTerminate(id,name,st,termDate){
+  var orig='';ALL.forEach(function(a){if(a.id===id)orig=a.status});
+  var now=new Date().toISOString();
+  sb("applications","PATCH",{status:st,terminated_at:now,terminated_date:termDate},"?id=eq."+id).then(function(){
+    if(st==='resigned_pending'&&orig&&orig!=='resigned_pending')sb("applications","PATCH",{prev_status:orig},"?id=eq."+id).then(function(){ALL.forEach(function(a){if(a.id===id)a.prev_status=orig})}).catch(function(){});
+    toast((st==='terminated'?'⛔ พ้นสภาพแล้ว':'⏳ ลาออก-รอจ่าย')+' — '+name+' ('+termDate+')','tok');
+    ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=now;a.terminated_date=termDate}});
+    audit('terminate','employee',id,(st==='terminated'?'พ้นสภาพ':'ลาออก-รอจ่าย')+' วันที่ '+termDate+' — '+name);
+    tgNotify('terminate',{name:name,date:termDate,status:st==='terminated'?'พ้นสภาพ':'ลาออก-รอจ่ายเงินเดือน'});
+    stats();doFilter();var det=document.getElementById('A-det');if(det&&!det.classList.contains('hide'))detail(id);
+  }).catch(function(e){toast('Error: '+e,'terr')});
+}
+function openConfirmPaidModal(id){
+  var emp=null;ALL.forEach(function(a){if(a.id===id)emp=a});
+  var today=new Date().toISOString().substring(0,10);
+  var d=(emp&&emp.terminated_date)?String(emp.terminated_date).substring(0,10):today;
+  var body='<div style="font-size:13px;color:#374151;margin-bottom:6px">ยืนยันว่าจ่ายเงินเดือนงวดสุดท้ายของ <b>'+esc(emp?emp.name:'')+'</b> แล้ว</div>'
+    +'<div style="font-size:12px;color:#6b7280;margin-bottom:14px">สถานะจะเปลี่ยนเป็น <b style="color:#dc2626">พ้นสภาพ</b></div>'
+    +'<div style="font-size:12px;color:#6b7280;margin-bottom:5px">📅 วันที่พ้นสภาพ (ดึงจากวันลาออกให้แล้ว แก้ได้ถ้าต้องการ)</div>'
+    +'<input type="date" id="cp-date" value="'+d+'" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:9px;font-size:14px;font-family:inherit">';
+  mtModal({title:'💰 จ่ายแล้ว → พ้นสภาพ',body:body,okText:'ยืนยันจ่ายแล้ว',okColor:'#16a34a',onOk:function(){
+    var dt=document.getElementById('cp-date').value||d;mtModalClose();
+    sb("applications","PATCH",{status:"terminated",terminated_date:dt},"?id=eq."+id).then(function(){
+      toast('✅ จ่ายแล้ว → พ้นสภาพ ('+dt+')','tok');
+      audit('terminate','employee',id,'จ่ายเงินเดือนแล้ว → พ้นสภาพ วันที่ '+dt+' ('+_empNm(id)+')');
+      ALL.forEach(function(a){if(a.id===id){a.status='terminated';a.terminated_date=dt}});
+      stats();doFilter();var det=document.getElementById('A-det');if(det&&!det.classList.contains('hide'))detail(id);
+    }).catch(function(e){toast('Error: '+e,'terr')});
+  }});
+}
+function openReinstateModal(id){
+  var emp=null;ALL.forEach(function(a){if(a.id===id)emp=a});
+  var opt=[['daily','พนักงานรายวัน'],['monthly','พนักงานประจำ'],['new','พนักงานใหม่']];
+  var body='<div style="font-size:13px;color:#374151;margin-bottom:12px">คืนสถานะ <b>'+esc(emp?emp.name:'')+'</b> เป็น:</div><div style="display:flex;flex-direction:column;gap:8px">'
+    +opt.map(function(o,ix){return '<label style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer"><input type="radio" name="ri-st" value="'+o[0]+'" '+(ix===0?'checked':'')+' style="width:16px;height:16px"><span style="font-weight:600;font-size:13px;color:#374151">'+o[1]+'</span></label>';}).join('')
+    +'</div><div style="font-size:11px;color:#9ca3af;margin-top:12px">* วันพ้นสภาพจะถูกลบออก</div>';
+  mtModal({title:'↩️ คืนสถานะพนักงาน',body:body,okText:'คืนสถานะ',okColor:'#2563eb',onOk:function(){
+    var st=(document.querySelector('input[name="ri-st"]:checked')||{}).value||'daily';mtModalClose();
+    sb("applications","PATCH",{status:st,terminated_at:null,terminated_date:''},"?id=eq."+id).then(function(){
+      toast('↩️ คืนสถานะเป็น '+({daily:'รายวัน',monthly:'ประจำ',new:'ใหม่'}[st])+' แล้ว','tok');
+      audit('reinstate','employee',id,'คืนสถานะเป็น '+({daily:'รายวัน',monthly:'ประจำ',new:'ใหม่'}[st])+' ('+_empNm(id)+')');
+      ALL.forEach(function(a){if(a.id===id){a.status=st;a.terminated_at=null;a.terminated_date=''}});
+      stats();doFilter();var det=document.getElementById('A-det');if(det&&!det.classList.contains('hide'))detail(id);
+    }).catch(function(e){toast('Error: '+e,'terr')});
+  }});
+}
+function bulkPayModal(){
+  var list=ALL.filter(function(a){return a.status==='resigned_pending'});
+  if(!list.length){toast('ไม่มีพนักงานรอจ่ายเงินเดือน','terr');return;}
+  var today=new Date().toISOString().substring(0,10);
+  var rows=list.map(function(a){
+    var d=a.terminated_date?String(a.terminated_date).substring(0,10):today;
+    return '<label style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid #f0f0f0;cursor:pointer">'
+      +'<input type="checkbox" class="bp-chk" data-id="'+a.id+'" checked style="width:16px;height:16px;flex:none">'
+      +'<div style="flex:1"><div style="font-weight:600;font-size:13px;color:#374151">'+esc(a.name)+(a.nickname?' <span style="color:#9ca3af">('+esc(a.nickname)+')</span>':'')+'</div>'
+      +'<div style="font-size:11px;color:#9ca3af;margin-top:2px">วันพ้นสภาพ: <input type="date" class="bp-date" data-id="'+a.id+'" value="'+d+'" onclick="event.preventDefault()" style="border:1px solid #e5e7eb;border-radius:5px;padding:1px 5px;font-size:11px;font-family:inherit"></div></div></label>';
+  }).join('');
+  mtModal({title:'💰 จ่ายเงินหลายคน ('+list.length+' คนรอจ่าย)',width:480,okText:'ยืนยันจ่าย & พ้นสภาพ',okColor:'#16a34a',
+    body:'<div style="font-size:12px;color:#6b7280;margin-bottom:10px">เลือกคนที่จ่ายเงินแล้ว → เปลี่ยนเป็น "พ้นสภาพ" พร้อมกัน</div><div style="border:1px solid #eee;border-radius:10px;overflow:hidden">'+rows+'</div>',
+    onOk:function(){
+      var sel=[];document.querySelectorAll('.bp-chk').forEach(function(c){if(c.checked){var id=c.getAttribute('data-id');var di=document.querySelector('.bp-date[data-id="'+id+'"]');sel.push({id:id,date:(di&&di.value)||today});}});
+      if(!sel.length){toast('ยังไม่ได้เลือกใคร','terr');return;}
+      mtModalClose();bulkPayRun(sel,0);
+    }});
+}
+function bulkPayRun(sel,i){
+  if(i>=sel.length){toast('✅ จ่ายเงิน & พ้นสภาพ '+sel.length+' คนเรียบร้อย','tok');audit('terminate','employee','','จ่ายเงินหลายคน → พ้นสภาพ '+sel.length+' คน');stats();doFilter();return;}
+  var s=sel[i];
+  sb("applications","PATCH",{status:"terminated",terminated_date:s.date},"?id=eq."+s.id).then(function(){
+    ALL.forEach(function(a){if(a.id===s.id){a.status='terminated';a.terminated_date=s.date}});bulkPayRun(sel,i+1);
+  }).catch(function(){bulkPayRun(sel,i+1);});
+}
+
+function terminate(id){return openTerminateModal(id,null);}
+function _termOld(id){
   var choice=prompt('เลือกประเภท:\n1 = ลาออก รอจ่ายเงินเดือน\n2 = พ้นสภาพทันที\n\nพิมพ์ 1 หรือ 2:','1');
   if(!choice)return;
   var st=choice.trim()==='2'?'terminated':'resigned_pending';
@@ -3028,7 +3143,8 @@ function terminate(id){
     stats();doFilter();detail(id);
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
-function quickTerminate(id,name){
+function quickTerminate(id,name){return openTerminateModal(id,name);}
+function _qtermOld(id,name){
   var choice=prompt('⛔ "'+name+'" ลาออก:\n1 = รอจ่ายเงินเดือนก่อน\n2 = พ้นสภาพทันที\n\nพิมพ์ 1 หรือ 2:','1');
   if(!choice)return;
   var st=choice.trim()==='2'?'terminated':'resigned_pending';
@@ -3045,7 +3161,8 @@ function quickTerminate(id,name){
     stats();doFilter();
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
-function confirmPaid(id){
+function confirmPaid(id){return openConfirmPaidModal(id);}
+function _cpOld(id){
   if(!confirm('ยืนยันจ่ายเงินเดือนแล้ว?\n\nพนักงานจะถูกเปลี่ยนเป็น "พ้นสภาพ"'))return;
   var termDate=prompt('📅 วันที่พ้นสภาพ (YYYY-MM-DD):',new Date().toISOString().substring(0,10));
   if(!termDate)return;
@@ -3064,7 +3181,8 @@ function setTermDate(id,date){
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
 
-function reinstate(id){
+function reinstate(id){return openReinstateModal(id);}
+function _riOld(id){
   var newStatus=prompt('คืนสถานะเป็น:\n1 = รายวัน\n2 = ประจำ\n3 = ใหม่\n\nพิมพ์ 1, 2 หรือ 3:','1');
   if(!newStatus)return;
   var st=newStatus.trim()==='2'?'monthly':newStatus.trim()==='3'?'new':'daily';

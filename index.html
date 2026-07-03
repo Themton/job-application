@@ -8275,37 +8275,56 @@ function saveInterview(){
 }
 
 function ivUpdateStatus(id,st){
-  var note='';
-  if(st==='failed')note=prompt('เหตุผลที่ไม่ผ่าน:','');
-  if(st==='failed'&&note===null)return;
+  if(st==='failed'){
+    var iv=null;IV_ALL.forEach(function(x){if(x.id===id)iv=x});
+    mtModal({title:'\ud83d\udd34 ไม่ผ่านการสัมภาษณ์',okText:'ยืนยัน',okColor:'#dc2626',
+      body:'<div style="font-size:13px;color:#374151;margin-bottom:10px">ผู้สมัคร: <b>'+esc(iv?iv.name:'')+'</b></div>'
+        +'<div style="font-size:12px;color:#6b7280;margin-bottom:4px">\ud83d\udcdd เหตุผลที่ไม่ผ่าน (ไม่บังคับ)</div>'
+        +'<textarea id="iv-fail-note" rows="3" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical" placeholder="เช่น ประสบการณ์ไม่ตรง, ไม่มาตามนัด..."></textarea>',
+      onOk:function(){var n=($('iv-fail-note')||{}).value||'';mtModalClose();ivDoStatus(id,'failed',n);}});
+    return;
+  }
+  ivDoStatus(id,st,'');
+}
+function ivDoStatus(id,st,note){
   sb("interviews","PATCH",{status:st,note:note||undefined},"?id=eq."+id).then(function(){
-    toast(st==='passed'?'🟢 ผ่านการสัมภาษณ์':'🔴 ไม่ผ่านการสัมภาษณ์','tok');
+    toast(st==='passed'?'\ud83d\udfe2 ผ่านการสัมภาษณ์':st==='failed'?'\ud83d\udd34 ไม่ผ่านการสัมภาษณ์':'อัปเดตแล้ว','tok');
     IV_ALL.forEach(function(iv){if(iv.id===id){iv.status=st;if(note)iv.note=note}});
     renderInterviews();
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
 
 function ivHire(id){
-  if(!confirm('🎉 รับเข้าทำงาน?\n\nจะเพิ่มเป็นพนักงานใหม่ในระบบ'))return;
+  var iv=null;IV_ALL.forEach(function(x){if(x.id===id)iv=x});
+  if(!iv){toast('ไม่พบข้อมูล','terr');return}
+  mtModal({title:'\ud83c\udf89 รับเข้าทำงาน',okText:'ยืนยันรับเข้าทำงาน',okColor:'#16a34a',
+    body:'<div style="font-size:13px;color:#374151">รับ <b>'+esc(iv.name)+'</b> เข้าทำงาน?</div>'
+      +'<div style="font-size:12px;color:#6b7280;margin-top:6px">\ud83d\udcbc ตำแหน่ง: '+esc(iv.position||'-')+'</div>'
+      +'<div style="font-size:11px;color:#9ca3af;margin-top:10px">* จะเพิ่มเป็นพนักงานใหม่ในระบบ (สถานะ "ใหม่")</div>',
+    onOk:function(){mtModalClose();ivDoHire(id);}});
+}
+function ivDoHire(id){
   var iv=null;IV_ALL.forEach(function(x){if(x.id===id)iv=x});
   if(!iv){toast('ไม่พบข้อมูล','terr');return}
   var empId='EMP-'+Date.now();
   var data={id:empId,name:iv.name,phone:iv.phone||'',email:iv.email||'',position:iv.position||'',status:'new',created_at:new Date().toISOString()};
   prog(20,'เพิ่มพนักงานใหม่...');
   sb("applications","POST",data).then(function(){
-    sb("interviews","PATCH",{status:'completed',note:(iv.note||'')+' → รับเข้าทำงานแล้ว'},"?id=eq."+id);
-    prog(100,'เพิ่มพนักงาน ✅ '+iv.name);
-    toast('🎉 รับ '+iv.name+' เข้าทำงานแล้ว','tok');
-    tgSend('🎉 <b>รับพนักงานใหม่</b>\n\n👤 '+esc(iv.name)+'\n💼 '+esc(iv.position||'-')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+    sb("interviews","PATCH",{status:'completed',note:(iv.note||'')+' \u2192 รับเข้าทำงานแล้ว'},"?id=eq."+id);
+    prog(100,'เพิ่มพนักงาน \u2705 '+iv.name);
+    toast('\ud83c\udf89 รับ '+iv.name+' เข้าทำงานแล้ว','tok');
+    tgSend('\ud83c\udf89 <b>รับพนักงานใหม่</b>\n\n\ud83d\udc64 '+esc(iv.name)+'\n\ud83d\udcbc '+esc(iv.position||'-')+'\n\n\ud83c\udfe2 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
     loadInterviews();
   }).catch(function(e){prog(-1);toast('Error: '+e,'terr')});
 }
 
 function ivDelete(id){
-  if(!confirm('ลบนัดสัมภาษณ์นี้?'))return;
-  sb("interviews","DELETE",null,"?id=eq."+id).then(function(){
-    toast('ลบแล้ว','tok');loadInterviews();
-  }).catch(function(e){toast('Error: '+e,'terr')});
+  var iv=null;IV_ALL.forEach(function(x){if(x.id===id)iv=x});
+  mtModal({title:'\ud83d\uddd1\ufe0f ลบนัดสัมภาษณ์',okText:'ลบ',okColor:'#dc2626',
+    body:'<div style="font-size:13px;color:#374151">ลบนัดสัมภาษณ์ของ <b>'+esc(iv?iv.name:'')+'</b>?</div>',
+    onOk:function(){mtModalClose();
+      sb("interviews","DELETE",null,"?id=eq."+id).then(function(){toast('ลบแล้ว','tok');loadInterviews();}).catch(function(e){toast('Error: '+e,'terr')});
+    }});
 }
 
 /* ═══ TERMINATION ANNOUNCEMENTS (ประกาศพ้นสภาพ) ═══ */

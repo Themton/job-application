@@ -328,6 +328,11 @@ body.hr-mode .hr-hide{display:none!important}
         <div class="cd"><div class="cd-t"><span class="dot"></span> 📋 เอกสารยังไม่ครบ (Telesale)</div><div id="dash-docs-incomplete"></div></div>
       </div>
 
+      <!-- Row 4.6: Missing work start date (Customer Relations) -->
+      <div style="margin-bottom:16px">
+        <div class="cd"><div class="cd-t"><span class="dot"></span> 📅 ยังไม่ระบุวันเริ่มงาน (ลูกค้าสัมพันธ์)</div><div id="dash-nostart"></div></div>
+      </div>
+
       <!-- Row 5: Birthday -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
         <div class="cd"><div class="cd-t"><span class="dot"></span> 🎂 วันเกิดเดือนนี้</div><div id="dash-birthday"></div></div>
@@ -7340,6 +7345,23 @@ function loadDashboard(){
     dh+='</div>';
     $('dash-docs-incomplete').innerHTML=dh;
   }else{$('dash-docs-incomplete').innerHTML='<div style="color:var(--ok);font-size:12px">✅ เอกสารพนักงาน Telesale ครบทุกคน</div>'}
+
+  // ยังไม่ระบุวันเริ่มงาน — เฉพาะพนักงานลูกค้าสัมพันธ์
+  var noStart=ALL.filter(function(a){
+    if(a.status==='terminated')return false;
+    if(String(a.position||'').indexOf('ลูกค้าสัมพันธ์')<0)return false;
+    return !a.start_date||String(a.start_date).length<8;
+  });
+  if(noStart.length){
+    var nh='<div style="font-size:12px;color:var(--err);font-weight:700;margin-bottom:8px">⚠️ '+noStart.length+' คนยังไม่ระบุวันเริ่มงาน</div><div style="max-height:320px;overflow:auto">';
+    noStart.forEach(function(a){
+      nh+='<div style="padding:6px 0;border-bottom:1px solid var(--bdr);font-size:12px;cursor:pointer" onclick="showTab(\'app\');setTimeout(function(){detail(\''+a.id+'\')},300)">'
+        +'<span style="font-weight:600;color:var(--pri)">'+esc(a.name)+'</span>'+(a.nickname?' ('+esc(a.nickname)+')':'')
+        +' <span style="display:inline-block;background:#fee2e2;color:#c00;font-size:10px;padding:1px 7px;border-radius:8px;margin-left:4px">ไม่มีวันเริ่มงาน</span></div>';
+    });
+    nh+='</div>';
+    $('dash-nostart').innerHTML=nh;
+  }else{$('dash-nostart').innerHTML='<div style="color:var(--ok);font-size:12px">✅ พนักงานลูกค้าสัมพันธ์ระบุวันเริ่มงานครบทุกคน</div>'}
 
   // Latest payroll summary
   sb("payroll","GET",null,"?select=month,salary,total_income,total_ded,net&order=month.desc&limit=50").then(function(r){

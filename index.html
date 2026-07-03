@@ -261,7 +261,7 @@ body.hr-mode .hr-hide{display:none!important}
 
 <!-- PAGE: LOGIN -->
 <div id="P-login" class="wrap hide"><div class="lw"><div class="lb">
-  <div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>เข้าสู่ระบบเจ้าหน้าที่</h2><p class="s">บริษัทเดอะเอ็มที</p>
+  <div style="text-align:left;margin-bottom:6px"><a href="." style="color:#9ca3af;font-size:13px;text-decoration:none">← เลือกวิธีเข้าสู่ระบบ</a></div><div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>เข้าสู่ระบบเจ้าหน้าที่</h2><p class="s">บริษัทเดอะเอ็มที</p>
   <div id="l-err" class="lerr hide"></div>
   <div class="fld"><label>ชื่อผู้ใช้</label><input id="i-user" placeholder="ชื่อผู้ใช้" onkeydown="if(event.key==='Enter')doLogin()"></div>
   <div class="fld"><label>รหัสผ่าน</label><input id="i-pass" type="password" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()"></div>
@@ -1009,7 +1009,7 @@ body.hr-mode .hr-hide{display:none!important}
 
 <!-- PAGE: ACCOUNTING LOGIN -->
 <div id="P-acc-login" class="wrap hide"><div class="lw"><div class="lb">
-<div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>เข้าสู่ระบบบัญชี</h2><p class="s">บริษัทเดอะเอ็มที</p>
+<div style="text-align:left;margin-bottom:6px"><a href="." style="color:#9ca3af;font-size:13px;text-decoration:none">← เลือกวิธีเข้าสู่ระบบ</a></div><div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>เข้าสู่ระบบบัญชี</h2><p class="s">บริษัทเดอะเอ็มที</p>
 <div id="acc-err" class="lerr hide"></div>
 <div class="fld"><label>ชื่อผู้ใช้</label><input id="acc-user" placeholder="ชื่อผู้ใช้" onkeydown="if(event.key==='Enter')doAccLogin()"></div>
 <div class="fld"><label>รหัสผ่าน</label><input id="acc-pass" type="password" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doAccLogin()"></div>
@@ -1075,7 +1075,7 @@ if(location.search.indexOf('emp')>-1){
 </script>
 <div id="P-emp-login" style="display:none">
 <div class="wrap"><div class="lw"><div class="lb">
-<div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>พนักงานเข้าสู่ระบบ</h2><p class="s">ดูข้อมูลส่วนตัว / ตรวจสอบวันลา</p>
+<div style="text-align:left;margin-bottom:6px"><a href="." style="color:#9ca3af;font-size:13px;text-decoration:none">← เลือกวิธีเข้าสู่ระบบ</a></div><div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><h2>พนักงานเข้าสู่ระบบ</h2><p class="s">ดูข้อมูลส่วนตัว / ตรวจสอบวันลา</p>
 <div class="fld"><label>รหัสพนักงาน</label><input id="emp-l-email" placeholder="เช่น MT001" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')document.getElementById('emp-l-pass').focus()"></div>
 <div class="fld"><label>รหัสผ่าน (เบอร์โทร 4 ตัวท้าย)</label><input id="emp-l-pass" placeholder="เช่น 6339" type="password" maxlength="4" inputmode="numeric" pattern="[0-9]*" onkeydown="if(event.key==='Enter')empLogin()"></div>
 <div id="emp-l-err" style="display:none;color:#dc3545;background:rgba(220,53,69,.08);border:1px solid #dc3545;border-radius:6px;padding:8px 12px;font-size:12px;margin-top:8px"></div>
@@ -1543,7 +1543,7 @@ function page(p){
   });
   var target=$('P-'+p);
   if(target){target.classList.remove('hide');target.style.display='block'}
-  var hdr=document.querySelector('.hdr');if(hdr)hdr.style.display=(p==='admin')?'none':'';
+  var hdr=document.querySelector('.hdr');if(hdr)hdr.style.display=(p==='admin'||p==='login'||p==='acc-login'||p==='emp-login')?'none':'';
   // หน้าพนักงาน: ล็อกอินแล้วซ่อนแถบนำทางบนสุดทั้งหมด (ไม่ให้เห็นเจ้าหน้าที่/บัญชี/ส่วนอื่น) · หน้าล็อกอินพนักงานซ่อนเฉพาะลิงก์เจ้าหน้าที่
   var _nb=document.getElementById('nav-btns');if(_nb)_nb.style.display=(p==='emp')?'none':'';
   if(p==='emp'||p==='emp-login'){document.querySelectorAll('.nav-staff,.nav-fillform').forEach(function(el){el.style.display='none'});}
@@ -8928,6 +8928,7 @@ if(MODE==='admin'){
   else{page('acc-login')}
 }else if(MODE==='emp'){
   document.getElementById('P-form').style.display='none';
+  var _hE=document.querySelector('.hdr');if(_hE)_hE.style.display='none';
   if(localStorage.getItem('emp_data')){
     document.getElementById('P-emp-login').style.display='none';
     document.getElementById('P-emp').style.display='block';

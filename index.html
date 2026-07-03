@@ -163,13 +163,37 @@ body.hr-mode .hr-hide{display:none!important}
   <div class="brand"><div class="logo"><img src="LOGO_THEMT.png" alt="MT"></div><div><h1>ระบบข้อมูลพนักงาน</h1><small>บริษัทเดอะเอ็มที</small></div></div>
   <div id="nav-btns" style="display:flex;gap:5px;flex-wrap:wrap">
     <!-- Employee links -->
-    <a href="." class="nbtn nav-emp nav-pub nav-fillform" style="text-decoration:none">📝 กรอกข้อมูล</a>
+    <a href="?form" class="nbtn nav-emp nav-pub nav-fillform" style="text-decoration:none">📝 กรอกข้อมูล</a>
     <a href="?emp" class="nbtn nav-emp nav-pub" style="text-decoration:none">🔑 พนักงาน</a>
     <!-- Staff links -->
     <a href="?admin" class="nbtn nav-staff nav-pub" style="text-decoration:none">👤 เจ้าหน้าที่</a>
     <a href="?acc" class="nbtn nav-staff nav-pub" style="text-decoration:none">📊 บัญชี</a>
   </div>
 </div></div>
+
+<!-- PAGE: CHOOSE LOGIN -->
+<div id="P-choose" style="display:none;min-height:82vh;align-items:center;justify-content:center;padding:24px">
+  <div style="max-width:460px;width:100%;text-align:center">
+    <img src="LOGO_THEMT.png" alt="MT" style="width:84px;height:84px;border-radius:18px;box-shadow:0 6px 20px rgba(0,0,0,.12);margin-bottom:14px">
+    <h1 style="font-size:26px;color:#8a6d1e;margin:0 0 4px;font-weight:800">ระบบข้อมูลพนักงาน</h1>
+    <div style="color:#9ca3af;font-size:14px;margin-bottom:6px">บริษัท เดอะ เอ็มที จำกัด</div>
+    <div style="color:#6b7280;font-size:15px;font-weight:600;margin-bottom:26px">เลือกวิธีเข้าสู่ระบบ</div>
+    <div style="display:flex;flex-direction:column;gap:13px;text-align:left">
+      <a href="?emp" style="display:block;text-decoration:none;background:#fff;border:2px solid #e5e7eb;border-radius:14px;padding:18px 22px;transition:.18s;box-shadow:0 2px 10px rgba(0,0,0,.05)" onmouseover="this.style.borderColor='#c79a3a';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 22px rgba(199,154,58,.18)'" onmouseout="this.style.borderColor='#e5e7eb';this.style.transform='';this.style.boxShadow='0 2px 10px rgba(0,0,0,.05)'">
+        <div style="font-size:17px;font-weight:800;color:#8a6d1e">🔑 พนักงาน</div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:3px">ดูข้อมูลส่วนตัว · ยื่นลา · ตรวจสอบวันลา</div>
+      </a>
+      <a href="?admin" style="display:block;text-decoration:none;background:#fff;border:2px solid #e5e7eb;border-radius:14px;padding:18px 22px;transition:.18s;box-shadow:0 2px 10px rgba(0,0,0,.05)" onmouseover="this.style.borderColor='#c79a3a';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 22px rgba(199,154,58,.18)'" onmouseout="this.style.borderColor='#e5e7eb';this.style.transform='';this.style.boxShadow='0 2px 10px rgba(0,0,0,.05)'">
+        <div style="font-size:17px;font-weight:800;color:#8a6d1e">👤 เจ้าหน้าที่ / HR</div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:3px">จัดการข้อมูลพนักงาน · อนุมัติการลา · สัมภาษณ์</div>
+      </a>
+      <a href="?acc" style="display:block;text-decoration:none;background:#fff;border:2px solid #e5e7eb;border-radius:14px;padding:18px 22px;transition:.18s;box-shadow:0 2px 10px rgba(0,0,0,.05)" onmouseover="this.style.borderColor='#c79a3a';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 22px rgba(199,154,58,.18)'" onmouseout="this.style.borderColor='#e5e7eb';this.style.transform='';this.style.boxShadow='0 2px 10px rgba(0,0,0,.05)'">
+        <div style="font-size:17px;font-weight:800;color:#8a6d1e">📊 บัญชี</div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:3px">เงินเดือน · รายงาน · ค่าใช้จ่าย</div>
+      </a>
+    </div>
+  </div>
+</div>
 
 <!-- PAGE: FORM -->
 <div id="P-form" class="wrap">
@@ -1045,6 +1069,8 @@ if(location.search.indexOf('emp')>-1){
   document.querySelectorAll('.nav-staff,.nav-fillform').forEach(function(el){el.style.display='none'});
 }else if(location.search.indexOf('admin')>-1||location.search.indexOf('acc')>-1){
   document.querySelectorAll('.nav-emp').forEach(function(el){el.style.display='none'});
+}else if(location.search.indexOf('form')<0){
+  document.getElementById('P-form').style.display='none'; // หน้าแรก = chooser, ซ่อนฟอร์มกัน flash
 }
 </script>
 <div id="P-emp-login" style="display:none">
@@ -1512,7 +1538,7 @@ function setBdayDropdowns(prefix,val){
 
 /* ═══ PAGE NAV ═══ */
 function page(p){
-  ['P-form','P-success','P-login','P-admin','P-acc-login','P-acc','P-emp-login','P-emp'].forEach(function(x){
+  ['P-choose','P-form','P-success','P-login','P-admin','P-acc-login','P-acc','P-emp-login','P-emp'].forEach(function(x){
     var el=$(x);if(el){el.classList.add('hide');el.style.display='none'}
   });
   var target=$('P-'+p);
@@ -8911,7 +8937,14 @@ if(MODE==='admin'){
     document.getElementById('P-emp-login').style.display='block';
   }
 }else{
-  page('form');
+  if(location.search.indexOf('form')>-1){
+    page('form');
+  }else{
+    // หน้าแรก: เลือกวิธีเข้าสู่ระบบ (ไม่มีฟอร์มกรอกแล้ว)
+    document.getElementById('P-form').style.display='none';
+    document.getElementById('P-choose').style.display='flex';
+    var _nbc=document.getElementById('nav-btns');if(_nbc)_nbc.style.display='none';
+  }
 }
 </script>
 </body>

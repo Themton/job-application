@@ -260,6 +260,7 @@ body.hr-mode .hr-hide{display:none!important}
       <div class="sb-menu">
         <button class="sb-item" id="tab-dash" onclick="showTab('dash')"><span class="sb-ic">🏠</span><span class="sb-tx">Dashboard</span></button>
         <button class="sb-item on" id="tab-app" onclick="showTab('app')"><span class="sb-ic">📋</span><span class="sb-tx">พนักงาน</span></button>
+        <button class="sb-item" id="tab-interview" onclick="showTab('interview')"><span class="sb-ic">📅</span><span class="sb-tx">นัดสัมภาษณ์งาน</span></button>
         <button class="sb-item" id="tab-dept" onclick="showTab('dept')"><span class="sb-ic">🏢</span><span class="sb-tx">แผนก</span></button>
         <button class="sb-item" id="tab-pos" onclick="showTab('pos')"><span class="sb-ic">💼</span><span class="sb-tx">ตำแหน่ง</span></button>
         <button class="sb-item" id="tab-usr" onclick="showTab('usr')"><span class="sb-ic">👤</span><span class="sb-tx">ผู้ใช้ / สิทธิ์</span></button>
@@ -1541,10 +1542,10 @@ function page(p){
   window.scrollTo(0,0);
 }
 
-var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',warn:'⚠️ ใบเตือน',termlist:'📢 ประกาศพ้นสภาพ',eval:'📝 ประเมินผล',att:'📋 ขาด/ลา/มาสาย',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',exp:'🧾 เบิกค่าใช้จ่าย',paydb:'🗂️ รายงานรวม',cert:'📜 หนังสือรับรอง',tax:'📄 ภาษี/ปกส.',labor:'📋 ทะเบียนลูกจ้าง'};
+var TAB_LABELS={dash:'🏠 Dashboard',app:'📋 พนักงาน',interview:'📅 นัดสัมภาษณ์งาน',dept:'🏢 แผนก',pos:'💼 ตำแหน่ง',usr:'👤 ผู้ใช้',rpt:'📊 รายงาน',lv:'🗓️ อนุมัติการลา',warn:'⚠️ ใบเตือน',termlist:'📢 ประกาศพ้นสภาพ',eval:'📝 ประเมินผล',att:'📋 ขาด/ลา/มาสาย',pay:'💰 คิดเงินเดือน',comm:'⭐ คอมมิชชั่น',exp:'🧾 เบิกค่าใช้จ่าย',paydb:'🗂️ รายงานรวม',cert:'📜 หนังสือรับรอง',tax:'📄 ภาษี/ปกส.',labor:'📋 ทะเบียนลูกจ้าง'};
 
 function showTab(t){
-  ['dash','app','dept','pos','usr','rpt','lv','warn','termlist','eval','att','pay','comm','exp','paydb','cert','tax','labor'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
+  ['dash','app','interview','dept','pos','usr','rpt','lv','warn','termlist','eval','att','pay','comm','exp','paydb','cert','tax','labor'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   if(t==='lv'){
     // Auto-select filter based on role
@@ -1567,6 +1568,7 @@ function showTab(t){
   if(t==='tax'&&!$('tax-month').value){var now=new Date();$('tax-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   if(t==='labor')laborLoad();
   if(t==='termlist')renderTermList();
+  if(t==='interview')loadInterviews();
   // Update mobile topbar label
   if($('sb-active-label'))$('sb-active-label').textContent=TAB_LABELS[t]||t;
   // Close sidebar on mobile
@@ -8163,6 +8165,9 @@ function tgNotify(type,data){
     msg='✅ <b>อนุมัติการลา</b>\n\n👤 ชื่อ: <b>'+(data.name||'')+'</b>\n📋 ประเภท: '+(data.leaveType||'')+'\n📅 วันที่: '+(data.date||'');
   }else if(type==='payroll_saved'){
     msg='💰 <b>บันทึกเงินเดือน</b>\n\n📅 เดือน: '+(data.month||'')+'\n👥 จำนวน: '+(data.count||0)+' คน\n💵 รวมจ่ายสุทธิ: '+(data.total||'0')+' บาท';
+  }else if(type==='interview'){
+    msg='📅 <b>นัดสัมภาษณ์งาน</b>\n\n👤 ผู้สมัคร: <b>'+(data.name||'')+'</b>\n💼 ตำแหน่ง: '+(data.position||'-')+'\n📅 วันที่: '+(data.date||'')+' '+(data.time||'')+'\n📍 สถานที่: '+(data.location||'-');
+    btns=[[{text:'📋 ดูในระบบ',url:adminUrl}]];
   }else{
     msg='📢 <b>แจ้งเตือน</b>\n\n'+(data.message||'');
   }

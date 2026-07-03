@@ -8177,6 +8177,7 @@ function renderInterviews(){
     if(iv.status==='passed'){
       h+='<button class="btn btn-a btn-s" onclick="ivHire(\''+iv.id+'\')" style="padding:2px 6px;font-size:10px;background:var(--ok)">🎉 รับเข้าทำงาน</button> ';
     }
+    h+='<button class="btn btn-g btn-s" onclick="ivEdit(\''+iv.id+'\')" style="padding:2px 6px;font-size:10px;background:#fef3c7;border-color:#f59e0b;color:#92400e">✏️ แก้ไข</button> ';
     h+='<button class="btn btn-g btn-s" onclick="ivDelete(\''+iv.id+'\')" style="padding:2px 6px;font-size:10px">🗑️</button>';
     h+='</td></tr>';
   });
@@ -8216,6 +8217,44 @@ function saveInterview(){
     toast('📅 เพิ่มนัดสัมภาษณ์ '+name+' วันที่ '+date+' '+time,'tok');
     $('iv-form').classList.add('hide');
     tgSend('\ud83d\udcc5 <b>นัดสัมภาษณ์ใหม่</b>\n\n\ud83d\udc64 ชื่อ: <b>'+esc(name)+'</b>\n\ud83d\udcbc ตำแหน่ง: '+esc(pos||'-')+'\n\ud83d\udcde เบอร์: '+esc(phone||'-')+'\n\ud83d\udcc5 วันที่: '+date+' เวลา '+time+'\n\n\ud83c\udfe2 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+    loadInterviews();
+  }).catch(function(e){prog(-1);toast('บันทึกไม่สำเร็จ: '+e,'terr')});
+}
+
+function ivEdit(id){
+  var iv=null;IV_ALL.forEach(function(x){if(x.id===id)iv=x});
+  if(!iv){toast('ไม่พบข้อมูล','terr');return}
+  $('iv-form').classList.remove('hide');
+  $('iv-form-title').textContent='แก้ไขนัดสัมภาษณ์';
+  $('iv-name').value=iv.name||'';
+  $('iv-phone').value=iv.phone||'';
+  $('iv-note').value=iv.note||'';
+  var posInList=POS.some(function(p){return p.title===iv.position});
+  var opts='<option value="">-- เลือกตำแหน่ง --</option>';
+  if(iv.position&&!posInList)opts+='<option value="'+esc(iv.position)+'" selected>'+esc(iv.position)+'</option>';
+  opts+=POS.map(function(p){return '<option value="'+esc(p.title)+'"'+(iv.position===p.title?' selected':'')+'>'+esc(p.title)+'</option>';}).join('');
+  var _ivp=$('iv-position');if(_ivp)_ivp.innerHTML=opts;
+  $('iv-date').value=String(iv.interview_date||'').substring(0,10);
+  $('iv-time').value=iv.interview_time||'10:00';
+  $('iv-save-btn').onclick=function(){ivUpdate(id)};
+  $('iv-form').scrollIntoView({behavior:'smooth'});
+  $('iv-name').focus();
+}
+function ivUpdate(id){
+  var name=$('iv-name').value.trim(),pos=$('iv-position').value.trim();
+  var phone=$('iv-phone').value.trim(),date=$('iv-date').value,time=$('iv-time').value,note=$('iv-note').value.trim();
+  if(!name){toast('กรอกชื่อผู้สมัคร','terr');return}
+  if(!pos){toast('เลือกตำแหน่งที่สมัคร','terr');return}
+  if(!phone){toast('กรอกเบอร์โทร','terr');return}
+  if(!date){toast('เลือกวันที่สัมภาษณ์','terr');return}
+  if(!time){toast('เลือกเวลา','terr');return}
+  prog(20,'บันทึกการแก้ไข...');
+  sb("interviews","PATCH",{name:name,position:pos,phone:phone,interview_date:date,interview_time:time,note:note},"?id=eq."+id).then(function(){
+    prog(100,'บันทึกแล้ว ✅');
+    toast('✏️ แก้ไขนัดสัมภาษณ์แล้ว','tok');
+    $('iv-form').classList.add('hide');
+    $('iv-save-btn').onclick=function(){saveInterview()};
+    audit('interview_update','interview',id,'แก้ไขนัดสัมภาษณ์: '+name);
     loadInterviews();
   }).catch(function(e){prog(-1);toast('บันทึกไม่สำเร็จ: '+e,'terr')});
 }

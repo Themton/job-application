@@ -8217,6 +8217,8 @@ function renderInterviews(){
       h+='<button class="btn btn-d btn-s" onclick="ivUpdateStatus(\''+iv.id+'\',\'failed\')" style="padding:2px 6px;font-size:10px">🔴 ไม่ผ่าน</button> ';
     }
     if(iv.status==='passed'){
+      if(iv.start_date)h+='<span style="font-size:10px;color:#15803d;font-weight:700;margin-right:4px">📅 เริ่มงาน '+esc(beDate(iv.start_date))+'</span>';
+      h+='<button class="btn btn-g btn-s" onclick="ivSetStartDate(\''+iv.id+'\')" style="padding:2px 6px;font-size:10px;background:#eff6ff;border-color:#3b82f6;color:#1d4ed8">📅 '+(iv.start_date?'เปลี่ยนวันเริ่มงาน':'นัดวันเริ่มงาน')+'</button> ';
       h+='<button class="btn btn-a btn-s" onclick="ivHire(\''+iv.id+'\')" style="padding:2px 6px;font-size:10px;background:var(--ok)">🎉 รับเข้าทำงาน</button> ';
     }
     h+='<button class="btn btn-g btn-s" onclick="ivEdit(\''+iv.id+'\')" style="padding:2px 6px;font-size:10px;background:#fef3c7;border-color:#f59e0b;color:#92400e">✏️ แก้ไข</button> ';
@@ -8321,6 +8323,27 @@ function ivDoStatus(id,st,note){
   }).catch(function(e){toast('Error: '+e,'terr')});
 }
 
+function ivSetStartDate(id){
+  var iv=null;IV_ALL.forEach(function(x){if(x.id===id)iv=x});
+  if(!iv){toast('ไม่พบข้อมูล','terr');return}
+  var d=iv.start_date?String(iv.start_date).substring(0,10):new Date().toISOString().substring(0,10);
+  mtModal({title:'📅 นัดวันเริ่มงาน',okText:'บันทึก',okColor:'#16a34a',
+    body:'<div style="font-size:13px;color:#374151;margin-bottom:10px">ผู้สมัคร: <b>'+esc(iv.name)+'</b>'+(iv.position?' — '+esc(iv.position):'')+'</div>'
+      +'<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📅 วันเริ่มงาน</div>'
+      +'<input type="date" id="iv-start-date" value="'+d+'" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:9px;font-size:14px;font-family:inherit">'
+      +'<div style="font-size:11px;color:#9ca3af;margin-top:8px">* เมื่อกด "รับเข้าทำงาน" วันนี้จะถูกใส่เป็นวันเริ่มงานของพนักงานให้อัตโนมัติ</div>',
+    onOk:function(){
+      var val=$('iv-start-date').value;if(!val){toast('เลือกวันเริ่มงาน','terr');return;}
+      mtModalClose();
+      sb("interviews","PATCH",{start_date:val},"?id=eq."+id).then(function(){
+        toast('📅 นัดวันเริ่มงาน '+beDate(val),'tok');
+        audit('interview_startdate','interview',id,'นัดวันเริ่มงาน '+val+' — '+iv.name);
+        IV_ALL.forEach(function(x){if(x.id===id)x.start_date=val});
+        renderInterviews();
+      }).catch(function(e){toast('บันทึกไม่สำเร็จ — ตาราง interviews อาจยังไม่มีคอลัมน์ start_date ('+e+')','terr');});
+    }});
+}
+
 function ivHire(id){
   var iv=null;IV_ALL.forEach(function(x){if(x.id===id)iv=x});
   if(!iv){toast('ไม่พบข้อมูล','terr');return}
@@ -8334,7 +8357,7 @@ function ivDoHire(id){
   var iv=null;IV_ALL.forEach(function(x){if(x.id===id)iv=x});
   if(!iv){toast('ไม่พบข้อมูล','terr');return}
   var empId='EMP-'+Date.now();
-  var data={id:empId,name:iv.name,phone:iv.phone||'',email:iv.email||'',position:iv.position||'',status:'new',created_at:new Date().toISOString()};
+  var data={id:empId,name:iv.name,phone:iv.phone||'',email:iv.email||'',position:iv.position||'',status:'new',start_date:iv.start_date||'',created_at:new Date().toISOString()};
   prog(20,'เพิ่มพนักงานใหม่...');
   sb("applications","POST",data).then(function(){
     sb("interviews","PATCH",{status:'completed',note:(iv.note||'')+' \u2192 รับเข้าทำงานแล้ว'},"?id=eq."+id);

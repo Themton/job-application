@@ -2609,8 +2609,9 @@ function renderLeaveRequestsAdmin(rows){
     // ปุ่มจัดการ
     h+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
     if(r.status==='pending'){
-      if(!r.evidence_link)h+='<span style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">⚠️ ต้องแนบเอกสารก่อนอนุมัติ</span>';
-      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px'+(r.evidence_link?'':';opacity:.55')+'">✅ HR อนุมัติ</button>'
+      var _needDoc=(r.type==='personal'&&!r.evidence_link);
+      if(_needDoc)h+='<span style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">⚠️ ลากิจต้องแนบเอกสารก่อนอนุมัติ</span>';
+      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px'+(_needDoc?';opacity:.55':'')+'">✅ HR อนุมัติ</button>'
         +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">❌ ปฏิเสธ</button>';
       if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:5px 14px;font-size:12px;text-decoration:none">📎 หลักฐาน</a>';
       h+='<button class="btn btn-g btn-s hr-hide" onclick="deleteLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px;color:var(--err)">🗑️ ลบ</button>';
@@ -2712,9 +2713,9 @@ function approveLeaveReq(id){
     var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',absent:'ขาดงาน'};
     
     if(lv.status==='pending'){
-      // ต้องแนบเอกสารก่อน HR จึงจะอนุมัติได้
-      if(!lv.evidence_link){
-        toast('⚠️ ต้องแนบเอกสารก่อน จึงจะอนุมัติได้ — กดปุ่ม "📤 แนบเอกสาร" ที่ใบลานี้','terr');
+      // ลากิจ: ต้องแนบเอกสารก่อน HR จึงจะอนุมัติได้ · ลาป่วย/อื่นๆ: แนบทีหลังได้
+      if(lv.type==='personal'&&!lv.evidence_link){
+        toast('⚠️ ลากิจต้องแนบเอกสารก่อน จึงจะอนุมัติได้ — กดปุ่ม "📤 แนบเอกสาร" ที่ใบลานี้','terr');
         return;
       }
       // Level 1: HR approves → forward to manager
@@ -2753,8 +2754,8 @@ function approveAllLeaveReq(){
   var rows=(window._lvRows||[]).filter(function(r){return r.status==='pending'||r.status==='hr_approved'});
   if(!rows.length){toast('ไม่มีใบลาที่อนุมัติได้','terr');return}
   var pendingRows=rows.filter(function(r){return r.status==='pending'});
-  var pendingReady=pendingRows.filter(function(r){return r.evidence_link});
-  var pendingNoDoc=pendingRows.filter(function(r){return !r.evidence_link});
+  var pendingReady=pendingRows.filter(function(r){return r.type!=='personal'||r.evidence_link});
+  var pendingNoDoc=pendingRows.filter(function(r){return r.type==='personal'&&!r.evidence_link});
   var pendingIds=pendingReady.map(function(r){return r.id});
   var hrIds=rows.filter(function(r){return r.status==='hr_approved'}).map(function(r){return r.id});
   if(!pendingIds.length&&!hrIds.length){

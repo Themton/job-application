@@ -1751,9 +1751,11 @@ function loadAdmin(){
   }).catch(function(e){$('A-ld').classList.add('hide');$('A-main').classList.remove('hide');prog(-1);toast('โหลดไม่สำเร็จ: '+e,'terr')});
 }
 
-/* Update pending-leave badge (admin) */
+/* Update pending-leave badge — นับตามบทบาท (หัวหน้า = รอหัวหน้าอนุมัติ, อื่นๆ = รออนุมัติ) */
 function updateLeavePendingBadge(){
-  sbRpc('leave_list',{p_token:TOK(),p_status:'pending',p_limit:200}).then(function(r){
+  var role=localStorage.getItem('mt_role')||'admin';
+  var st=role==='manager'?'hr_approved':'pending';
+  sbRpc('leave_list',{p_token:TOK(),p_status:st,p_limit:200}).then(function(r){
     var n=(r&&r.ok&&Array.isArray(r.rows))?r.rows.length:0;
     var dot=$('lv-pending-dot');if(!dot)return;
     if(n>0){dot.textContent=n;dot.style.display='inline-block'}

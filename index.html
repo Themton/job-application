@@ -1563,10 +1563,8 @@ function showTab(t){
   ['dash','app','interview','dept','pos','usr','rpt','lv','warn','termlist','eval','att','pay','comm','exp','paydb','cert','tax','labor'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   if(t==='lv'){
-    // Auto-select filter based on role
-    var role=localStorage.getItem('mt_role')||'admin';
-    if(role==='manager'&&$('lv-filter-status'))$('lv-filter-status').value='hr_approved';
-    else if(role==='hr'&&$('lv-filter-status'))$('lv-filter-status').value='pending';
+    // อนุมัติครั้งเดียวจบ (ทุกบทบาทเท่ากัน) — ตั้งค่าเริ่มต้นดูใบที่รออนุมัติ
+    if($('lv-filter-status'))$('lv-filter-status').value='pending';
     loadLeaveRequests();
   }
   if(t==='dash')loadDashboard();

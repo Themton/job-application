@@ -1565,8 +1565,12 @@ function showTab(t){
   if(t==='lv'){
     // Auto-select filter based on role
     var role=localStorage.getItem('mt_role')||'admin';
-    if(role==='manager'&&$('lv-filter-status'))$('lv-filter-status').value='hr_approved';
-    else if(role==='hr'&&$('lv-filter-status'))$('lv-filter-status').value='pending';
+    var fsel=$('lv-filter-status');
+    if(role==='manager'&&fsel){
+      // หัวหน้า: ห้ามเห็นใบที่ HR ยังไม่อนุมัติ — ซ่อนตัวเลือก 'รออนุมัติ'
+      var popt=fsel.querySelector('option[value="pending"]');if(popt)popt.style.display='none';
+      if(fsel.value==='pending'||fsel.value==='')fsel.value='hr_approved';
+    }else if(role==='hr'&&fsel){fsel.value='pending';}
     loadLeaveRequests();
   }
   if(t==='dash')loadDashboard();
@@ -2558,18 +2562,17 @@ var LR_STATUS_COLOR={pending:'#f59e0b',hr_approved:'#3b82f6',approved:'var(--ok)
 
 /* === ADMIN: list + approve/reject === */
 function loadLeaveRequests(){
+  var role=localStorage.getItem('mt_role')||'admin';
   var st=$('lv-filter-status').value;
+  if(role==='manager'&&st==='pending')st='hr_approved';
   $('lv-admin-list').innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">กำลังโหลด...</div>';
   sbRpc('leave_list',{p_token:TOK(),p_status:st||null,p_limit:200}).then(function(r){
     if(!r||!r.ok){$('lv-admin-list').innerHTML='<div class="emp"><div class="ei">⚠️</div><p>โหลดไม่สำเร็จ</p></div>';return}
-    renderLeaveRequestsAdmin(r.rows||[]);
-    // อัปเดต badge
-    sbRpc('leave_list',{p_token:TOK(),p_status:'pending',p_limit:1}).then(function(r2){
-      var n=(r2&&r2.rows)?r2.rows.length:0;
-      var dot=$('lv-pending-dot');
-      if(n>0){dot.textContent=n;dot.style.display='inline-block'}
-      else{dot.style.display='none'}
-    }).catch(function(){});
+    var rows=r.rows||[];
+    // หัวหน้า: กันไม่ให้เห็นใบที่ HR ยังไม่อนุมัติ แม้เลือก 'ทั้งหมด'
+    if(role==='manager')rows=rows.filter(function(x){return x.status!=='pending'});
+    renderLeaveRequestsAdmin(rows);
+    updateLeavePendingBadge();
   }).catch(function(e){
     $('lv-admin-list').innerHTML='<div class="emp"><div class="ei">⚠️</div><p>Error: '+esc(String(e))+'</p></div>';
   });

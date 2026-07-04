@@ -2876,6 +2876,7 @@ function submitLeaveRequest(btn){
 
 function doSubmitLeave(type,start,end,half,reason,days,btn){
   if(btn){btn.disabled=true;btn.innerHTML='⏳ กำลังส่ง...';}
+  prog(-1); // ปิดแถบ 'ตรวจสอบสิทธิ์ลากิจ' ที่ค้างจากขั้นตอนก่อนหน้า
 
   // พนักงานไม่ต้องแนบเอกสาร — HR จะอัปโหลดให้ภายหลัง
   Promise.resolve(null).then(function(evidenceUrl){
@@ -7948,6 +7949,7 @@ function accExportXLS(data,title){
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
 function prog(pct,txt){
   var el=$('g-prog'),bar=$('g-prog-bar'),tx=$('g-prog-txt');
+  if(!el||!bar||!tx)return;
   if(pct<0){el.style.display='none';return}
   el.style.display='block';
   bar.style.width=Math.min(pct,100)+'%';

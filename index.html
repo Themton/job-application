@@ -2951,6 +2951,7 @@ function renderMyLeaveRequests(rows){
       +'<td style="font-size:11px">'+range+'</td>'
       +'<td style="font-weight:700">'+r.days+'</td>'
       +'<td><span style="color:'+sColor+';font-weight:600;font-size:11px">'+status+'</span>'
+      +((r.status==='hr_approved'||r.status==='approved')?'<div style="font-size:9px;color:var(--muted);margin-top:2px">HR ✅ · หัวหน้า '+(r.status==='approved'?'✅':'⏳ รออยู่')+'</div>':'')
       +(r.review_note?'<div style="font-size:10px;color:var(--muted);margin-top:2px">'+esc(r.review_note)+'</div>':'')
       +'</td>'
       +'<td style="text-align:right">'

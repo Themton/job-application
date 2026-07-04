@@ -1563,8 +1563,10 @@ function showTab(t){
   ['dash','app','interview','dept','pos','usr','rpt','lv','warn','termlist','eval','att','pay','comm','exp','paydb','cert','tax','labor'].forEach(function(x){var tb=$('tab-'+x);if(tb)tb.classList.toggle('on',t===x);var tp=$('T-'+x);if(tp)tp.classList.toggle('hide',t!==x)});
   if(t==='pos')renderPos();if(t==='usr')renderUsr();if(t==='rpt')loadReport();if(t==='paydb')loadPayDBMonths();if(t==='dept')renderDept();
   if(t==='lv'){
-    // อนุมัติครั้งเดียวจบ (ทุกบทบาทเท่ากัน) — ตั้งค่าเริ่มต้นดูใบที่รออนุมัติ
-    if($('lv-filter-status'))$('lv-filter-status').value='pending';
+    // Auto-select filter based on role
+    var role=localStorage.getItem('mt_role')||'admin';
+    if(role==='manager'&&$('lv-filter-status'))$('lv-filter-status').value='hr_approved';
+    else if(role==='hr'&&$('lv-filter-status'))$('lv-filter-status').value='pending';
     loadLeaveRequests();
   }
   if(t==='dash')loadDashboard();
@@ -2549,7 +2551,7 @@ function viewAuditLog(){
 /* ═══ LEAVE REQUEST SYSTEM ═══ */
 var LR_TYPE_LABEL={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน',other:'อื่นๆ'};
 var LR_TYPE_COLOR={personal:'#3b82f6',sick:'#f59e0b',vacation:'#10b981',other:'#6b7280'};
-var LR_STATUS_LABEL={pending:'🟡 รออนุมัติ',hr_approved:'✅ อนุมัติแล้ว',approved:'✅ อนุมัติสมบูรณ์',rejected:'❌ ไม่อนุมัติ',cancelled:'🚫 ยกเลิก'};
+var LR_STATUS_LABEL={pending:'🟡 รออนุมัติ',hr_approved:'🔵 HR อนุมัติ — รอหัวหน้า',approved:'✅ อนุมัติสมบูรณ์',rejected:'❌ ไม่อนุมัติ',cancelled:'🚫 ยกเลิก'};
 var LR_STATUS_COLOR={pending:'#f59e0b',hr_approved:'#3b82f6',approved:'var(--ok)',rejected:'var(--err)',cancelled:'#6b7280'};
 
 /* === ADMIN: list + approve/reject === */
@@ -2609,12 +2611,12 @@ function renderLeaveRequestsAdmin(rows){
     if(r.status==='pending'){
       var _needDoc=(r.type==='personal'&&!r.evidence_link);
       if(_needDoc)h+='<span style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">⚠️ ลากิจต้องแนบเอกสารก่อนอนุมัติ</span>';
-      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px'+(_needDoc?';opacity:.55':'')+'">✅ อนุมัติ</button>'
+      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px'+(_needDoc?';opacity:.55':'')+'">✅ HR อนุมัติ</button>'
         +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">❌ ปฏิเสธ</button>';
       if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:5px 14px;font-size:12px;text-decoration:none">📎 หลักฐาน</a>';
       h+='<button class="btn btn-g btn-s hr-hide" onclick="deleteLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px;color:var(--err)">🗑️ ลบ</button>';
     }else if(r.status==='hr_approved'){
-      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px;background:linear-gradient(135deg,#2563eb,#3b82f6)">✅ อนุมัติ</button>'
+      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px;background:linear-gradient(135deg,#2563eb,#3b82f6)">✅ หัวหน้าอนุมัติ</button>'
         +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">❌ ไม่อนุมัติ</button>'
         +'<button class="btn btn-g btn-s" onclick="revertLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">↩️ คืนค่า</button>';
       if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:5px 14px;font-size:12px;text-decoration:none">📎 หลักฐาน</a>';
@@ -2710,22 +2712,38 @@ function approveLeaveReq(id){
     var lv=r[0];
     var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',absent:'ขาดงาน'};
     
-    if(lv.status==='pending'||lv.status==='hr_approved'){
-      // ลากิจ: ต้องแนบเอกสารก่อนอนุมัติ (เฉพาะใบที่ยังไม่ถูกอนุมัติ)
-      if(lv.status==='pending'&&lv.type==='personal'&&!lv.evidence_link){
-        toast('\u26a0\ufe0f ลากิจต้องแนบเอกสารก่อน จึงจะอนุมัติได้ \u2014 กดปุ่ม "\ud83d\udce4 แนบเอกสาร" ที่ใบลานี้','terr');
+    if(lv.status==='pending'){
+      // ลากิจ: ต้องแนบเอกสารก่อน HR จึงจะอนุมัติได้ · ลาป่วย/อื่นๆ: แนบทีหลังได้
+      if(lv.type==='personal'&&!lv.evidence_link){
+        toast('⚠️ ลากิจต้องแนบเอกสารก่อน จึงจะอนุมัติได้ — กดปุ่ม "📤 แนบเอกสาร" ที่ใบลานี้','terr');
         return;
       }
-      // อนุมัติครั้งเดียวจบ \u2014 admin หรือ หัวหน้า คนไหนกดก็ถือว่าอนุมัติสมบูรณ์
-      var uName=localStorage.getItem('mt_username')||'-';var uRole=localStorage.getItem('mt_role')||'';
-      var roleTH=uRole==='manager'?'หัวหน้า':(uRole==='hr'?'HR':(uRole==='admin'?'แอดมิน':uRole));
-      var byTxt=uName+(roleTH?' ('+roleTH+')':'');var nowT=new Date().toISOString();
-      sb("leaves","PATCH",{status:'approved',approved_by:byTxt,hr_approved_by:lv.hr_approved_by||uName,hr_approved_at:lv.hr_approved_at||nowT,mgr_approved_by:uName,mgr_approved_at:nowT},"?id=eq."+encodeURIComponent(id)).then(function(){
-        toast('\u2705 อนุมัติการลาเรียบร้อย','tok');
-        audit('leave_approve','leave',id,'อนุมัติการลา (โดย '+byTxt+') \u2014 '+(lv.emp_name||'')+' '+(lvLabels[lv.type]||lv.type)+' '+(lv.date||''));
-        tgSend('\u2705 <b>อนุมัติการลา</b>\n\n\ud83d\udc64 '+esc(lv.emp_name||'')+'\n\ud83d\udccb '+(lvLabels[lv.type]||lv.type)+'\n\ud83d\udcc5 '+esc(lv.date||'')+'\n\n\u2705 อนุมัติเรียบร้อย โดย '+esc(byTxt)+'\n\n\ud83c\udfe2 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+      // Level 1: HR approves → forward to manager
+      var note=prompt('HR อนุมัติ — หมายเหตุ (ไม่บังคับ):','');
+      if(note===null)return;
+      sb("leaves","PATCH",{status:'hr_approved',hr_approved_by:localStorage.getItem('mt_username')||'HR',hr_approved_at:new Date().toISOString(),hr_note:note||''},"?id=eq."+encodeURIComponent(id)).then(function(){
+        toast('✅ HR อนุมัติแล้ว — ส่งต่อหัวหน้ารออนุมัติ','tok');
+        audit('leave_approve','leave',id,'HR อนุมัติ — '+(lv.emp_name||'')+' '+(lvLabels[lv.type]||lv.type)+' '+(lv.date||''));
+        // Send Telegram to manager
+        var adminUrl=location.origin+location.pathname+'?admin';
+        var approveUrl=adminUrl+'&tg_action=approve_leave&leave_id='+encodeURIComponent(id);
+        var rejectUrl=adminUrl+'&tg_action=reject_leave&leave_id='+encodeURIComponent(id);
+        tgSend('📤 <b>ส่งต่ออนุมัติ → หัวหน้า</b>\n\n👤 ชื่อ: <b>'+esc(lv.emp_name||'')+'</b>\n📋 ประเภท: '+(lvLabels[lv.type]||lv.type)+'\n📅 วันที่: '+esc(lv.date||'')+'\n📝 เหตุผล: '+esc(lv.note||'-')+'\n\n✅ <i>HR อนุมัติแล้ว — รอหัวหน้าอนุมัติ</i>\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>',
+          [[{text:'✅ หัวหน้าอนุมัติ',url:approveUrl},{text:'❌ ไม่อนุมัติ',url:rejectUrl}]]);
         loadLeaveRequests();
       }).catch(function(e){toast('Error: '+e,'terr')});
+
+    }else if(lv.status==='hr_approved'){
+      // Level 2: Manager final approve
+      var note2=prompt('หัวหน้าอนุมัติขั้นสุดท้าย — หมายเหตุ (ไม่บังคับ):','');
+      if(note2===null)return;
+      sb("leaves","PATCH",{status:'approved',mgr_approved_by:localStorage.getItem('mt_username')||'Manager',mgr_approved_at:new Date().toISOString(),mgr_note:note2||''},"?id=eq."+encodeURIComponent(id)).then(function(){
+        toast('✅ หัวหน้าอนุมัติแล้ว — การลาได้รับอนุมัติสมบูรณ์','tok');
+        audit('leave_approve','leave',id,'หัวหน้าอนุมัติสมบูรณ์ — '+(lv.emp_name||'')+' '+(lvLabels[lv.type]||lv.type)+' '+(lv.date||''));
+        tgSend('✅ <b>อนุมัติการลาสมบูรณ์</b>\n\n👤 '+esc(lv.emp_name||'')+'\n📋 '+(lvLabels[lv.type]||lv.type)+'\n📅 '+esc(lv.date||'')+'\n\n✅ HR อนุมัติแล้ว\n✅ หัวหน้าอนุมัติแล้ว\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+        loadLeaveRequests();
+      }).catch(function(e){toast('Error: '+e,'terr')});
+
     }else{
       toast('ใบลานี้ถูกตรวจแล้ว (สถานะ: '+lv.status+')','terr');
     }
@@ -2735,21 +2753,36 @@ function approveLeaveReq(id){
 function approveAllLeaveReq(){
   var rows=(window._lvRows||[]).filter(function(r){return r.status==='pending'||r.status==='hr_approved'});
   if(!rows.length){toast('ไม่มีใบลาที่อนุมัติได้','terr');return}
-  var skip=rows.filter(function(r){return r.status==='pending'&&r.type==='personal'&&!r.evidence_link});
-  var ready=rows.filter(function(r){return !(r.status==='pending'&&r.type==='personal'&&!r.evidence_link)});
-  var ids=ready.map(function(r){return r.id});
-  if(!ids.length){toast('ไม่มีใบลาที่อนุมัติได้'+(skip.length?' \u2014 มี '+skip.length+' ใบลากิจที่ยังไม่แนบเอกสาร':''),'terr');return}
-  var msg='อนุมัติ '+ids.length+' ใบให้เสร็จสมบูรณ์?'+(skip.length?'\n\u26a0\ufe0f ข้าม '+skip.length+' ใบลากิจที่ยังไม่แนบเอกสาร':'');
+  var pendingRows=rows.filter(function(r){return r.status==='pending'});
+  var pendingReady=pendingRows.filter(function(r){return r.type!=='personal'||r.evidence_link});
+  var pendingNoDoc=pendingRows.filter(function(r){return r.type==='personal'&&!r.evidence_link});
+  var pendingIds=pendingReady.map(function(r){return r.id});
+  var hrIds=rows.filter(function(r){return r.status==='hr_approved'}).map(function(r){return r.id});
+  if(!pendingIds.length&&!hrIds.length){
+    toast('ไม่มีใบลาที่อนุมัติได้'+(pendingNoDoc.length?' — มี '+pendingNoDoc.length+' ใบที่ยังไม่แนบเอกสาร (แนบก่อนจึงอนุมัติได้)':''),'terr');
+    return;
+  }
+  var msg='อนุมัติทั้งหมด '+(pendingIds.length+hrIds.length)+' ใบ?';
+  if(pendingIds.length)msg+='\n• HR อนุมัติ → ส่งต่อหัวหน้า: '+pendingIds.length+' ใบ';
+  if(hrIds.length)msg+='\n• หัวหน้าอนุมัติสมบูรณ์: '+hrIds.length+' ใบ';
+  if(pendingNoDoc.length)msg+='\n⚠️ ข้าม (ยังไม่แนบเอกสาร): '+pendingNoDoc.length+' ใบ';
   if(!confirm(msg))return;
-  var uName=localStorage.getItem('mt_username')||'-';var uRole=localStorage.getItem('mt_role')||'';
-  var roleTH=uRole==='manager'?'หัวหน้า':(uRole==='hr'?'HR':(uRole==='admin'?'แอดมิน':uRole));
-  var byTxt=uName+(roleTH?' ('+roleTH+')':'');var nowT=new Date().toISOString();
-  function idIn(a){return '?id=in.('+a.map(function(x){return '"'+x+'"'}).join(',')+')'}
-  toast('\u23f3 กำลังอนุมัติ '+ids.length+' ใบ...','tok');
-  sb("leaves","PATCH",{status:'approved',approved_by:byTxt,mgr_approved_by:uName,mgr_approved_at:nowT},idIn(ids)).then(function(){
-    toast('\u2705 อนุมัติแล้ว '+ids.length+' ใบ'+(skip.length?' (ข้าม '+skip.length+' ใบยังไม่แนบเอกสาร)':''),'tok');
-    audit('leave_approve','leave','','อนุมัติพร้อมกัน '+ids.length+' ใบ (โดย '+byTxt+')');
-    tgSend('\u2705 <b>อนุมัติการลาพร้อมกัน</b>\n\n\u2705 อนุมัติ <b>'+ids.length+'</b> ใบ\n\ud83d\udc64 โดย: '+esc(byTxt)+'\n\n\ud83c\udfe2 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+  var user=localStorage.getItem('mt_username')||'';
+  var now=new Date().toISOString();
+  function idIn(ids){return '?id=in.('+ids.map(function(x){return '"'+x+'"'}).join(',')+')'}
+  var tasks=[];
+  if(pendingIds.length){
+    tasks.push(sb("leaves","PATCH",{status:'hr_approved',hr_approved_by:user||'HR',hr_approved_at:now,hr_note:'อนุมัติพร้อมกัน'},idIn(pendingIds)));
+  }
+  if(hrIds.length){
+    tasks.push(sb("leaves","PATCH",{status:'approved',mgr_approved_by:user||'Manager',mgr_approved_at:now,mgr_note:'อนุมัติพร้อมกัน'},idIn(hrIds)));
+  }
+  var doneCount=pendingIds.length+hrIds.length;
+  toast('⏳ กำลังอนุมัติ '+doneCount+' ใบ...','tok');
+  Promise.all(tasks).then(function(){
+    toast('✅ อนุมัติแล้ว '+doneCount+' ใบ'+(pendingNoDoc.length?' (ข้าม '+pendingNoDoc.length+' ใบที่ยังไม่แนบเอกสาร)':''),'tok');
+    audit('leave_approve','leave','','อนุมัติพร้อมกัน '+doneCount+' ใบ (HR '+pendingIds.length+', หัวหน้า '+hrIds.length+')');
+    tgSend('✅ <b>อนุมัติการลาพร้อมกัน</b>\n\n'+(pendingIds.length?'📤 HR อนุมัติ → รอหัวหน้า: <b>'+pendingIds.length+'</b> ใบ\n':'')+(hrIds.length?'✅ หัวหน้าอนุมัติสมบูรณ์: <b>'+hrIds.length+'</b> ใบ\n':'')+'👤 โดย: '+esc(user||'-')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
     loadLeaveRequests();
   }).catch(function(e){toast('Error: '+e,'terr');loadLeaveRequests()});
 }
@@ -2918,7 +2951,7 @@ function renderMyLeaveRequests(rows){
       +'<td style="font-size:11px">'+range+'</td>'
       +'<td style="font-weight:700">'+r.days+'</td>'
       +'<td><span style="color:'+sColor+';font-weight:600;font-size:11px">'+status+'</span>'
-      +(r.status==='approved'?'<div style="font-size:9px;color:var(--muted);margin-top:2px">อนุมัติแล้ว'+(r.reviewed_by?' โดย '+esc(r.reviewed_by):'')+'</div>':'')
+      +((r.status==='hr_approved'||r.status==='approved')?'<div style="font-size:9px;color:var(--muted);margin-top:2px">HR ✅ · หัวหน้า '+(r.status==='approved'?'✅':'⏳ รออยู่')+'</div>':'')
       +(r.review_note?'<div style="font-size:10px;color:var(--muted);margin-top:2px">'+esc(r.review_note)+'</div>':'')
       +'</td>'
       +'<td style="text-align:right">'

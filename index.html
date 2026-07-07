@@ -2621,9 +2621,15 @@ function renderLeaveRequestsAdmin(rows){
       if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:5px 14px;font-size:12px;text-decoration:none">📎 หลักฐาน</a>';
       h+='<button class="btn btn-g btn-s hr-hide" onclick="deleteLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px;color:var(--err)">🗑️ ลบ</button>';
     }else if(r.status==='hr_approved'){
-      h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px;background:linear-gradient(135deg,#2563eb,#3b82f6)">✅ หัวหน้าอนุมัติ</button>'
-        +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">❌ ไม่อนุมัติ</button>'
-        +'<button class="btn btn-g btn-s" onclick="revertLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">↩️ คืนค่า</button>';
+      if((localStorage.getItem('mt_role')||'')==='hr'){
+        // HR เห็นได้ว่ารอหัวหน้า แต่กดอนุมัติแทนหัวหน้าไม่ได้
+        h+='<span style="background:#dbeafe;border:1px solid #3b82f6;color:#1e40af;font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px">⏳ รอหัวหน้าอนุมัติ</span>'
+          +'<button class="btn btn-g btn-s" onclick="revertLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">↩️ คืนค่า</button>';
+      }else{
+        h+='<button class="btn btn-a btn-s" onclick="approveLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px;background:linear-gradient(135deg,#2563eb,#3b82f6)">✅ หัวหน้าอนุมัติ</button>'
+          +'<button class="btn btn-d btn-s" onclick="rejectLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">❌ ไม่อนุมัติ</button>'
+          +'<button class="btn btn-g btn-s" onclick="revertLeaveReq(\''+r.id+'\')" style="padding:5px 14px;font-size:12px">↩️ คืนค่า</button>';
+      }
       if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:5px 14px;font-size:12px;text-decoration:none">📎 หลักฐาน</a>';
     }else{
       if(r.evidence_link)h+='<a href="javascript:void(0)" onclick="showEvidence(\''+esc(r.evidence_link).replace(/'/g,"\\'")+'\')" class="btn btn-g btn-s" style="padding:5px 14px;font-size:12px;text-decoration:none">📎 หลักฐาน</a>';
@@ -2739,7 +2745,8 @@ function approveLeaveReq(id){
       }).catch(function(e){toast('Error: '+e,'terr')});
 
     }else if(lv.status==='hr_approved'){
-      // Level 2: Manager final approve
+      // Level 2: Manager final approve — HR ห้ามอนุมัติแทนหัวหน้า
+      if((localStorage.getItem('mt_role')||'')==='hr'){toast('HR ไม่มีสิทธิ์อนุมัติขั้นหัวหน้า — ต้องให้หัวหน้าอนุมัติ','terr');return;}
       var note2=prompt('หัวหน้าอนุมัติขั้นสุดท้าย — หมายเหตุ (ไม่บังคับ):','');
       if(note2===null)return;
       sb("leaves","PATCH",{status:'approved',mgr_approved_by:localStorage.getItem('mt_username')||'Manager',mgr_approved_at:new Date().toISOString(),mgr_note:note2||''},"?id=eq."+encodeURIComponent(id)).then(function(){
@@ -2762,7 +2769,9 @@ function approveAllLeaveReq(){
   var pendingReady=pendingRows.filter(function(r){return r.type!=='personal'||r.evidence_link});
   var pendingNoDoc=pendingRows.filter(function(r){return r.type==='personal'&&!r.evidence_link});
   var pendingIds=pendingReady.map(function(r){return r.id});
-  var hrIds=rows.filter(function(r){return r.status==='hr_approved'}).map(function(r){return r.id});
+  var _roleAll=localStorage.getItem('mt_role')||'admin';
+  // HR ห้ามอนุมัติขั้นหัวหน้า → ไม่รวมใบ hr_approved
+  var hrIds=(_roleAll==='hr')?[]:rows.filter(function(r){return r.status==='hr_approved'}).map(function(r){return r.id});
   if(!pendingIds.length&&!hrIds.length){
     toast('ไม่มีใบลาที่อนุมัติได้'+(pendingNoDoc.length?' — มี '+pendingNoDoc.length+' ใบที่ยังไม่แนบเอกสาร (แนบก่อนจึงอนุมัติได้)':''),'terr');
     return;

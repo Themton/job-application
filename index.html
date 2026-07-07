@@ -566,6 +566,7 @@ body.hr-mode .hr-hide{display:none!important}
         </div>
       </div>
       <div id="lv-mgr-reject-alert" style="display:none;background:#fef2f2;border:1.5px solid #dc2626;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#7f1d1d"></div>
+      <div id="lv-mgr-reject-banner" style="display:none;margin-bottom:12px"></div>
       <div id="lv-admin-list"><div style="text-align:center;padding:30px;color:var(--muted)">กำลังโหลด...</div></div>
     </div>
 
@@ -2578,6 +2579,19 @@ function loadLeaveRequests(){
     if(role==='manager')rows=rows.filter(function(x){return x.status!=='pending'});
     renderLeaveRequestsAdmin(rows);
     updateLeavePendingBadge();
+    // แจ้งเตือน: ใบที่หัวหน้าปฏิเสธ (rejected + เคยผ่าน HR) — ให้ HR/แอดมินเห็นชัด
+    var bn=$('lv-mgr-reject-banner');
+    if(bn&&role!=='manager'){
+      sbRpc('leave_list',{p_token:TOK(),p_status:'rejected',p_limit:200}).then(function(rj){
+        var mrej=(rj&&rj.ok&&Array.isArray(rj.rows))?rj.rows.filter(function(x){return x.hr_approved_by}):[];
+        if(mrej.length){
+          bn.innerHTML='<div style="background:#fef2f2;border:1.5px solid #dc2626;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'
+            +'<div style="color:#b91c1c;font-weight:800;font-size:14px">🔴 หัวหน้าไม่อนุมัติ '+mrej.length+' ใบ <span style="font-weight:400;font-size:12px;color:#7f1d1d">(ใบที่ HR อนุมัติไปแล้ว แต่หัวหน้าปฏิเสธ)</span></div>'
+            +'<button onclick="$(\'lv-filter-status\').value=\'rejected\';loadLeaveRequests()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">ดูรายการ</button></div>';
+          bn.style.display='block';
+        }else{bn.style.display='none';}
+      }).catch(function(){});
+    }else if(bn){bn.style.display='none';}
     checkManagerRejected();
   }).catch(function(e){
     $('lv-admin-list').innerHTML='<div class="emp"><div class="ei">⚠️</div><p>Error: '+esc(String(e))+'</p></div>';

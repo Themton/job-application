@@ -565,6 +565,7 @@ body.hr-mode .hr-hide{display:none!important}
           <button class="btn btn-g btn-s" onclick="loadLeaveRequests()">🔄</button>
         </div>
       </div>
+      <div id="lv-mgr-reject-alert" style="display:none;background:#fef2f2;border:1.5px solid #dc2626;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#7f1d1d"></div>
       <div id="lv-admin-list"><div style="text-align:center;padding:30px;color:var(--muted)">กำลังโหลด...</div></div>
     </div>
 
@@ -1334,7 +1335,11 @@ function sbRpc(fn,params){
           submitted_at:x.created_at||'',
           review_note:x.hr_note||x.mgr_note||x.reject_reason||'',
           evidence_link:x.evidence_link||'',
-          reviewed_by:x.hr_approved_by||x.mgr_approved_by||x.rejected_by||''
+          reviewed_by:x.hr_approved_by||x.mgr_approved_by||x.rejected_by||'',
+          hr_approved_by:x.hr_approved_by||'',
+          reject_reason:x.reject_reason||'',
+          rejected_by:x.rejected_by||'',
+          type:x.type||x.leave_type||'personal'
         };
       });
       return{ok:true,rows:rows};
@@ -2573,9 +2578,23 @@ function loadLeaveRequests(){
     if(role==='manager')rows=rows.filter(function(x){return x.status!=='pending'});
     renderLeaveRequestsAdmin(rows);
     updateLeavePendingBadge();
+    checkManagerRejected();
   }).catch(function(e){
     $('lv-admin-list').innerHTML='<div class="emp"><div class="ei">⚠️</div><p>Error: '+esc(String(e))+'</p></div>';
   });
+}
+function checkManagerRejected(){
+  var box=$('lv-mgr-reject-alert');if(!box)return;
+  var role=localStorage.getItem('mt_role')||'admin';
+  if(role==='manager'){box.style.display='none';return}
+  sbRpc('leave_list',{p_token:TOK(),p_status:'rejected',p_limit:200}).then(function(r){
+    if(!r||!r.ok){box.style.display='none';return}
+    var mr=(r.rows||[]).filter(function(x){return x.hr_approved_by});
+    if(mr.length){
+      box.style.display='block';
+      box.innerHTML='🔴 <b>หัวหน้าไม่อนุมัติ '+mr.length+' ใบ</b> (ที่ HR อนุมัติไปแล้ว) &nbsp;<a href="javascript:void(0)" onclick="$(\'lv-filter-status\').value=\'rejected\';loadLeaveRequests()" style="color:#b91c1c;font-weight:700;text-decoration:underline">ดูรายการ →</a>';
+    }else box.style.display='none';
+  }).catch(function(){box.style.display='none'});
 }
 
 function renderLeaveRequestsAdmin(rows){
@@ -2610,6 +2629,14 @@ function renderLeaveRequestsAdmin(rows){
     if(r.submitted_at)h+='<span style="color:var(--muted);font-size:11px">ส่ง '+esc(beDate(r.submitted_at))+'</span>';
     h+='</div>';
     if(r.reason)h+='<div style="font-size:12px;background:var(--inp);border-radius:8px;padding:8px 10px;margin-bottom:10px">📝 '+esc(r.reason)+'</div>';
+    // แบนเนอร์ชัด: หัวหน้าไม่อนุมัติใบที่ HR อนุมัติไปแล้ว
+    if(r.status==='rejected'&&r.hr_approved_by){
+      h+='<div style="background:#fef2f2;border:1.5px solid #dc2626;border-radius:10px;padding:10px 12px;margin-bottom:10px">'
+        +'<div style="color:#b91c1c;font-weight:800;font-size:13px">🔴 หัวหน้าไม่อนุมัติ (หลัง HR อนุมัติแล้ว)</div>'
+        +(r.reject_reason?'<div style="color:#7f1d1d;font-size:12px;margin-top:3px">เหตุผล: '+esc(r.reject_reason)+'</div>':'')
+        +(r.rejected_by?'<div style="color:#9ca3af;font-size:11px;margin-top:2px">โดย '+esc(r.rejected_by)+'</div>':'')
+        +'</div>';
+    }
     if(r.review_note)h+='<div style="font-size:11px;color:var(--muted);margin-bottom:9px">หมายเหตุ: '+esc(r.review_note)+(r.reviewed_by_name?' (โดย '+esc(r.reviewed_by_name)+')':'')+'</div>';
     // ปุ่มจัดการ
     h+='<div style="display:flex;gap:6px;flex-wrap:wrap">';

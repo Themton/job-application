@@ -2618,10 +2618,16 @@ function renderLeaveRequestsAdmin(rows){
     $('lv-admin-list').innerHTML='<div style="text-align:center;padding:64px 20px;color:var(--muted)"><div style="font-size:46px;margin-bottom:8px">📭</div><div style="font-size:15px">ไม่มีรายการลาในสถานะนี้</div></div>';
     return;
   }
-  var canApprove=rows.filter(function(r){return r.status==='pending'||r.status==='hr_approved'}).length;
+  var canApprove=rows.filter(function(r){return lvCanPick(r)}).length;
   var h='';
   if(canApprove){
-    h+='<div style="margin-bottom:14px"><button class="btn btn-a" onclick="approveAllLeaveReq()" style="background:linear-gradient(135deg,#16a34a,#22c55e);padding:8px 18px">✅ อนุมัติทั้งหมด ('+canApprove+' ใบ)</button></div>';
+    h+='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:9px 14px">'
+      +'<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--txt)">'
+      +'<input type="checkbox" id="lv-pick-all" onchange="lvToggleAll(this)" style="width:17px;height:17px;cursor:pointer;accent-color:#16a34a">เลือกทั้งหมด ('+canApprove+' ใบ)</label>'
+      +'<span id="lv-sel-count" style="font-size:12px;color:var(--muted)">เลือกแล้ว 0 ใบ</span>'
+      +'<button class="btn btn-a" id="lv-approve-sel" onclick="approveSelectedLeaveReq()" disabled style="background:linear-gradient(135deg,#16a34a,#22c55e);padding:7px 16px;font-size:13px;opacity:.45;cursor:not-allowed">✅ อนุมัติที่เลือก</button>'
+      +'<button class="btn btn-g btn-s" onclick="approveAllLeaveReq()" style="padding:7px 14px;font-size:12px">✅ อนุมัติทั้งหมด ('+canApprove+' ใบ)</button>'
+      +'</div>';
   }
   h+='<div style="display:flex;flex-direction:column;gap:10px">';
   rows.forEach(function(r){
@@ -2633,7 +2639,10 @@ function renderLeaveRequestsAdmin(rows){
     h+='<div style="border:1px solid var(--bdr);border-left:4px solid '+color+';border-radius:12px;padding:14px 16px;background:var(--card)">';
     // หัวการ์ด: ชื่อ + สถานะ
     h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px">';
+    h+='<div style="display:flex;align-items:center;gap:9px">';
+    if(lvCanPick(r))h+='<input type="checkbox" class="lv-pick" value="'+r.id+'" onchange="lvUpdateSelBar()" style="width:17px;height:17px;cursor:pointer;accent-color:#16a34a;flex-shrink:0">';
     h+='<div style="font-weight:700;font-size:15px">'+esc(r.emp_name)+(r.nickname?' <span style="font-weight:400;color:var(--muted);font-size:13px">('+esc(r.nickname)+')</span>':'')+'</div>';
+    h+='</div>';
     h+='<span style="background:'+sColor+'1f;color:'+sColor+';font-weight:600;font-size:11px;padding:3px 11px;border-radius:20px;white-space:nowrap">'+status+'</span>';
     h+='</div>';
     // ข้อมูล: ประเภท · ช่วงวัน · จำนวน · วันที่ส่ง
@@ -2827,6 +2836,57 @@ function approveLeaveReq(id){
       toast('ใบลานี้ถูกตรวจแล้ว (สถานะ: '+lv.status+')','terr');
     }
   }).catch(function(e){toast('Error: '+e,'terr')});
+}
+
+/* ═══ เลือกใบลา (เช็คบ็อกซ์) ═══ */
+function lvCanPick(r){
+  // ใบที่บทบาทนี้อนุมัติได้จริง (HR อนุมัติแทนหัวหน้าไม่ได้)
+  var role=localStorage.getItem('mt_role')||'admin';
+  if(r.status==='pending')return true;
+  if(r.status==='hr_approved')return role!=='hr';
+  return false;
+}
+function lvToggleAll(cb){
+  document.querySelectorAll('.lv-pick').forEach(function(x){x.checked=cb.checked});
+  lvUpdateSelBar();
+}
+function lvSelectedIds(){
+  var ids=[];document.querySelectorAll('.lv-pick').forEach(function(x){if(x.checked)ids.push(x.value)});
+  return ids;
+}
+function lvUpdateSelBar(){
+  var n=lvSelectedIds().length,all=document.querySelectorAll('.lv-pick').length;
+  var c=$('lv-sel-count');if(c)c.textContent='เลือกแล้ว '+n+' ใบ';
+  var b=$('lv-approve-sel');
+  if(b){b.disabled=!n;b.style.opacity=n?'1':'.45';b.style.cursor=n?'pointer':'not-allowed';b.textContent=n?'✅ อนุมัติที่เลือก ('+n+')':'✅ อนุมัติที่เลือก';}
+  var a=$('lv-pick-all');if(a){a.checked=(n>0&&n===all);a.indeterminate=(n>0&&n<all);}
+}
+function approveSelectedLeaveReq(){
+  var ids=lvSelectedIds();
+  if(!ids.length){toast('ยังไม่ได้เลือกใบลา','terr');return}
+  var rows=(window._lvRows||[]).filter(function(r){return ids.indexOf(r.id)>=0});
+  var skip=rows.filter(function(r){return r.status==='pending'&&r.type==='personal'&&!r.evidence_link});
+  var ready=rows.filter(function(r){return !(r.status==='pending'&&r.type==='personal'&&!r.evidence_link)});
+  if(!ready.length){toast('ใบที่เลือกเป็นลากิจที่ยังไม่แนบเอกสาร — แนบก่อนจึงอนุมัติได้','terr');return}
+  var pendingIds=ready.filter(function(r){return r.status==='pending'}).map(function(r){return r.id});
+  var hrIds=ready.filter(function(r){return r.status==='hr_approved'}).map(function(r){return r.id});
+  var msg='อนุมัติ '+ready.length+' ใบที่เลือก?';
+  if(pendingIds.length)msg+='\n• HR อนุมัติ → ส่งต่อหัวหน้า: '+pendingIds.length+' ใบ';
+  if(hrIds.length)msg+='\n• หัวหน้าอนุมัติสมบูรณ์: '+hrIds.length+' ใบ';
+  if(skip.length)msg+='\n⚠️ ข้าม (ลากิจยังไม่แนบเอกสาร): '+skip.length+' ใบ';
+  if(!confirm(msg))return;
+  var user=localStorage.getItem('mt_username')||'';var now=new Date().toISOString();
+  function idIn(a){return '?id=in.('+a.map(function(x){return '"'+x+'"'}).join(',')+')'}
+  var tasks=[];
+  if(pendingIds.length)tasks.push(sb("leaves","PATCH",{status:'hr_approved',hr_approved_by:user||'HR',hr_approved_at:now,hr_note:'อนุมัติที่เลือก'},idIn(pendingIds)));
+  if(hrIds.length)tasks.push(sb("leaves","PATCH",{status:'approved',mgr_approved_by:user||'Manager',mgr_approved_at:now,mgr_note:'อนุมัติที่เลือก'},idIn(hrIds)));
+  toast('⏳ กำลังอนุมัติ '+ready.length+' ใบ...','tok');
+  Promise.all(tasks).then(function(){
+    toast('✅ อนุมัติแล้ว '+ready.length+' ใบ'+(skip.length?' (ข้าม '+skip.length+' ใบ)':''),'tok');
+    audit('leave_approve','leave','','อนุมัติที่เลือก '+ready.length+' ใบ (HR '+pendingIds.length+', หัวหน้า '+hrIds.length+')');
+    tgSend('✅ <b>อนุมัติการลา (เลือก)</b>\n\n'+(pendingIds.length?'📤 HR อนุมัติ → รอหัวหน้า: <b>'+pendingIds.length+'</b> ใบ\n':'')+(hrIds.length?'✅ หัวหน้าอนุมัติสมบูรณ์: <b>'+hrIds.length+'</b> ใบ\n':'')+'👤 โดย: '+esc(user||'-')+'\n\n🏢 <i>บริษัท เดอะ เอ็มที จำกัด</i>');
+    loadLeaveRequests();
+  }).catch(function(e){toast('Error: '+e,'terr');loadLeaveRequests()});
 }
 
 function approveAllLeaveReq(){

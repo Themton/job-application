@@ -708,7 +708,7 @@ body.hr-mode .hr-hide{display:none!important}
 
       <div id="pay-results" class="hide">
         <div style="display:flex;gap:8px;align-items:center;margin-top:16px;margin-bottom:10px;flex-wrap:wrap">
-          <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="pay-month" value="" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
+          <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="pay-month" value="" onchange="if(window.PAY_DATA&&PAY_DATA.length)payLoadUnpaidLeaves()" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
           <button class="btn btn-a btn-s" onclick="paySaveToDB()" id="pay-save-btn">💾 บันทึกลงระบบ</button>
           <button class="btn btn-a btn-s" onclick="payExportSCB()" style="background:linear-gradient(135deg,#4e2a84,#7b3fa0)">🏦 สร้างไฟล์ Payroll SCB</button>
           <button class="btn btn-g btn-s" onclick="payExportCSV2()">📥 Export CSV</button>
@@ -3898,7 +3898,7 @@ function payProcess(){
         var isTerminated=(empStatus==='terminated');
         if(isTerminated)terminated.push(emp.name);
         if(!dbEmp)notFound.push(emp.name);
-        return Object.assign({},emp,{att:att,attA:attA,pay:pay,dbStatus:empStatus,isTerminated:isTerminated,dbFound:!!dbEmp});
+        return Object.assign({},emp,{att:att,attA:attA,pay:pay,dbStatus:empStatus,isTerminated:isTerminated,dbFound:!!dbEmp,dbId:dbEmp?dbEmp.id:null,unpaidDays:0});
       });
       $('pay-results').classList.remove('hide');
       if(!$('pay-month').value){var now=new Date();$('pay-month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
@@ -3923,7 +3923,7 @@ function payProcess(){
       $('pay-warn')&&$('pay-warn').remove();
       if(warn){var div=document.createElement('div');div.id='pay-warn';div.innerHTML=warn;$('pay-stats').parentNode.insertBefore(div,$('pay-stats'))}
 
-      payRenderFilters();payRenderTable();
+      payRenderFilters();payRenderTable();payLoadUnpaidLeaves();
       if(terminated.length){
         toast('⛔ พบพนักงานลาออก '+terminated.length+' คน — ห้ามโอน!','terr');
       }else{
@@ -4016,6 +4016,16 @@ function payRenderFilters(){
 function paySetFilter(f){PAY_FILTER=f;payRenderFilters();payRenderTable()}
 function payHandleSort(col){if(PAY_SORT===col)PAY_SDIR=PAY_SDIR==="asc"?"desc":"asc";else{PAY_SORT=col;PAY_SDIR="asc"}payRenderTable()}
 
+function payLoadUnpaidLeaves(){
+  var m=($('pay-month')&&$('pay-month').value)||'';
+  if(!m||!PAY_DATA||!PAY_DATA.length)return;
+  var start=m+'-01',end=m+'-31';
+  sb("leaves","GET",null,"?type=eq.unpaid&status=neq.rejected&status=neq.cancelled&date=gte."+start+"&date=lte."+end+"&select=emp_id,days,date").then(function(r){
+    var byEmp={};(Array.isArray(r)?r:[]).forEach(function(l){if(l.emp_id)byEmp[l.emp_id]=(byEmp[l.emp_id]||0)+(l.days||1)});
+    PAY_DATA.forEach(function(e){e.unpaidDays=(e.dbId&&byEmp[e.dbId])?byEmp[e.dbId]:0});
+    payRenderTable();
+  }).catch(function(){});
+}
 function payRenderTable(){
   var q=$('pay-srch').value.toLowerCase(),comp=$('pay-comp').checked;
   var list=PAY_DATA.filter(function(e){if(PAY_FILTER!=="ทั้งหมด"&&e.position!==PAY_FILTER)return false;if(q&&e.name.toLowerCase().indexOf(q)<0&&(!e.nickname||e.nickname.toLowerCase().indexOf(q)<0))return false;return true});
@@ -4033,24 +4043,25 @@ function payRenderTable(){
 
   var si=function(c){return PAY_SORT===c?(PAY_SDIR==="asc"?"↑":"↓"):'<span style="opacity:.3">↕</span>'};
   var h='<div class="tw" style="overflow-x:auto"><table><thead><tr>';
-  [{k:"name",l:"ชื่อ"},{k:"pos",l:"ตำแหน่ง"},{k:"salary",l:"เดิม"},{k:"halfDays",l:"½วัน"},{k:"absentDays",l:"ขาด"},{k:"attDed",l:"หักเวลา"},{k:"net",l:comp?"เดิม→ใหม่":"สุทธิ"}].forEach(function(c){
-    var al=["salary","attDed","net"].indexOf(c.k)>=0?"text-align:right":"";var al2=["halfDays","absentDays"].indexOf(c.k)>=0?"text-align:center":"";
+  [{k:"name",l:"ชื่อ"},{k:"pos",l:"ตำแหน่ง"},{k:"salary",l:"เดิม"},{k:"halfDays",l:"½วัน"},{k:"absentDays",l:"ขาด"},{k:"unpaid",l:"ลาไม่รับ"},{k:"attDed",l:"หักเวลา"},{k:"net",l:comp?"เดิม→ใหม่":"สุทธิ"}].forEach(function(c){
+    var al=["salary","attDed","net"].indexOf(c.k)>=0?"text-align:right":"";var al2=["halfDays","absentDays","unpaid"].indexOf(c.k)>=0?"text-align:center":"";
     h+='<th style="'+al+al2+'" onclick="payHandleSort(\''+c.k+'\')">'+c.l+' '+si(c.k)+'</th>';
   });h+='</tr></thead><tbody>';
-  var tH=0,tA=0,tAD=0,tN=0;
-  list.forEach(function(e,i){var pc=posClr[e.position]||"#888",hasC=e.pay.attDed>0;tH+=e.attA.half;tA+=e.attA.absent;tAD+=e.pay.attDed;if(!e.isTerminated)tN+=e.pay.net;
+  var tH=0,tA=0,tAD=0,tN=0,tU=0;
+  list.forEach(function(e,i){var pc=posClr[e.position]||"#888",hasC=e.pay.attDed>0;tH+=e.attA.half;tA+=e.attA.absent;tAD+=e.pay.attDed;tU+=(e.unpaidDays||0);if(!e.isTerminated)tN+=e.pay.net;
     h+='<tr onclick="payShowDetail('+i+')" style="'+(e.isTerminated?'background:rgba(220,38,38,.06);opacity:.7':'')+'">';
     h+='<td><div class="nm">'+esc(e.name)+(e.isTerminated?' <span style="background:var(--err);color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700">⛔ ลาออก</span>':'')+'</div>'+(e.nickname?'<div class="em">('+esc(e.nickname)+')</div>':'')+'</td>';
     h+='<td><span class="bg" style="background:'+pc+'14;color:'+pc+';border:1px solid '+pc+'33;font-size:10px">'+esc(e.position)+'</span></td>';
     h+='<td style="text-align:right;font-variant-numeric:tabular-nums">'+(e.salary>0?payFmt(e.salary):"-")+'</td>';
     h+='<td style="text-align:center;color:'+(e.attA.half>0?"#d4a73c":"var(--muted)")+';font-weight:'+(e.attA.half>0?700:400)+'">'+(e.attA.half||"-")+'</td>';
     h+='<td style="text-align:center;color:'+(e.attA.absent>0?"var(--err)":"var(--muted)")+';font-weight:'+(e.attA.absent>0?700:400)+'">'+(e.attA.absent||"-")+'</td>';
+    h+='<td style="text-align:center;color:'+(e.unpaidDays>0?"#b91c1c":"var(--muted)")+';font-weight:'+(e.unpaidDays>0?800:400)+'"'+(e.unpaidDays>0?' title="ลาไม่รับค่าจ้าง '+e.unpaidDays+' วัน — ต้องหักเงิน"':'')+'>'+(e.unpaidDays>0?e.unpaidDays+' วัน':"-")+'</td>';
     h+='<td style="text-align:right;color:'+(hasC?"var(--err)":"var(--muted)")+';font-weight:'+(hasC?600:400)+';font-variant-numeric:tabular-nums">'+(hasC?"-"+payFmt(e.pay.attDed):"-")+'</td>';
     if(comp&&hasC){h+='<td style="text-align:right;font-variant-numeric:tabular-nums"><span style="text-decoration:line-through;color:var(--muted);font-size:11px">'+payFmt(e.net)+'</span> <span style="color:#d4a73c;font-weight:700">'+payFmt(e.pay.net)+'</span></td>';}
     else{h+='<td style="text-align:right;color:'+(hasC?"#d4a73c":"var(--txt)")+';font-weight:700;font-variant-numeric:tabular-nums">'+payFmt(e.pay.net)+'</td>';}
     h+='</tr>';
   });
-  h+='</tbody><tfoot><tr><td colspan="3" style="color:var(--pri)">รวม '+list.length+' คน</td><td style="text-align:center;color:#d4a73c">'+tH+'</td><td style="text-align:center;color:var(--err)">'+tA+'</td><td style="text-align:right;color:var(--err);font-variant-numeric:tabular-nums">-'+payFmt(tAD)+'</td><td style="text-align:right;color:var(--ok);font-variant-numeric:tabular-nums">'+payFmt(tN)+'</td></tr></tfoot></table></div>';
+  h+='</tbody><tfoot><tr><td colspan="3" style="color:var(--pri)">รวม '+list.length+' คน</td><td style="text-align:center;color:#d4a73c">'+tH+'</td><td style="text-align:center;color:var(--err)">'+tA+'</td><td style="text-align:center;color:#b91c1c;font-weight:800">'+(tU||0)+'</td><td style="text-align:right;color:var(--err);font-variant-numeric:tabular-nums">-'+payFmt(tAD)+'</td><td style="text-align:right;color:var(--ok);font-variant-numeric:tabular-nums">'+payFmt(tN)+'</td></tr></tfoot></table></div>';
   $('pay-table').innerHTML=h;window._payList=list;
 }
 

@@ -1130,6 +1130,7 @@ if(location.search.indexOf('emp')>-1){
           <option value="personal">ลากิจ</option>
           <option value="sick">ลาป่วย</option>
           <option value="vacation">ลาพักร้อน</option>
+          <option value="unpaid">ลาไม่รับค่าจ้าง</option>
           <option value="other">อื่น ๆ</option>
         </select>
       </div>
@@ -1378,7 +1379,7 @@ function sbRpc(fn,params){
           evidence_link:params.p_evidence_link||'',
           status:'pending',created_at:new Date().toISOString()
         }).then(function(){
-          var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',maternity:'ลาคลอด'};
+          var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',maternity:'ลาคลอด',vacation:'ลาพักร้อน',unpaid:'ลาไม่รับค่าจ้าง',other:'อื่นๆ'};
           tgNotify('leave_request',{name:empName,leaveType:lvLabels[params.p_leave_type]||params.p_leave_type,date:(params.p_start_date||'')+(params.p_end_date?' ถึง '+params.p_end_date:''),reason:params.p_reason||'',leaveId:id});
           return{ok:true,id:id};
         });
@@ -2475,7 +2476,7 @@ function auditDetailTH(action,details){
   try{
     // Leave actions
     if(action.indexOf('leave')>=0){
-      if(d.type){var tl={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน',absent:'ขาดงาน',other:'อื่นๆ'};parts.push(tl[d.type]||d.type)}
+      if(d.type){var tl={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน',unpaid:'ลาไม่รับค่าจ้าง',absent:'ขาดงาน',other:'อื่นๆ'};parts.push(tl[d.type]||d.type)}
       if(d.days)parts.push(d.days+(d.days===0.5?' (ครึ่งวัน)':' วัน'));
       if(d.start_date&&d.end_date)parts.push(d.start_date+' ถึง '+d.end_date);
       else if(d.start_date)parts.push(d.start_date);
@@ -2562,8 +2563,8 @@ function viewAuditLog(){
 }
 
 /* ═══ LEAVE REQUEST SYSTEM ═══ */
-var LR_TYPE_LABEL={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน',other:'อื่นๆ'};
-var LR_TYPE_COLOR={personal:'#3b82f6',sick:'#f59e0b',vacation:'#10b981',other:'#6b7280'};
+var LR_TYPE_LABEL={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน',unpaid:'ลาไม่รับค่าจ้าง',other:'อื่นๆ'};
+var LR_TYPE_COLOR={personal:'#3b82f6',sick:'#f59e0b',vacation:'#10b981',unpaid:'#b91c1c',other:'#6b7280'};
 var LR_STATUS_LABEL={pending:'🟡 รออนุมัติ',hr_approved:'🔵 HR อนุมัติ — รอหัวหน้า',approved:'✅ อนุมัติสมบูรณ์',rejected:'❌ ไม่อนุมัติ',cancelled:'🚫 ยกเลิก'};
 var LR_STATUS_COLOR={pending:'#f59e0b',hr_approved:'#3b82f6',approved:'var(--ok)',rejected:'var(--err)',cancelled:'#6b7280'};
 
@@ -2797,7 +2798,7 @@ function approveLeaveReq(id){
   sb("leaves","GET",null,"?id=eq."+encodeURIComponent(id)+"&select=*").then(function(r){
     if(!Array.isArray(r)||!r.length){toast('ไม่พบใบลา','terr');return}
     var lv=r[0];
-    var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',absent:'ขาดงาน'};
+    var lvLabels={personal:'ลากิจ',sick:'ลาป่วย',annual:'ลาพักร้อน',absent:'ขาดงาน',vacation:'ลาพักร้อน',unpaid:'ลาไม่รับค่าจ้าง',other:'อื่นๆ'};
     
     if(lv.status==='pending'){
       // ลากิจ: ต้องแนบเอกสารก่อน HR จึงจะอนุมัติได้ · ลาป่วย/อื่นๆ: แนบทีหลังได้
@@ -4675,9 +4676,9 @@ function attUpload(inp){
         leaves=Array.isArray(leaves)?leaves:[];
         var empMap={};
         ALL.forEach(function(a){empMap[a.id]={name:a.name,nickname:a.nickname}});
-        var leaveByType={personal:[],sick:[],vacation:[],absent:[]};
-        var leaveLabels={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน',absent:'ขาดงาน'};
-        var leaveColors={personal:'#3b82f6',sick:'#ef4444',vacation:'#10b981',absent:'#dc2626'};
+        var leaveByType={personal:[],sick:[],vacation:[],unpaid:[],absent:[]};
+        var leaveLabels={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน',unpaid:'ลาไม่รับค่าจ้าง',absent:'ขาดงาน'};
+        var leaveColors={personal:'#3b82f6',sick:'#ef4444',vacation:'#10b981',unpaid:'#b91c1c',absent:'#dc2626'};
         leaves.forEach(function(l){
           var t2=l.type||'other';
           if(!leaveByType[t2])leaveByType[t2]=[];
@@ -4777,7 +4778,7 @@ function attShowTab(key){
       });
     }
   }else if(key==='leave'){
-    var secOrder=['sick','personal','vacation'];
+    var secOrder=['unpaid','sick','personal','vacation'];
     var hasAny=false;
     secOrder.forEach(function(skey){
       var items=d.leaveByType[skey]||[];
@@ -4785,7 +4786,12 @@ function attShowTab(key){
       hasAny=true;
       var label=d.leaveLabels[skey];
       var color=d.leaveColors[skey];
-      h+='<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:700;color:'+color+';margin-bottom:8px">'+label+' ('+items.length+' ครั้ง)</div>';
+      if(skey==='unpaid'){
+        var totDays=0;items.forEach(function(l){totDays+=(l.days||0)});
+        h+='<div style="margin-bottom:14px;border:2px solid #dc2626;border-radius:10px;padding:12px;background:#fef2f2"><div style="font-size:14px;font-weight:800;color:#b91c1c;margin-bottom:8px">🚫 '+label+' — ต้องหักเงินเดือน (รวม '+totDays+' วัน / '+items.length+' ครั้ง)</div>';
+      }else{
+        h+='<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:700;color:'+color+';margin-bottom:8px">'+label+' ('+items.length+' ครั้ง)</div>';
+      }
       items.forEach(function(l){
         h+='<div style="padding:10px 16px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">';
         h+='<div><span style="font-weight:700;color:var(--pri);font-size:13px">'+esc(l.name)+'</span>';

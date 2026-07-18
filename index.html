@@ -5253,6 +5253,7 @@ function payDBLoad(){
   }
   queries.push(month?sb("payroll","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*").catch(function(){return[]}):Promise.resolve([]));
   queries.push(month?sb("leaves","GET",null,"?type=eq.absent&date=gte."+_absStart+"&date=lte."+_absEnd+"&select=emp_id,date,days,status").catch(function(){return[]}):Promise.resolve([]));
+  queries.push(month?sb("leaves","GET",null,"?type=eq.unpaid&status=neq.rejected&status=neq.cancelled&date=gte."+_absStart+"&date=lte."+_absEnd+"&select=emp_id,date,days,status").catch(function(){return[]}):Promise.resolve([]));
 
   Promise.all(queries).then(function(res){
     var r=res[0];
@@ -5268,6 +5269,17 @@ function payDBLoad(){
     });
     var absentMap={};
     Object.keys(_absByEmp).forEach(function(eid){var s=0;Object.keys(_absByEmp[eid]).forEach(function(d){s+=_absByEmp[eid][d]});absentMap[eid]=s});
+    // ลาไม่รับค่าจ้าง — รวมจำนวนวันต่อพนักงาน (ไม่นับที่ถูกปฏิเสธ/ยกเลิก)
+    var unpaidRows=Array.isArray(res[3])?res[3]:[];
+    var _unpByEmp={};
+    unpaidRows.forEach(function(l){
+      if(!l.emp_id)return;if(l.status==='rejected'||l.status==='cancelled')return;
+      if(!_unpByEmp[l.emp_id])_unpByEmp[l.emp_id]={};
+      var dk=l.date||('_'+Math.random());
+      _unpByEmp[l.emp_id][dk]=Math.max(_unpByEmp[l.emp_id][dk]||0,l.days||1);
+    });
+    var unpaidMap={};
+    Object.keys(_unpByEmp).forEach(function(eid){var s=0;Object.keys(_unpByEmp[eid]).forEach(function(d){s+=_unpByEmp[eid][d]});unpaidMap[eid]=s});
     if(!Array.isArray(r)||!r.length){$('paydb2-status').textContent='ไม่พบพนักงาน';return}
 
     // ดูพ้นสภาพ: เก็บเฉพาะคนที่พ้นสภาพในเดือนที่เลือก (คนทำงานอยู่คงไว้เพื่อความถูกต้องตอนบันทึก)
@@ -5341,6 +5353,7 @@ function payDBLoad(){
       }
       // ดึงวันขาดมาหัก — เฉพาะประจำ/ใหม่ (เงินเดือนคงที่) • รายวัน/รายวันปกส คิดจากจำนวนวันที่กรอกเองอยู่แล้ว
       var absD=absentMap[e.id]||0;
+      e._unpaidDays=unpaidMap[e.id]||0;
       if(absD>0&&(e.status==='monthly'||e.status==='new')){
         e.absent_ded=Math.round((e.salary||0)/daysInMonth*absD*100)/100;
         e._absentDays=absD;
@@ -5447,14 +5460,15 @@ function payDBRender(){
   var _pm=($('paydb2-month')&&$('paydb2-month').value)?$('paydb2-month').value.split('-'):null;
   var _refWD=_pm?dailyPayCycle(parseInt(_pm[0],10),parseInt(_pm[1],10)).workDays:'';
 
-  var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0,tAbsDays=0;
-  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tAbsDays+=(e._absentDays||0);if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated')tWD+=e.work_days});
+  var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0,tAbsDays=0,tUnpaid=0;
+  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tAbsDays+=(e._absentDays||0);tUnpaid+=(e._unpaidDays||0);if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated')tWD+=e.work_days});
 
   var cols=[
     {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
     {k:'diligence',l:'เบี้ยขยัน',w:75,type:'inc'},
     {k:'late',l:'หักมาสาย',w:80,type:'ded'},
     {k:'_absentDays',l:'วันขาด',w:55,type:'days'},
+    {k:'_unpaidDays',l:'ลาไม่รับ',w:60,type:'days'},
     {k:'absent_ded',l:'หักขาดงาน',w:80,type:'ded'},
     {k:'tax3',l:'ภาษี 3% ⚡',w:80,type:'ded'},
     {k:'ss5',l:'ปกส. 5% ⚡',w:80,type:'ded'},
@@ -5462,7 +5476,7 @@ function payDBRender(){
     {k:'advance',l:'เบิกล่วงหน้า',w:85,type:'ded'}
   ];
   var totalCols=4+2+cols.length+3; // +2 daily_rate&work_days
-  var sums=[tSal,tDil,tLa,tAbsDays,tAb,tT3,tS5,tLo,tAd];
+  var sums=[tSal,tDil,tLa,tAbsDays,tUnpaid,tAb,tT3,tS5,tLo,tAd];
 
   var h='<div class="xls-wrap"><table class="xls"><thead><tr>';
   h+='<th class="xr" style="min-width:28px"></th>';
@@ -5528,8 +5542,8 @@ function payDBRender(){
     }
     cols.forEach(function(c){
       if(c.type==='days'){
-        var ad=e._absentDays||0;
-        h+='<td style="text-align:center;'+(ad>0?'background:#fde8e8;color:#dc2626;font-weight:bold':'background:#fafafa;color:#ccc')+'" title="จำนวนวันขาดงาน (ดึงจากระบบลา/ขาด)">'+(ad>0?ad:'-')+'</td>';
+        var dv=e[c.k]||0;var isUnp=(c.k==='_unpaidDays');
+        h+='<td style="text-align:center;'+(dv>0?(isUnp?'background:#fbdada;color:#b91c1c;font-weight:800':'background:#fde8e8;color:#dc2626;font-weight:bold'):'background:#fafafa;color:#ccc')+'" title="'+(isUnp?'ลาไม่รับค่าจ้าง (ดึงจากระบบลา) — ต้องหักเงิน':'จำนวนวันขาดงาน (ดึงจากระบบลา/ขาด)')+'">'+(dv>0?dv:'-')+'</td>';
         return;
       }
       var v=e[c.k]||0;

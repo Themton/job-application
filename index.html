@@ -5354,6 +5354,11 @@ function payDBLoad(){
       // ดึงวันขาดมาหัก — เฉพาะประจำ/ใหม่ (เงินเดือนคงที่) • รายวัน/รายวันปกส คิดจากจำนวนวันที่กรอกเองอยู่แล้ว
       var absD=absentMap[e.id]||0;
       e._unpaidDays=unpaidMap[e.id]||0;
+      e.unpaid_ded=0;
+      if(e._unpaidDays>0){
+        var _upRate=((e.daily_rate||0)>0)?e.daily_rate:((e.salary||0)/daysInMonth);
+        e.unpaid_ded=Math.round(_upRate*e._unpaidDays*100)/100;
+      }
       if(absD>0&&(e.status==='monthly'||e.status==='new')){
         e.absent_ded=Math.round((e.salary||0)/daysInMonth*absD*100)/100;
         e._absentDays=absD;
@@ -5460,8 +5465,8 @@ function payDBRender(){
   var _pm=($('paydb2-month')&&$('paydb2-month').value)?$('paydb2-month').value.split('-'):null;
   var _refWD=_pm?dailyPayCycle(parseInt(_pm[0],10),parseInt(_pm[1],10)).workDays:'';
 
-  var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0,tAbsDays=0,tUnpaid=0;
-  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tAbsDays+=(e._absentDays||0);tUnpaid+=(e._unpaidDays||0);if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated')tWD+=e.work_days});
+  var tSal=0,tDil=0,tI=0,tLa=0,tAb=0,tT3=0,tS5=0,tLo=0,tAd=0,tD=0,tN=0,tWD=0,tAbsDays=0,tUnpaid=0,tUnpaidDed=0;
+  filtered.forEach(function(f){var e=f.e;tSal+=e.salary;tDil+=e.diligence;tI+=e.totalIncome;tLa+=e.late;tAb+=e.absent_ded;tT3+=e.tax3;tS5+=e.ss5;tLo+=e.loan;tAd+=e.advance;tD+=e.totalDed;tN+=e.net;tAbsDays+=(e._absentDays||0);tUnpaid+=(e._unpaidDays||0);tUnpaidDed+=(e.unpaid_ded||0);if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated')tWD+=e.work_days});
 
   var cols=[
     {k:'salary',l:'เงินเดือน',w:90,type:'inc'},
@@ -5469,6 +5474,7 @@ function payDBRender(){
     {k:'late',l:'หักมาสาย',w:80,type:'ded'},
     {k:'_absentDays',l:'วันขาด',w:55,type:'days'},
     {k:'_unpaidDays',l:'ลาไม่รับ',w:60,type:'days'},
+    {k:'unpaid_ded',l:'หักลาไม่รับ',w:85,type:'ded'},
     {k:'absent_ded',l:'หักขาดงาน',w:80,type:'ded'},
     {k:'tax3',l:'ภาษี 3% ⚡',w:80,type:'ded'},
     {k:'ss5',l:'ปกส. 5% ⚡',w:80,type:'ded'},
@@ -5476,7 +5482,7 @@ function payDBRender(){
     {k:'advance',l:'เบิกล่วงหน้า',w:85,type:'ded'}
   ];
   var totalCols=4+2+cols.length+3; // +2 daily_rate&work_days
-  var sums=[tSal,tDil,tLa,tAbsDays,tUnpaid,tAb,tT3,tS5,tLo,tAd];
+  var sums=[tSal,tDil,tLa,tAbsDays,tUnpaid,tUnpaidDed,tAb,tT3,tS5,tLo,tAd];
 
   var h='<div class="xls-wrap"><table class="xls"><thead><tr>';
   h+='<th class="xr" style="min-width:28px"></th>';
@@ -5556,9 +5562,10 @@ function payDBRender(){
       var auto=(c.k==='tax3'||c.k==='ss5')||(isDaily&&c.k==='salary'&&e.work_days>0);
       var refreshed=(c.k==='salary'&&e._baseUpdated);
       var absentAuto=(c.k==='absent_ded'&&e._absentDays>0);
-      var cellBg=refreshed?'background:#fef3c7':absentAuto?'background:#fde8e8':(auto?'background:#f0f8ff':'');
-      var cellColor=refreshed?'color:#92400e;font-weight:bold':absentAuto?'color:#dc2626;font-weight:bold':(auto?'color:#4a90d9':'');
-      var cellTitle=refreshed?'อัปเดตฐานเงินเดือนใหม่จากข้อมูลพนักงาน':absentAuto?('หักขาดงาน '+e._absentDays+' วัน (ดึงจากระบบลา/ขาด)'):'';
+      var unpaidAuto=(c.k==='unpaid_ded'&&e._unpaidDays>0);
+      var cellBg=refreshed?'background:#fef3c7':absentAuto?'background:#fde8e8':unpaidAuto?'background:#fbdada':(auto?'background:#f0f8ff':'');
+      var cellColor=refreshed?'color:#92400e;font-weight:bold':absentAuto?'color:#dc2626;font-weight:bold':unpaidAuto?'color:#b91c1c;font-weight:bold':(auto?'color:#4a90d9':'');
+      var cellTitle=refreshed?'อัปเดตฐานเงินเดือนใหม่จากข้อมูลพนักงาน':absentAuto?('หักขาดงาน '+e._absentDays+' วัน (ดึงจากระบบลา/ขาด)'):unpaidAuto?('หักลาไม่รับค่าจ้าง '+e._unpaidDays+' วัน (คำนวณอัตโนมัติ — แก้ได้)'):'';
       h+='<td style="'+cellBg+'" title="'+cellTitle+'"><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" data-i="'+i+'" placeholder="0" style="'+cellColor+'"></td>';
     });
     h+='<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
@@ -5605,7 +5612,7 @@ function payDBCalcRow(e){
     e.tax3=0;
     e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,875);
   }
-  e.totalDed=e.late+e.absent_ded+e.tax3+e.ss5+e.loan+e.advance;
+  e.totalDed=e.late+e.absent_ded+(e.unpaid_ded||0)+e.tax3+e.ss5+e.loan+e.advance;
   e.net=Math.max(0,e.totalIncome-e.totalDed);
 }
 
@@ -5643,7 +5650,7 @@ function payDBCell(i,field,val){
     payDBCalcRow(e); // ยอดเบิกเปลี่ยน + ติ๊กหัก3%แล้ว → คิดภาษี 3% ใหม่จาก (เงินได้ − เบิก)
   }else{
     e.totalIncome=e.salary+e.diligence;
-    e.totalDed=e.late+e.absent_ded+e.tax3+e.ss5+e.loan+e.advance;
+    e.totalDed=e.late+e.absent_ded+(e.unpaid_ded||0)+e.tax3+e.ss5+e.loan+e.advance;
     e.net=Math.max(0,e.totalIncome-e.totalDed);
   }
 

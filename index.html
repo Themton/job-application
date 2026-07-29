@@ -5508,9 +5508,12 @@ function payDBRender(){
   h+='<th style="background:#c0d8f0">สุทธิ</th>';
   h+='</tr></thead><tbody>';
 
+  var _hrView=(typeof isHR==='function'&&isHR());
+  var _mgrSet={};if(_hrView){USR.forEach(function(u){if(u.role==='manager'&&u.display_name)_mgrSet[u.display_name.replace(/\s+/g,'')]=1});}
   var lastGroup='',rowNum=0;
   filtered.forEach(function(f,ri){
     var e=f.e,i=f.idx;
+    var hideMoney=_hrView&&!!_mgrSet[(e.name||'').replace(/\s+/g,'')];
 
     // Group header when showing all
     if(!PAYDB2_FILTER&&e.status!==lastGroup){
@@ -5540,13 +5543,14 @@ function payDBRender(){
     // ค่าแรง/วัน & จำนวนวัน — active for daily/monthly_daily/ลาออก-รอจ่าย (กรอกวันทำงานเองได้)
     var isDaily=(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated');
     if(isDaily){
-      h+='<td style="background:#f3e8ff;text-align:center;font-weight:bold;color:#7c3aed;font-size:12px">'+e.daily_rate+'</td>';
+      h+=hideMoney?'<td style="background:#f3e8ff;text-align:center;color:#c00" title="ซ่อนเงินเดือนจาก HR">🔒</td>':'<td style="background:#f3e8ff;text-align:center;font-weight:bold;color:#7c3aed;font-size:12px">'+e.daily_rate+'</td>';
       h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="" title="กรอกจำนวนวันทำงานเอง (รอบนี้มาตรฐาน '+(_refWD||'-')+' วัน)" style="color:#7c3aed;font-weight:bold"></td>';
     }else{
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
     }
     cols.forEach(function(c){
+      if(hideMoney&&c.type!=='days'){h+='<td style="text-align:center;color:#c00;background:#f7f7f7" title="ซ่อนเงินเดือนจาก HR">🔒</td>';return;}
       if(c.type==='days'){
         var dv=e[c.k]||0;var isUnp=(c.k==='_unpaidDays');
         h+='<td style="text-align:center;'+(dv>0?(isUnp?'background:#fbdada;color:#b91c1c;font-weight:800':'background:#fde8e8;color:#dc2626;font-weight:bold'):'background:#fafafa;color:#ccc')+'" title="'+(isUnp?'ลาไม่รับค่าจ้าง (ดึงจากระบบลา) — ต้องหักเงิน':'จำนวนวันขาดงาน (ดึงจากระบบลา/ขาด)')+'">'+(dv>0?dv:'-')+'</td>';
@@ -5568,9 +5572,9 @@ function payDBRender(){
       var cellTitle=refreshed?'อัปเดตฐานเงินเดือนใหม่จากข้อมูลพนักงาน':absentAuto?('หักขาดงาน '+e._absentDays+' วัน (ดึงจากระบบลา/ขาด)'):unpaidAuto?('หักลาไม่รับค่าจ้าง '+e._unpaidDays+' วัน (คำนวณอัตโนมัติ — แก้ได้)'):'';
       h+='<td style="'+cellBg+'" title="'+cellTitle+'"><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" data-i="'+i+'" placeholder="0" style="'+cellColor+'"></td>';
     });
-    h+='<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
-    h+='<td class="xsum xsum-err">'+payFmt(e.totalDed)+'</td>';
-    h+='<td class="xsum" style="font-size:13px;color:var(--pri)">'+payFmt(e.net)+'</td>';
+    h+=hideMoney?'<td class="xsum" style="text-align:center;color:#c00">🔒</td>':'<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
+    h+=hideMoney?'<td class="xsum" style="text-align:center;color:#c00">🔒</td>':'<td class="xsum xsum-err">'+payFmt(e.totalDed)+'</td>';
+    h+=hideMoney?'<td class="xsum" style="text-align:center;color:#c00">🔒</td>':'<td class="xsum" style="font-size:13px;color:var(--pri)">'+payFmt(e.net)+'</td>';
     h+='</tr>';
   });
 

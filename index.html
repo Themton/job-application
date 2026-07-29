@@ -5510,10 +5510,11 @@ function payDBRender(){
 
   var _hrView=(typeof isHR==='function'&&isHR());
   var _mgrSet={};if(_hrView){USR.forEach(function(u){if(u.role==='manager'&&u.display_name)_mgrSet[u.display_name.replace(/\s+/g,'')]=1});}
+  var _hidePos=['ผู้จัดการแผนกลูกค้าสัมพันธ์','พนักงานยิงโฆษณา']; // ตำแหน่งที่ HR ห้ามเห็นเงินเดือน
   var lastGroup='',rowNum=0;
   filtered.forEach(function(f,ri){
     var e=f.e,i=f.idx;
-    var hideMoney=_hrView&&!!_mgrSet[(e.name||'').replace(/\s+/g,'')];
+    var hideMoney=_hrView&&(!!_mgrSet[(e.name||'').replace(/\s+/g,'')]||_hidePos.some(function(p){return (e.position||'').indexOf(p)>=0}));
 
     // Group header when showing all
     if(!PAYDB2_FILTER&&e.status!==lastGroup){

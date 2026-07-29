@@ -5,6 +5,23 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<script>
+window.APP_VER='v2026.07.14-1';
+(function(){
+  function checkVer(){
+    fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
+      var m=t.match(/window\.APP_VER='([^']+)'/);
+      if(m&&m[1]&&m[1]!==window.APP_VER){
+        try{if(window.toast)toast('🔄 มีเวอร์ชันใหม่ กำลังอัปเดตอัตโนมัติ...','tinfo');}catch(e){}
+        setTimeout(function(){location.reload()},1200);
+      }
+    }).catch(function(){});
+  }
+  setTimeout(checkVer,4000);
+  setInterval(checkVer,120000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)checkVer()});
+})();
+</script>
 <link rel="icon" href="LOGO_THEMT.png" type="image/png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ระบบข้อมูลพนักงาน บริษัทเดอะเอ็มที</title>

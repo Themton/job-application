@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.07.14-1';
+window.APP_VER='v2026.07.14-2';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -692,6 +692,9 @@ body.hr-mode .hr-hide{display:none!important}
           <div id="paydb2-actions" class="hide" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
             <button class="btn btn-a" onclick="payDBCalcAll()">📊 คำนวณทั้งหมด</button>
             <button class="btn btn-a btn-s" onclick="payDBSave()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">💾 บันทึกลงระบบ</button>
+            <button class="btn btn-a btn-s" onclick="payPublish(true)" style="background:linear-gradient(135deg,#16a34a,#22c55e)">📢 เผยแพร่เดือนนี้</button>
+            <button class="btn btn-g btn-s" onclick="payPublish(false)" style="color:var(--err)">🚫 ยกเลิกเผยแพร่</button>
+            <span id="paydb2-pub-status" style="font-size:12px;margin-left:4px;align-self:center"></span>
             <button class="btn btn-a btn-s" onclick="payDBExportSCB()" style="background:linear-gradient(135deg,#4e2a84,#7b3fa0)">🏦 สร้างไฟล์ SCB</button>
             <button class="btn btn-a btn-s" onclick="payDBExportTxt()" style="background:linear-gradient(135deg,#166534,#16a34a)">📄 ไฟล์ .txt (อัปโหลดตรง)</button>
             <button class="btn btn-g btn-s" onclick="payDBSCBSettings()" title="ตั้งค่าเลขบัญชีตัดเงิน + Product">⚙️</button>
@@ -5924,6 +5927,26 @@ function payDBApplyLate(){
   toast('ใส่ยอดหักมาสาย '+applied+' คน แล้ว — ตรวจสอบในคอลัมน์ "หักมาสาย"','tok');
 }
 
+function payPublish(pub){
+  var month=$('paydb2-month').value;
+  if(!month){toast('เลือกเดือน/ปี','terr');return}
+  if(!confirm((pub?'📢 เผยแพร่':'🚫 ยกเลิกเผยแพร่')+'เงินเดือนเดือน '+month+'?\n\n'+(pub?'พนักงานจะเห็นสลิป/เงินเดือนของตัวเองในเดือนนี้':'พนักงานจะไม่เห็นเงินเดือนเดือนนี้')))return;
+  prog(20,pub?'กำลังเผยแพร่...':'กำลังยกเลิกเผยแพร่...');
+  sb("payroll","PATCH",{published:pub},"?month=eq."+encodeURIComponent(month)).then(function(r){
+    prog(100,'เรียบร้อย ✅');
+    toast(pub?'📢 เผยแพร่แล้ว — พนักงานเห็นเงินเดือนเดือน '+month+' ได้':'🚫 ยกเลิกเผยแพร่แล้ว — พนักงานไม่เห็นเงินเดือนเดือน '+month,'tok');
+    audit(pub?'payroll_publish':'payroll_unpublish','payroll',month,(pub?'เผยแพร่':'ยกเลิกเผยแพร่')+'เงินเดือนเดือน '+month);
+    var st=$('paydb2-pub-status');if(st)st.innerHTML=pub?'<span style="color:var(--ok);font-weight:700">🟢 เผยแพร่แล้ว (พนักงานเห็นได้)</span>':'<span style="color:var(--muted)">⚪ ยังไม่เผยแพร่</span>';
+  }).catch(function(e){prog(-1);toast('ผิดพลาด: '+e+' — ตาราง payroll อาจยังไม่มีคอลัมน์ published','terr')});
+}
+function payCheckPublished(){
+  var month=$('paydb2-month')?$('paydb2-month').value:'';var st=$('paydb2-pub-status');if(!month||!st)return;
+  sb("payroll","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=published&limit=1").then(function(r){
+    if(Array.isArray(r)&&r.length){var pub=(r[0].published===true||r[0].published==='true');st.innerHTML=pub?'<span style="color:var(--ok);font-weight:700">🟢 เผยแพร่แล้ว (พนักงานเห็นได้)</span>':'<span style="color:var(--muted)">⚪ ยังไม่เผยแพร่</span>';}
+    else st.innerHTML='';
+  }).catch(function(){});
+}
+
 function payDBSave(){
   var month=$('paydb2-month').value;
   if(!month){toast('เลือกเดือน/ปี','terr');return}
@@ -5937,11 +5960,12 @@ function payDBSave(){
   sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
     prog(40,'กำลังบันทึก '+valid.length+' คน...');
     var records=valid.map(function(e,ri){
-      return{id:'PR-'+month+'-'+Date.now()+'-'+ri+'-'+Math.random().toString(36).substr(2,6),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||0,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net};
+      return{id:'PR-'+month+'-'+Date.now()+'-'+ri+'-'+Math.random().toString(36).substr(2,6),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||0,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net,published:false};
     });
     sb("payroll","POST",records).then(function(){
       prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');
-      $('paydb2-save-status').innerHTML='<span style="color:var(--ok)">✅ บันทึก '+valid.length+' คน เดือน '+month+'</span>';
+      $('paydb2-save-status').innerHTML='<span style="color:var(--ok)">✅ บันทึก '+valid.length+' คน เดือน '+month+'</span> <span style="color:var(--muted);font-size:11px">(ยังไม่เผยแพร่ — พนักงานยังไม่เห็น กด "📢 เผยแพร่เดือนนี้")</span>';
+      var _ps=$('paydb2-pub-status');if(_ps)_ps.innerHTML='<span style="color:var(--muted)">⚪ ยังไม่เผยแพร่</span>';
       var totalNet=0;valid.forEach(function(e){totalNet+=e.net});
       tgNotify('payroll_saved',{month:month,count:valid.length,total:payFmt(totalNet)});
       audit('payroll_save','payroll',month,'บันทึกเงินเดือน '+valid.length+' คน เดือน '+month+' รวมสุทธิ '+payFmt(totalNet));
@@ -8282,10 +8306,11 @@ function loadEmpPortal(){
         $('emp-p-leave-table').innerHTML=lh+'</tbody></table></div>';
       }else{$('emp-p-leave-table').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติการลา</div>'}
 
-      // Payroll history - detailed like email slip
-      if(pay.length){
+      // Payroll history - เฉพาะเดือนที่ HR เผยแพร่แล้ว
+      var pubPay=pay.filter(function(p){return p.published===true||p.published==='true'});
+      if(pubPay.length){
         var ph2='';
-        pay.forEach(function(p){
+        pubPay.forEach(function(p){
           var totalIncome=(p.salary||0)+(p.diligence||0);
           var totalDed=(p.total_ded||0);
           ph2+='<div style="border:1px solid var(--bdr);border-radius:10px;margin-bottom:12px;overflow:hidden">';
@@ -8312,7 +8337,7 @@ function loadEmpPortal(){
           ph2+='</div></div>';
         });
         $('emp-p-payroll').innerHTML=ph2;
-      }else{$('emp-p-payroll').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีประวัติเงินเดือน</div>'}
+      }else{$('emp-p-payroll').innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">📭 ยังไม่มีสลิปเงินเดือนที่เผยแพร่<br><span style="font-size:11px">(รอ HR เผยแพร่เงินเดือนของเดือนนั้นก่อน)</span></div>'}
 
       // Load leave requests + notifications + set default start date
       loadMyLeaveRequests();

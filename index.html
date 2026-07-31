@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.07.14-5';
+window.APP_VER='v2026.07.14-6';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -2139,7 +2139,7 @@ function doFilter(){
     if(a.status!=='terminated'&&a.status!=='resigned_pending'){
       h+='<button class="btn btn-d btn-s" style="font-size:10px;padding:3px 8px" onclick="quickTerminate(window._empFiltered['+idx+'].id,window._empFiltered['+idx+'].name)">ลาออก</button>';
     }else if(a.status==='resigned_pending'){
-      h+='<span style="color:#d97706;font-size:10px">⏳ รอจ่าย</span>';
+      h+='<button class="btn btn-a btn-s" style="font-size:10px;padding:3px 10px;background:#d4edda;border-color:#16a34a;color:#15803d;font-weight:700" onclick="confirmPaid(window._empFiltered['+idx+'].id)">💰 จ่ายแล้ว</button>';
     }else{
       h+='<span style="color:var(--muted);font-size:10px">ลาออกแล้ว</span>';
     }

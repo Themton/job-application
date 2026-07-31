@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.07.14-4';
+window.APP_VER='v2026.07.14-5';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -3263,17 +3263,25 @@ function bulkPayModal(){
   var rows=list.map(function(a){
     var d=a.terminated_date?String(a.terminated_date).substring(0,10):today;
     return '<label style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid #f0f0f0;cursor:pointer">'
-      +'<input type="checkbox" class="bp-chk" data-id="'+a.id+'" checked style="width:16px;height:16px;flex:none">'
+      +'<input type="checkbox" class="bp-chk" data-id="'+a.id+'" checked onchange="bpUpdateCount()" style="width:16px;height:16px;flex:none">'
       +'<div style="flex:1"><div style="font-weight:600;font-size:13px;color:#374151">'+esc(a.name)+(a.nickname?' <span style="color:#9ca3af">('+esc(a.nickname)+')</span>':'')+'</div>'
       +'<div style="font-size:11px;color:#9ca3af;margin-top:2px">วันพ้นสภาพ: <input type="date" class="bp-date" data-id="'+a.id+'" value="'+d+'" onclick="event.preventDefault()" style="border:1px solid #e5e7eb;border-radius:5px;padding:1px 5px;font-size:11px;font-family:inherit"></div></div></label>';
   }).join('');
   mtModal({title:'💰 จ่ายเงินหลายคน ('+list.length+' คนรอจ่าย)',width:480,okText:'ยืนยันจ่าย & พ้นสภาพ',okColor:'#16a34a',
-    body:'<div style="font-size:12px;color:#6b7280;margin-bottom:10px">เลือกคนที่จ่ายเงินแล้ว → เปลี่ยนเป็น "พ้นสภาพ" พร้อมกัน</div><div style="border:1px solid #eee;border-radius:10px;overflow:hidden">'+rows+'</div>',
+    body:'<div style="font-size:12px;color:#6b7280;margin-bottom:8px">เลือกคนที่จ่ายเงินแล้ว → เปลี่ยนเป็น "พ้นสภาพ" พร้อมกัน</div>'
+      +'<label style="display:flex;align-items:center;gap:9px;padding:8px 10px;background:#f0fdf4;border:1px solid #16a34a;border-radius:9px;margin-bottom:8px;cursor:pointer;font-weight:700;color:#15803d;font-size:13px"><input type="checkbox" id="bp-all" checked onchange="bpToggleAll(this)" style="width:17px;height:17px;accent-color:#16a34a">เลือกทั้งหมด <span id="bp-count" style="font-weight:400;color:#6b7280;font-size:12px;margin-left:auto">เลือกแล้ว '+list.length+'/'+list.length+' คน</span></label>'
+      +'<div style="border:1px solid #eee;border-radius:10px;overflow:hidden;max-height:340px;overflow-y:auto">'+rows+'</div>',
     onOk:function(){
       var sel=[];document.querySelectorAll('.bp-chk').forEach(function(c){if(c.checked){var id=c.getAttribute('data-id');var di=document.querySelector('.bp-date[data-id="'+id+'"]');sel.push({id:id,date:(di&&di.value)||today});}});
       if(!sel.length){toast('ยังไม่ได้เลือกใคร','terr');return;}
       mtModalClose();bulkPayRun(sel,0);
     }});
+}
+function bpToggleAll(cb){document.querySelectorAll('.bp-chk').forEach(function(c){c.checked=cb.checked});bpUpdateCount();}
+function bpUpdateCount(){
+  var all=document.querySelectorAll('.bp-chk'),n=0;all.forEach(function(c){if(c.checked)n++});
+  var cnt=$('bp-count');if(cnt)cnt.textContent='เลือกแล้ว '+n+'/'+all.length+' คน';
+  var a=$('bp-all');if(a){a.checked=(n===all.length&&n>0);a.indeterminate=(n>0&&n<all.length);}
 }
 function bulkPayRun(sel,i){
   if(i>=sel.length){toast('✅ จ่ายเงิน & พ้นสภาพ '+sel.length+' คนเรียบร้อย','tok');audit('terminate','employee','','จ่ายเงินหลายคน → พ้นสภาพ '+sel.length+' คน');stats();doFilter();return;}

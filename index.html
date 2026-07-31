@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.07.14-2';
+window.APP_VER='v2026.07.14-3';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -3385,7 +3385,7 @@ function editEmp(id){
   var deptOpts='<option value="">-- เลือก --</option>';
   DEPT.forEach(function(d){deptOpts+='<option value="'+esc(d.title)+'"'+(d.title===a.department?' selected':'')+'>'+esc(d.title)+'</option>'});
 
-  var stOpts='<option value="new"'+(a.status==='new'?' selected':'')+'>ใหม่</option><option value="daily"'+(a.status==='daily'?' selected':'')+'>รายวัน</option><option value="monthly"'+(a.status==='monthly'?' selected':'')+'>ประจำ</option><option value="monthly_daily"'+(a.status==='monthly_daily'?' selected':'')+'>ประจำ(รายวัน)+ปกส.</option>';
+  var stOpts='<option value="new"'+(a.status==='new'?' selected':'')+'>ใหม่</option><option value="daily"'+(a.status==='daily'?' selected':'')+'>รายวัน</option><option value="monthly"'+(a.status==='monthly'?' selected':'')+'>ประจำ</option><option value="monthly_daily"'+(a.status==='monthly_daily'?' selected':'')+'>ประจำ(รายวัน)+ปกส.</option><option value="resigned_pending"'+(a.status==='resigned_pending'?' selected':'')+'>⏳ ลาออก-รอจ่าย</option><option value="terminated"'+(a.status==='terminated'?' selected':'')+'>⛔ พ้นสภาพ</option>';
 
   var docRow=function(label,icon,key,link){
     var has=link&&link.length>5;

@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-3';
+window.APP_VER='v2026.08.01-4';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -8247,6 +8247,31 @@ function empStatusGuard(cb){
 }
 setInterval(function(){if(localStorage.getItem('emp_data'))empStatusGuard();},120000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&localStorage.getItem('emp_data'))empStatusGuard();});
+
+/* เฝ้าสถานะเจ้าหน้าที่/HR — บัญชีถูกลบหรือเปลี่ยนสิทธิ์ → เด้งออก/อัปเดต (แม้เปิดค้างไว้) */
+function staffStatusGuard(){
+  if(!localStorage.getItem('mt_logged'))return;
+  var uname=localStorage.getItem('mt_username')||'';
+  if(!uname||uname==='admin')return; // admin หลัก (hardcoded) ไม่ต้องเช็ค
+  sb("users","GET",null,"?select=id,role&username=eq."+encodeURIComponent(uname)).then(function(r){
+    if(!Array.isArray(r))return;
+    if(!r.length){
+      // บัญชีถูกลบ → ออกจากระบบ
+      try{clearTOK()}catch(e){}
+      localStorage.removeItem('mt_logged');localStorage.removeItem('mt_role');localStorage.removeItem('mt_username');
+      try{toast('⛔ บัญชีนี้ถูกปิดสิทธิ์/ลบแล้ว — ออกจากระบบ','terr')}catch(e){}
+      setTimeout(function(){location.href=location.pathname+'?admin'},1500);
+    }else if(r[0].role&&r[0].role!==localStorage.getItem('mt_role')){
+      // สิทธิ์ถูกเปลี่ยน → อัปเดตแล้วรีเฟรชให้เมนู/สิทธิ์ตรง
+      localStorage.setItem('mt_role',r[0].role);
+      try{setSES({role:r[0].role,username:uname,display_name:(getSES()||{}).display_name||''})}catch(e){}
+      try{toast('🔄 สิทธิ์ของคุณถูกเปลี่ยน — กำลังรีเฟรช','tinfo')}catch(e){}
+      setTimeout(function(){location.reload()},1500);
+    }
+  }).catch(function(){});
+}
+setInterval(function(){if(localStorage.getItem('mt_logged'))staffStatusGuard();},120000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&localStorage.getItem('mt_logged'))staffStatusGuard();});
 
 function loadEmpPortal(){
   var raw=localStorage.getItem('emp_data');

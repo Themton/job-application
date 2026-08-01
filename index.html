@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.07.14-6';
+window.APP_VER='v2026.07.14-7';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -1248,6 +1248,7 @@ function contractUpload(id,inp){
 function _docExt(name,mime){var m=String(name||'').match(/\.[^.]+$/);if(m)return m[0].toLowerCase();if(/pdf/i.test(mime))return '.pdf';if(/png/i.test(mime))return '.png';return '.jpg'}
 function _ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 // วันสิ้นสุดสัญญา: ใช้ contract_end ถ้ามี ไม่งั้นคิดจากระยะ (contract_period) + วันเริ่ม/ต่อสัญญา
+function contractPeriodTH(a){var m={'1m':1,'3m':3,'6m':6,'1y':12};var v=a&&a.contract_period?m[a.contract_period]:0;return v?v+' เดือน':'';}
 function contractEndDate(a){
   if(a&&a.contract_end)return new Date(a.contract_end+'T00:00:00');
   if(a&&a.contract_period&&(a.contract_renew_date||a.start_date)){
@@ -2091,7 +2092,7 @@ function doFilter(){
   var allChk=f.length>0&&f.every(function(a){return EMP_SEL[a.id]});
   var h='<div class="tw"><table><thead><tr>';
   h+='<th style="width:32px;text-align:center;padding:4px"><button onclick="empToggleAll2()" style="background:'+(allChk?'var(--acc)':'none')+';border:2px solid '+(allChk?'var(--acc)':'#ccc')+';border-radius:4px;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:16px;color:'+(allChk?'#fff':'transparent')+'">✓</button></th>';
-  h+='<th style="width:70px">รหัส</th><th style="min-width:180px">ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>แผนก</th><th>ธนาคาร</th><th>ประเภท</th><th style="min-width:140px">อีเมล</th><th style="text-align:center;width:70px"></th>';
+  h+='<th style="width:70px">รหัส</th><th style="min-width:180px">ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>แผนก</th><th>ธนาคาร</th><th>ประเภท</th><th style="text-align:center;width:80px">สัญญา</th><th style="min-width:140px">อีเมล</th><th style="text-align:center;width:70px"></th>';
   h+='</tr></thead><tbody>';
 
   var lastSt='';
@@ -2100,7 +2101,7 @@ function doFilter(){
       var grpCnt=f.filter(function(x){return x.status===a.status}).length;
       var grpLabel=stGroupLabels[a.status]||a.status;
       var grpColor=stGroupColors[a.status]||'#666';
-      h+='<tr><td colspan="8" style="background:var(--inp);border-left:3px solid '+grpColor+';padding:7px 14px;font-weight:700;font-size:12px;color:'+grpColor+'">'+grpLabel+' <span style="font-weight:400;opacity:.6">('+grpCnt+')</span></td></tr>';
+      h+='<tr><td colspan="9" style="background:var(--inp);border-left:3px solid '+grpColor+';padding:7px 14px;font-weight:700;font-size:12px;color:'+grpColor+'">'+grpLabel+' <span style="font-weight:400;opacity:.6">('+grpCnt+')</span></td></tr>';
       lastSt=a.status;
     }
     var sel=EMP_SEL[a.id];
@@ -2128,6 +2129,7 @@ function doFilter(){
     var isSCB=a.bank&&(a.bank.indexOf('SCB')>=0||a.bank.indexOf('ไทยพาณิชย์')>=0);
     h+='<td style="font-size:11px" data-detail="'+idx+'">'+(a.bank?'<span style="'+(isSCB?'color:#4b0082':'color:#006400')+';font-weight:500">'+esc(a.bank)+'</span>':'<span style="color:var(--muted)">—</span>')+'</td>';
     h+='<td data-detail="'+idx+'"><span style="'+typeBg+';padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap">'+typeLabel+'</span></td>';
+    h+='<td style="text-align:center" data-detail="'+idx+'">'+(contractPeriodTH(a)?'<span style="background:#eef2ff;color:#4338ca;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;white-space:nowrap">📄 '+contractPeriodTH(a)+'</span>':'<span style="color:var(--muted);font-size:10px">—</span>')+'</td>';
     h+='<td style="padding:2px">';
     if(a.email&&a.email.indexOf('@')>=0){
       h+='<span style="font-size:11px;color:var(--ok)">'+esc(a.email)+'</span>';

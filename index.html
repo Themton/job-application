@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-2';
+window.APP_VER='v2026.08.01-3';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -1375,7 +1375,11 @@ function sbRpc(fn,params){
     var empId=empData.id||params.p_emp_id||'';
 
     // Fetch emp name from DB directly
-    return sb("applications","GET",null,"?id=eq."+encodeURIComponent(empId)+"&select=name").then(function(emps){
+    return sb("applications","GET",null,"?id=eq."+encodeURIComponent(empId)+"&select=name,status").then(function(emps){
+      if(Array.isArray(emps)&&emps.length&&emps[0].status==='terminated'){
+        try{localStorage.removeItem('emp_data');toast('บัญชีพ้นสภาพแล้ว — ไม่สามารถยื่นลาได้','terr');empStatusGuard();}catch(e){}
+        return{ok:false,message:'terminated'};
+      }
       var empName=(Array.isArray(emps)&&emps.length)?emps[0].name:'';
       if(!empName){var el=document.getElementById('emp-p-name');if(el&&el.textContent)empName=el.textContent.split(' (')[0]}
       if(!empName)empName=empData.name||empData.email||'';
@@ -8223,6 +8227,26 @@ function empLogin(){
     loadEmpPortal();
   }).catch(function(e){prog(-1);errEl.textContent='เชื่อมต่อไม่ได้: '+e;errEl.style.display='block'});
 }
+
+/* เฝ้าสถานะพนักงาน — พ้นสภาพเมื่อไหร่ เด้งออกทันที (กันทุกช่องทาง แม้เปิดค้างไว้) */
+function empStatusGuard(cb){
+  var raw=localStorage.getItem('emp_data');if(!raw){if(cb)cb(false);return}
+  var d;try{d=JSON.parse(raw)}catch(e){if(cb)cb(false);return}
+  if(!d.id){if(cb)cb(false);return}
+  sb("applications","GET",null,"?id=eq."+encodeURIComponent(d.id)+"&select=status").then(function(r){
+    var st=(Array.isArray(r)&&r.length)?r[0].status:'terminated';
+    if(st==='terminated'){
+      localStorage.removeItem('emp_data');
+      var pe=document.getElementById('P-emp');if(pe)pe.style.display='none';
+      var pl=document.getElementById('P-emp-login');if(pl)pl.style.display='block';
+      var ee=document.getElementById('emp-l-err');if(ee){ee.textContent='⛔ บัญชีนี้พ้นสภาพการเป็นพนักงานแล้ว — ไม่สามารถเข้าใช้งานระบบได้';ee.style.display='block';}
+      try{toast('บัญชีพ้นสภาพแล้ว — ออกจากระบบ','terr')}catch(e){}
+      if(cb)cb(true);
+    }else{if(cb)cb(false);}
+  }).catch(function(){if(cb)cb(false)});
+}
+setInterval(function(){if(localStorage.getItem('emp_data'))empStatusGuard();},120000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&localStorage.getItem('emp_data'))empStatusGuard();});
 
 function loadEmpPortal(){
   var raw=localStorage.getItem('emp_data');

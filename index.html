@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.07.14-7';
+window.APP_VER='v2026.08.01-1';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -5334,7 +5334,7 @@ function payDBLoad(){
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         prevStatus:a.prev_status||'',
-        bank:a.bank||'',account:a.bank_account||'',
+        bank:a.bank||'',account:a.bank_account||'',contract_period:a.contract_period||'',
         daily_rate:hasSaved&&p.daily_rate!==undefined?p.daily_rate:(a.daily_rate||(a.salary?Math.round(a.salary/30):352)),
         work_days:hasSaved?p.work_days||0:0,
         salary:hasSaved?p.salary:(a.salary||0),
@@ -5452,7 +5452,7 @@ function payDBLoadPrev(){
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         prevStatus:a.prev_status||'',
-        bank:a.bank||'',account:a.bank_account||'',
+        bank:a.bank||'',account:a.bank_account||'',contract_period:a.contract_period||'',
         daily_rate:p.daily_rate||(a.daily_rate||(a.salary?Math.round(a.salary/30):352)),
         work_days:0,
         salary:p.salary||a.salary||0,diligence:p.diligence||0,late:0,absent_ded:0,
@@ -5561,7 +5561,7 @@ function payDBRender(){
     h+='<td class="xr" style="font-size:10px">'+rowNum+'</td>';
     h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
     if(e.status==='resigned_pending'||e.status==='terminated'){
-      h+='<td class="xpos">'+esc(e.position)
+      h+='<td class="xpos">'+esc(e.position)+(contractPeriodTH(e)?' <span style="background:#eef2ff;color:#4338ca;padding:1px 6px;border-radius:6px;font-size:9px;font-weight:700;white-space:nowrap">📄 '+contractPeriodTH(e)+'</span>':'')
         +'<br><select onchange="payDBSetPrevStatus('+i+',this.value)" style="font-size:9px;margin-top:2px;border:1px solid #d97706;border-radius:4px;background:#fff7ed;color:#92400e;max-width:150px" title="ประเภทเดิมก่อนพ้นสภาพ (มีผลต่อ ปกส.)">'
         +'<option value="">เดิม: ?</option>'
         +'<option value="daily"'+(e.prevStatus==='daily'?' selected':'')+'>เคยรายวัน (ไม่หัก ปกส.)</option>'
@@ -5569,7 +5569,7 @@ function payDBRender(){
         +'<option value="monthly"'+(e.prevStatus==='monthly'?' selected':'')+'>เคยประจำ (หัก ปกส. 5%)</option>'
         +'</select></td>';
     }else{
-      h+='<td class="xpos">'+esc(e.position)+'</td>';
+      h+='<td class="xpos">'+esc(e.position)+(contractPeriodTH(e)?'<br><span style="background:#eef2ff;color:#4338ca;padding:1px 6px;border-radius:6px;font-size:9px;font-weight:700;white-space:nowrap">📄 '+contractPeriodTH(e)+'</span>':'')+'</td>';
     }
     // ค่าแรง/วัน & จำนวนวัน — active for daily/monthly_daily/ลาออก-รอจ่าย (กรอกวันทำงานเองได้)
     var isDaily=(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated');

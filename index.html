@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-1';
+window.APP_VER='v2026.08.01-2';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -8234,6 +8234,16 @@ function loadEmpPortal(){
     var emps=Array.isArray(res)?res:[];
     if(!emps.length){prog(-1);toast('ไม่พบข้อมูล','terr');return}
     var a=emps[0];
+    // พนักงานพ้นสภาพ — เข้าใช้งานระบบไม่ได้ (เด้งออกทันที)
+    if(a.status==='terminated'){
+      prog(-1);
+      localStorage.removeItem('emp_data');
+      document.getElementById('P-emp').style.display='none';
+      document.getElementById('P-emp-login').style.display='block';
+      var _ee=document.getElementById('emp-l-err');if(_ee){_ee.textContent='⛔ บัญชีนี้พ้นสภาพการเป็นพนักงานแล้ว — ไม่สามารถเข้าใช้งานระบบได้';_ee.style.display='block';}
+      try{toast('บัญชีพ้นสภาพแล้ว — ออกจากระบบ','terr')}catch(e){}
+      return;
+    }
     prog(40,'ดึงข้อมูลลา+เงินเดือน...');
 
     // Fetch leaves + payroll in parallel

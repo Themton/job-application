@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-4';
+window.APP_VER='v2026.08.01-5';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -668,6 +668,7 @@ body.hr-mode .hr-hide{display:none!important}
             <button class="btn btn-a btn-s" onclick="payDBLoad()">🗄️ ดึงข้อมูลพนักงาน</button>
             <button class="btn btn-g btn-s" onclick="payDBLoadPrev()">📋 ดึงเงินเดือนเดือนก่อน</button>
             <button class="btn btn-g btn-s" id="paydb2-term-btn" onclick="payDBToggleTerm()" style="border:1px solid #9ca3af">⛔ ดูพนักงานพ้นสภาพ</button>
+            <button class="btn btn-g btn-s" onclick="payTermHistory()" style="border:1px solid #16a34a;color:#15803d">💸 ประวัติการจ่าย (พ้นสภาพ)</button>
             <input type="checkbox" id="paydb2-incl-term" style="display:none">
           </div>
           <div id="paydb2-cutoff" style="font-size:12px;margin-top:8px;padding:8px 14px;background:rgba(198,149,43,.08);border:1px solid rgba(198,149,43,.2);border-radius:8px;display:none"></div>
@@ -5260,6 +5261,50 @@ function payShowCutoff(){
     +'<div><span style="background:var(--acc);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">'+cyc.workDays+' วันทำงาน</span> <span style="color:var(--muted);font-size:10px">(ไม่นับอาทิตย์)</span></div>'
     +'</div>'
     +'<div style="font-size:10px;color:var(--muted);margin-top:6px">* วันที่ 26–'+cyc.lastDay+' ('+cyc.carryDays+' วันทำงาน) ทบไปจ่ายรอบเดือนหน้า &nbsp; * เฉพาะพนักงานรายวันที่ยังทำงานอยู่ &nbsp; * ถ้าลาออกก่อน → นับแค่วันที่ทำจริง</div>';
+}
+
+function payTermHistory(){
+  prog(10,'กำลังดึงข้อมูล...');
+  Promise.all([
+    sb("applications","GET",null,"?status=eq.terminated&select=id,name,nickname,position,terminated_date,salary&order=terminated_date.desc"),
+    sb("payroll","GET",null,"?select=emp_name,salary,total_ded,net,month&order=month.desc")
+  ]).then(function(res){
+    prog(-1);
+    var terms=Array.isArray(res[0])?res[0]:[];
+    var pays=Array.isArray(res[1])?res[1]:[];
+    var payMap={};pays.forEach(function(p){var k=(p.emp_name||'').trim();if(k&&!payMap[k])payMap[k]=p;});
+    if(!terms.length){mtModal({title:'💸 ประวัติการจ่าย (พ้นสภาพ)',body:'<div style="text-align:center;padding:24px;color:#9ca3af">ยังไม่มีพนักงานพ้นสภาพ</div>',okText:'ปิด',okColor:'#6b7280',onOk:mtModalClose,hideCancel:true,width:460});return;}
+    window._termHist=terms.map(function(a){
+      var p=payMap[(a.name||'').trim()]||{};
+      return{name:a.name,nickname:a.nickname||'',position:a.position||'',paidDate:a.terminated_date||'',salary:(p.salary!==undefined&&p.salary!==null?p.salary:(a.salary||0)),ded:(p.total_ded||0),net:(p.net!==undefined&&p.net!==null?p.net:''),month:p.month||''};
+    });
+    var rows='';
+    window._termHist.forEach(function(t,i){
+      rows+='<tr style="border-bottom:1px solid #f1f1f1">'
+        +'<td style="padding:6px 8px;color:#9ca3af">'+(i+1)+'</td>'
+        +'<td style="padding:6px 8px;font-weight:600">'+esc(t.name)+(t.nickname?' <span style="color:#9ca3af;font-size:11px">('+esc(t.nickname)+')</span>':'')+'</td>'
+        +'<td style="padding:6px 8px;font-size:12px;color:#6b7280">'+esc(t.position)+'</td>'
+        +'<td style="padding:6px 8px;text-align:center;font-size:12px">'+(t.paidDate?beDate(t.paidDate):'-')+'</td>'
+        +'<td style="padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums">'+(t.salary?payFmt(t.salary):'-')+'</td>'
+        +'<td style="padding:6px 8px;text-align:right;color:#dc2626;font-variant-numeric:tabular-nums">'+(t.ded?payFmt(t.ded):'-')+'</td>'
+        +'<td style="padding:6px 8px;text-align:right;font-weight:700;color:#16a34a;font-variant-numeric:tabular-nums">'+(t.net!==''?payFmt(t.net):'<span style="color:#cbd5e1;font-size:11px;font-weight:400">ไม่มีข้อมูล</span>')+'</td>'
+        +'</tr>';
+    });
+    var body='<div style="margin-bottom:8px;font-size:12px;color:#6b7280">รวม <b>'+terms.length+'</b> คน · ยอดสุทธิดึงจากเงินเดือนเดือนล่าสุดที่บันทึกไว้ (คนที่ยังไม่เคยบันทึกเงินเดือนจะขึ้น "ไม่มีข้อมูล")</div>'
+      +'<div style="overflow:auto;max-height:56vh"><table style="width:100%;border-collapse:collapse;font-size:13px">'
+      +'<thead><tr style="background:#f8f6f0;position:sticky;top:0"><th style="padding:8px;text-align:left">#</th><th style="padding:8px;text-align:left">ชื่อ-สกุล</th><th style="padding:8px;text-align:left">ตำแหน่ง</th><th style="padding:8px">วันที่จ่าย</th><th style="padding:8px;text-align:right">เงินเดือน</th><th style="padding:8px;text-align:right">หัก</th><th style="padding:8px;text-align:right">สุทธิ</th></tr></thead>'
+      +'<tbody>'+rows+'</tbody></table></div>';
+    mtModal({title:'💸 ประวัติการจ่าย (พ้นสภาพ)',body:body,okText:'📊 Export Excel',okColor:'#16a34a',onOk:payTermHistoryExport,cancelText:'ปิด',width:920});
+  }).catch(function(e){prog(-1);toast('Error: '+e,'terr')});
+}
+function payTermHistoryExport(){
+  if(!window._termHist||!window._termHist.length){toast('ไม่มีข้อมูล','terr');return;}
+  var data=window._termHist.map(function(t){return{'ชื่อ-สกุล':t.name,'ชื่อเล่น':t.nickname,'ตำแหน่ง':t.position,'วันที่จ่าย':t.paidDate?beDate(t.paidDate):'','เงินเดือน':t.salary||0,'หัก':t.ded||0,'สุทธิ':(t.net!=='')?t.net:''};});
+  try{
+    var ws=XLSX.utils.json_to_sheet(data);var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'ประวัติการจ่าย');
+    XLSX.writeFile(wb,'ประวัติการจ่าย_พ้นสภาพ.xlsx');
+    toast('📊 Export เรียบร้อย','tok');
+  }catch(e){toast('Export ไม่สำเร็จ: '+e,'terr')}
 }
 
 function payDBToggleTerm(){

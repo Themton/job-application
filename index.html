@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-6';
+window.APP_VER='v2026.08.01-7';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -695,6 +695,7 @@ body.hr-mode .hr-hide{display:none!important}
             <button class="btn btn-a btn-s" onclick="payDBSave()" style="background:linear-gradient(135deg,#2d5080,#3b82f6)">💾 บันทึกลงระบบ</button>
             <button class="btn btn-a btn-s" onclick="payPublish(true)" style="background:linear-gradient(135deg,#16a34a,#22c55e)">📢 เผยแพร่เดือนนี้</button>
             <button class="btn btn-g btn-s" onclick="payPublish(false)" style="color:var(--err)">🚫 ยกเลิกเผยแพร่</button>
+            <button class="btn btn-g btn-s" onclick="payRestoreModal()" style="border:1px solid #7c3aed;color:#6d28d9">⏱️ กู้คืน</button>
             <span id="paydb2-pub-status" style="font-size:12px;margin-left:4px;align-self:center"></span>
             <button class="btn btn-a btn-s" onclick="payDBExportSCB()" style="background:linear-gradient(135deg,#4e2a84,#7b3fa0)">🏦 สร้างไฟล์ SCB</button>
             <button class="btn btn-a btn-s" onclick="payDBExportTxt()" style="background:linear-gradient(135deg,#166534,#16a34a)">📄 ไฟล์ .txt (อัปโหลดตรง)</button>
@@ -6024,6 +6025,50 @@ function payCheckPublished(){
   }).catch(function(){});
 }
 
+function payBackupMonth(month){
+  return sb("payroll","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*").then(function(_old){
+    if(Array.isArray(_old)&&_old.length){
+      sb("payroll_backup","POST",{id:'BK-'+month+'-'+Date.now(),month:month,snapshot_at:new Date().toISOString(),saved_by:localStorage.getItem('mt_username')||'',records:_old}).catch(function(){});
+      sb("payroll_backup","DELETE",null,"?snapshot_at=lt."+new Date(Date.now()-7*864e5).toISOString()).catch(function(){});
+    }
+  }).catch(function(){});
+}
+function payRestoreModal(){
+  var month=$('paydb2-month').value;
+  if(!month){toast('เลือกเดือน/ปีก่อน','terr');return}
+  prog(10,'กำลังโหลดสำเนา...');
+  sb("payroll_backup","GET",null,"?month=eq."+encodeURIComponent(month)+"&order=snapshot_at.desc&select=id,snapshot_at,saved_by,records").then(function(r){
+    prog(-1);
+    var bks=Array.isArray(r)?r:[];
+    if(!bks.length){mtModal({title:'\u23f1\ufe0f กู้คืนตารางเงินเดือน',body:'<div style="text-align:center;padding:22px;color:#9ca3af">ยังไม่มีสำเนาสำรองของเดือน '+month+'<br><span style="font-size:11px">(สำเนาถูกเก็บอัตโนมัติทุกครั้งที่บันทึกทับของเดิม)</span></div>',okText:'ปิด',okColor:'#6b7280',hideCancel:true,onOk:mtModalClose,width:480});return;}
+    window._payBackups=bks;
+    var rows=bks.map(function(b,i){
+      var cnt=Array.isArray(b.records)?b.records.length:0;
+      var dts=new Date(b.snapshot_at).toLocaleString('th-TH');
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid #eee;border-radius:9px;margin-bottom:7px">'
+        +'<div><div style="font-weight:600;font-size:13px">\ud83d\udd50 '+esc(dts)+'</div><div style="font-size:11px;color:#6b7280">'+cnt+' คน \u00b7 โดย '+esc(b.saved_by||'-')+'</div></div>'
+        +'<button class="btn btn-a btn-s" style="background:#16a34a;font-size:12px;padding:5px 14px" onclick="payRestoreDo('+i+')">\u21a9\ufe0f คืนค่านี้</button></div>';
+    }).join('');
+    mtModal({title:'\u23f1\ufe0f กู้คืนตารางเงินเดือน \u2014 '+month,body:'<div style="font-size:12px;color:#6b7280;margin-bottom:10px">เลือกเวอร์ชันที่ต้องการคืนค่า (เก็บย้อนหลัง 7 วัน) \u2014 ล่าสุดอยู่บนสุด</div>'+rows,okText:'ปิด',okColor:'#6b7280',hideCancel:true,onOk:mtModalClose,width:540});
+  }).catch(function(e){prog(-1);toast('Error: '+e+' (ตาราง payroll_backup อาจยังไม่มี)','terr')});
+}
+function payRestoreDo(i){
+  var b=(window._payBackups||[])[i];if(!b||!Array.isArray(b.records)){toast('ไม่พบข้อมูล','terr');return}
+  var month=$('paydb2-month').value;
+  if(!confirm('คืนค่าตารางเงินเดือนเดือน '+month+' เป็นเวอร์ชันนี้?\n('+b.records.length+' คน \u00b7 '+new Date(b.snapshot_at).toLocaleString('th-TH')+')\n\n\u26a0\ufe0f ข้อมูลปัจจุบันจะถูกแทนที่ (แต่ถูกสำรองไว้ก่อนแล้ว)'))return;
+  prog(20,'กำลังกู้คืน...');
+  payBackupMonth(month).then(function(){
+    return sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month));
+  }).then(function(){
+    var recs=b.records.map(function(r,ri){var c={};for(var k in r)c[k]=r[k];c.id='PR-'+month+'-'+Date.now()+'-'+ri+'-'+Math.random().toString(36).substr(2,5);return c;});
+    return sb("payroll","POST",recs);
+  }).then(function(){
+    prog(100,'กู้คืนเรียบร้อย \u2705');
+    toast('\u21a9\ufe0f กู้คืนตารางเงินเดือนเดือน '+month+' แล้ว','tok');
+    audit('payroll_restore','payroll',month,'กู้คืนตารางเงินเดือน '+month+' ('+b.records.length+' คน)');
+    mtModalClose();if(typeof payDBLoad==='function')payDBLoad();
+  }).catch(function(e){prog(-1);toast('กู้คืนไม่สำเร็จ: '+e,'terr')});
+}
 function payDBSave(){
   var month=$('paydb2-month').value;
   if(!month){toast('เลือกเดือน/ปี','terr');return}
@@ -6034,7 +6079,7 @@ function payDBSave(){
   $('paydb2-save-status').textContent='⏳ กำลังบันทึก...';
   prog(10,'กำลังลบข้อมูลเดือนเก่า...');
 
-  sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
+  payBackupMonth(month).then(function(){return sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month))}).then(function(){
     prog(40,'กำลังบันทึก '+valid.length+' คน...');
     var records=valid.map(function(e,ri){
       return{id:'PR-'+month+'-'+Date.now()+'-'+ri+'-'+Math.random().toString(36).substr(2,6),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||0,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net,published:false};
@@ -6673,7 +6718,7 @@ function paySaveToDB(){
   $('pay-save-btn').disabled=true;$('pay-save-status').textContent='⏳ กำลังบันทึก...';
 
   // Delete old records for this month first
-  sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
+  payBackupMonth(month).then(function(){return sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month))}).then(function(){
     // Insert all
     var records=PAY_DATA.map(function(e,ri){
       return{
@@ -6984,7 +7029,7 @@ function paydbDelete(){
   var month=$('paydb-month').value;
   if(!month)return;
   if(!confirm('ลบข้อมูลเงินเดือนเดือน '+month+' ทั้งหมด?'))return;
-  sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month)).then(function(){
+  payBackupMonth(month).then(function(){return sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month))}).then(function(){
     toast('ลบเดือน '+month+' แล้ว','tok');
     loadPayDBMonths();
   }).catch(function(e){toast('Error: '+e,'terr')});

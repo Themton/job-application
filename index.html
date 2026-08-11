@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-8';
+window.APP_VER='v2026.08.01-9';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -5382,12 +5382,13 @@ function payDBLoad(){
 
     // ดูพ้นสภาพ: เก็บเฉพาะคนที่พ้นสภาพในเดือนที่เลือก (คนทำงานอยู่คงไว้เพื่อความถูกต้องตอนบันทึก)
     var _termThisMonth=0;
-    if(_inclTerm&&month){
-      r=r.filter(function(a){
-        if(a.status!=='terminated')return true;
-        var td=String(a.terminated_date||a.terminated_at||'').substring(0,7);
-        if(td===month){_termThisMonth++;return true}
-        return false;
+    if(_inclTerm){
+      // แสดงคนพ้นสภาพทั้งหมด (แก้ไข/จ่ายย้อนหลังได้ทุกเดือน) — นับเฉพาะที่พ้นสภาพเดือนนี้ไว้แสดงผล
+      r.forEach(function(a){
+        if(a.status==='terminated'){
+          var td=String(a.terminated_date||a.terminated_at||'').substring(0,7);
+          if(td===month)_termThisMonth++;
+        }
       });
     }
 
@@ -5485,7 +5486,7 @@ function payDBLoad(){
     prog(100,'ดึงข้อมูล ✅ '+PAYDB2.length+' คน');
     PAYDB2_FILTER=(_inclTerm?'terminated':'');payDBBuildFilters();payDBRender();
     if(_inclTerm){
-      $('paydb2-status').innerHTML='⛔ ดูพนักงานพ้นสภาพ — พ้นสภาพในเดือน '+month+' <b>'+_termThisMonth+'</b> คน'+(_termThisMonth?' (กรอกยอดค้าง + เลือกประเภทเดิม แล้วบันทึก)':' — ไม่มีใครพ้นสภาพเดือนนี้');
+      $('paydb2-status').innerHTML='⛔ แสดงพนักงานพ้นสภาพทั้งหมด (แก้ไข/จ่ายย้อนหลังได้) — พ้นสภาพเดือน '+month+' <b>'+_termThisMonth+'</b> คน · กรอกยอด/ปรับตัวเลข แล้วกด "บันทึกลงระบบ"';
     }
     $('paydb2-actions').classList.remove('hide');$('paydb2-actions').style.display='flex';$('paydb2-late-area').classList.remove('hide');$('paydb2-late-area').style.display='block';
   }).catch(function(e){$('paydb2-status').textContent='❌ ดึงไม่สำเร็จ: '+e});

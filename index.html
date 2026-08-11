@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-7';
+window.APP_VER='v2026.08.01-8';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -6086,6 +6086,8 @@ function payDBSave(){
     });
     sb("payroll","POST",records).then(function(){
       prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');
+      // สร้างจุดกู้คืนของข้อมูลที่เพิ่งบันทึก (ทุกครั้ง รวมครั้งแรก)
+      sb("payroll_backup","POST",{id:'BK-'+month+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),month:month,snapshot_at:new Date().toISOString(),saved_by:localStorage.getItem('mt_username')||'',records:records}).catch(function(){});
       $('paydb2-save-status').innerHTML='<span style="color:var(--ok)">✅ บันทึก '+valid.length+' คน เดือน '+month+'</span> <span style="color:var(--muted);font-size:11px">(ยังไม่เผยแพร่ — พนักงานยังไม่เห็น กด "📢 เผยแพร่เดือนนี้")</span>';
       var _ps=$('paydb2-pub-status');if(_ps)_ps.innerHTML='<span style="color:var(--muted)">⚪ ยังไม่เผยแพร่</span>';
       var totalNet=0;valid.forEach(function(e){totalNet+=e.net});

@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-10';
+window.APP_VER='v2026.08.01-11';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -5601,7 +5601,7 @@ function payDBRender(){
   h+='<th style="text-align:left;padding-left:6px">ชื่อ-สกุล</th>';
   h+='<th style="text-align:left;padding-left:6px">ตำแหน่ง</th>';
   h+='<th style="background:#e8d5f5;font-size:10px">ค่าแรง/วัน</th>';
-  h+='<th style="background:#e8d5f5;font-size:10px">จำนวนวัน</th>';
+  h+='<th style="background:#e8d5f5;font-size:10px" title="กรอกวันเต็ม รวมวันลาไม่รับ — ระบบหักลาไม่รับให้">จำนวนวัน<br><span style="font-size:8px;font-weight:400;color:#7c3aed">(เต็ม)</span></th>';
   cols.forEach(function(c){h+='<th>'+c.l+'</th>'});
   h+='<th style="background:#d4ecc0">รวมรับ</th>';
   h+='<th style="background:#f5d0c0">รวมหัก</th>';
@@ -5645,7 +5645,7 @@ function payDBRender(){
     var isDaily=(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated');
     if(isDaily){
       h+=hideMoney?'<td style="background:#f3e8ff;text-align:center;color:#c00" title="ซ่อนเงินเดือนจาก HR">🔒</td>':'<td style="background:#f3e8ff;text-align:center;font-weight:bold;color:#7c3aed;font-size:12px">'+e.daily_rate+'</td>';
-      h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="" title="กรอกจำนวนวันทำงานเอง (รอบนี้มาตรฐาน '+(_refWD||'-')+' วัน)" style="color:#7c3aed;font-weight:bold"></td>';
+      h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="'+(_refWD||'')+'" title="กรอกจำนวนวันเต็ม (รวมวันลาไม่รับค่าจ้าง'+(e._unpaidDays>0?' '+e._unpaidDays+' วัน':'')+') — ระบบจะหักลาไม่รับให้อัตโนมัติ ไม่ต้องหักวันเอง · มาตรฐานรอบนี้ '+(_refWD||'-')+' วัน" style="color:#7c3aed;font-weight:bold"></td>';
     }else{
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';

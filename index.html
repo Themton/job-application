@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-13';
+window.APP_VER='v2026.08.01-14';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -5403,7 +5403,7 @@ function payDBLoad(){
       return{
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
-        prevStatus:a.prev_status||'',
+        prevStatus:a.prev_status||'',pay70:(hasSaved&&(p.pay70===true||p.pay70==='true'))?true:false,
         bank:a.bank||'',account:a.bank_account||'',contract_period:a.contract_period||'',
         daily_rate:hasSaved&&p.daily_rate!==undefined?p.daily_rate:(a.daily_rate||(a.salary?Math.round(a.salary/30):352)),
         work_days:hasSaved?p.work_days||0:0,
@@ -5521,7 +5521,7 @@ function payDBLoadPrev(){
       return{
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
-        prevStatus:a.prev_status||'',
+        prevStatus:a.prev_status||'',pay70:(hasSaved&&(p.pay70===true||p.pay70==='true'))?true:false,
         bank:a.bank||'',account:a.bank_account||'',contract_period:a.contract_period||'',
         daily_rate:p.daily_rate||(a.daily_rate||(a.salary?Math.round(a.salary/30):352)),
         work_days:0,
@@ -5629,7 +5629,7 @@ function payDBRender(){
     h+='<tr>';
     h+='<td class="xr">'+rowNum+'</td>';
     h+='<td class="xr" style="font-size:10px">'+rowNum+'</td>';
-    h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
+    h+='<td class="xname">'+((e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated')?'<label style="font-size:9px;color:#0891b2;cursor:pointer;margin-right:5px;white-space:nowrap" title="จ่าย 70% ของค่าจ้างตามวันทำงาน"><input type="checkbox" '+(e.pay70?'checked':'')+' onchange="payDBTogglePay70('+i+',this.checked)" style="vertical-align:middle;width:13px;height:13px;accent-color:#0891b2"> 70%</label>':'')+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+(e.pay70?' <span style="background:#cffafe;color:#0e7490;font-size:8px;font-weight:700;padding:1px 5px;border-radius:6px">70%</span>':'')+'</td>';
     if(e.status==='resigned_pending'||e.status==='terminated'){
       h+='<td class="xpos">'+esc(e.position)+(contractPeriodTH(e)?' <span style="background:#eef2ff;color:#4338ca;padding:1px 6px;border-radius:6px;font-size:9px;font-weight:700;white-space:nowrap">📄 '+contractPeriodTH(e)+'</span>':'')
         +'<br><select onchange="payDBSetPrevStatus('+i+',this.value)" style="font-size:9px;margin-top:2px;border:1px solid #d97706;border-radius:4px;background:#fff7ed;color:#92400e;max-width:150px" title="ประเภทเดิมก่อนพ้นสภาพ (มีผลต่อ ปกส.)">'
@@ -5739,6 +5739,15 @@ function payDBToggleAdv3(i,checked){
   payDBCalcRow(e);
   payDBRender();
 }
+function payDBTogglePay70(i,checked){
+  var e=PAYDB2[i];if(!e)return;
+  e.pay70=!!checked;
+  // คิดเงินเดือนใหม่ตามฐานเดิม × (70% ถ้าติ๊ก)
+  if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated'){
+    e.salary=Math.round((e.daily_rate||0)*(e.work_days||0)*(e.pay70?0.7:1)*100)/100;
+  }
+  payDBCalcRow(e);payDBRender();payDBUpdateFooter();
+}
 function payDBCell(i,field,val){
   PAYDB2[i][field]=parseFloat(val)||0;
   var e=PAYDB2[i];
@@ -5746,7 +5755,7 @@ function payDBCell(i,field,val){
   // work_days หรือ ค่าแรง/วัน เปลี่ยน → คิดเงินเดือนใหม่ (เฉพาะประเภทรายวัน)
   if(field==='work_days'||field==='daily_rate'){
     if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated'){
-      e.salary=Math.round((e.daily_rate||0)*e.work_days*100)/100;
+      e.salary=Math.round((e.daily_rate||0)*e.work_days*(e.pay70?0.7:1)*100)/100;
     }
     payDBCalcRow(e);
     payDBRender();
@@ -6087,7 +6096,7 @@ function payDBSave(){
   payBackupMonth(month).then(function(){return sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month))}).then(function(){
     prog(40,'กำลังบันทึก '+valid.length+' คน...');
     var records=valid.map(function(e,ri){
-      return{id:'PR-'+month+'-'+Date.now()+'-'+ri+'-'+Math.random().toString(36).substr(2,6),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||0,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net,published:false};
+      return{id:'PR-'+month+'-'+Date.now()+'-'+ri+'-'+Math.random().toString(36).substr(2,6),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||0,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net,pay70:e.pay70||false,published:false};
     });
     sb("payroll","POST",records).then(function(){
       prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');
@@ -6393,7 +6402,7 @@ function commRender(){
     h+='<tr>';
     h+='<td class="xr">'+(i+1)+'</td>';
     h+='<td class="xr">'+(i+1)+'</td>';
-    h+='<td class="xname">'+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+'</td>';
+    h+='<td class="xname">'+((e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated')?'<label style="font-size:9px;color:#0891b2;cursor:pointer;margin-right:5px;white-space:nowrap" title="จ่าย 70% ของค่าจ้างตามวันทำงาน"><input type="checkbox" '+(e.pay70?'checked':'')+' onchange="payDBTogglePay70('+i+',this.checked)" style="vertical-align:middle;width:13px;height:13px;accent-color:#0891b2"> 70%</label>':'')+esc(e.name)+(e.nickname?' <span style="color:var(--muted);font-weight:400;font-size:10px">('+esc(e.nickname)+')</span>':'')+(e.pay70?' <span style="background:#cffafe;color:#0e7490;font-size:8px;font-weight:700;padding:1px 5px;border-radius:6px">70%</span>':'')+'</td>';
     h+='<td class="xpos">'+esc(e.position)+'</td>';
     h+='<td style="background:#fff8e0"><input value="'+(e.commission||'')+'" onfocus="this.select()" onchange="COMM_DATA['+idx+'].commission=parseFloat(this.value)||0;commUpdateRow('+idx+')" placeholder="0" style="width:100%;border:none;background:transparent;text-align:right;font-size:13px;font-family:inherit;font-weight:600;color:#856404;outline:none;padding:2px 6px"></td>';
     h+='<td style="background:#fde8e8"><input value="'+(e.late||'')+'" onfocus="this.select()" onchange="COMM_DATA['+idx+'].late=parseFloat(this.value)||0;commUpdateRow('+idx+')" placeholder="0" style="width:100%;border:none;background:transparent;text-align:right;font-size:13px;font-family:inherit;font-weight:600;color:#c43e2a;outline:none;padding:2px 6px"></td>';

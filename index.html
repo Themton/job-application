@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-11';
+window.APP_VER='v2026.08.01-12';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -5707,7 +5707,8 @@ function payDBCalcRow(e){
   }
   if(e.status==='daily'||isResignedDaily){
     // ถ้ายอดเบิกล่วงหน้าถูกหัก 3% ไปแล้วตอนเบิก → ไม่คิด 3% ซ้ำบนก้อนที่เบิก
-    var base3=e.adv3_deducted?Math.max(0,e.totalIncome-(e.advance||0)):e.totalIncome;
+    var _inc3=Math.max(0,e.totalIncome-(e.unpaid_ded||0)); // คิดภาษีจากเงินจริง (หักลาไม่รับก่อน)
+    var base3=e.adv3_deducted?Math.max(0,_inc3-(e.advance||0)):_inc3;
     e.tax3=Math.round(base3*0.03*100)/100;
     e.ss5=0;
   }else if(e.status==='monthly_daily'){

@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-12';
+window.APP_VER='v2026.08.01-13';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -5644,7 +5644,7 @@ function payDBRender(){
     // ค่าแรง/วัน & จำนวนวัน — active for daily/monthly_daily/ลาออก-รอจ่าย (กรอกวันทำงานเองได้)
     var isDaily=(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated');
     if(isDaily){
-      h+=hideMoney?'<td style="background:#f3e8ff;text-align:center;color:#c00" title="ซ่อนเงินเดือนจาก HR">🔒</td>':'<td style="background:#f3e8ff;text-align:center;font-weight:bold;color:#7c3aed;font-size:12px">'+e.daily_rate+'</td>';
+      h+=hideMoney?'<td style="background:#f3e8ff;text-align:center;color:#c00" title="ซ่อนเงินเดือนจาก HR">🔒</td>':'<td style="background:#f3e8ff"><input value="'+(e.daily_rate||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'daily_rate\',this.value)" onkeydown="payDBNav(event,'+ri+',\'daily_rate\')" data-r="'+ri+'" data-c="daily_rate" data-i="'+i+'" title="ค่าแรงต่อวัน (แก้ไขได้ — คิดเงินเดือนใหม่ให้อัตโนมัติ)" style="text-align:center;color:#7c3aed;font-weight:bold;width:100%;background:transparent;border:none"></td>';
       h+='<td style="background:#f3e8ff"><input value="'+(e.work_days||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'work_days\',this.value)" onkeydown="payDBNav(event,'+ri+',\'work_days\')" data-r="'+ri+'" data-c="work_days" data-i="'+i+'" placeholder="'+(_refWD||'')+'" title="กรอกจำนวนวันเต็ม (รวมวันลาไม่รับค่าจ้าง'+(e._unpaidDays>0?' '+e._unpaidDays+' วัน':'')+') — ระบบจะหักลาไม่รับให้อัตโนมัติ ไม่ต้องหักวันเอง · มาตรฐานรอบนี้ '+(_refWD||'-')+' วัน" style="color:#7c3aed;font-weight:bold"></td>';
     }else{
       h+='<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:10px">-</td>';
@@ -5743,9 +5743,11 @@ function payDBCell(i,field,val){
   PAYDB2[i][field]=parseFloat(val)||0;
   var e=PAYDB2[i];
 
-  // work_days changed → auto-calc salary
-  if(field==='work_days'){
-    e.salary=Math.round((e.daily_rate||0)*e.work_days*100)/100;
+  // work_days หรือ ค่าแรง/วัน เปลี่ยน → คิดเงินเดือนใหม่ (เฉพาะประเภทรายวัน)
+  if(field==='work_days'||field==='daily_rate'){
+    if(e.status==='daily'||e.status==='monthly_daily'||e.status==='resigned_pending'||e.status==='terminated'){
+      e.salary=Math.round((e.daily_rate||0)*e.work_days*100)/100;
+    }
     payDBCalcRow(e);
     payDBRender();
     payDBUpdateFooter();
@@ -5790,7 +5792,7 @@ function payDBUpdateFooter(){
 }
 
 function payDBNav(e,dispRow,col){
-  var cols=['work_days','salary','diligence','late','absent_ded','tax3','ss5','loan','advance'];
+  var cols=['daily_rate','work_days','salary','diligence','late','absent_ded','tax3','ss5','loan','advance'];
   var ci=cols.indexOf(col);
   var nr=dispRow,nc=ci;
   if(e.key==='Tab'){

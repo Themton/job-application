@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.09.14-1';
+window.APP_VER='v2026.09.14-2';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -1782,6 +1782,7 @@ function loadAdmin(){
     USR=Array.isArray(r[2])?r[2]:[];
     DEPT=Array.isArray(r[3])?r[3]:[];
     $('A-ld').classList.add('hide');$('A-main').classList.remove('hide');emailSyncFromAll();stats();doFilter();renderPos();renderUsr();renderDept();
+    setTimeout(checkStartDateReminder,1500);
     prog(100,'โหลดเสร็จ ✅ '+ALL.length+' คน');
     // กลับไปหน้าเดิมที่เปิดอยู่ก่อนรีเฟรช
     var savedTab=localStorage.getItem('mt_tab');
@@ -5740,6 +5741,34 @@ function payDBToggleAdv3(i,checked){
   e.adv3_deducted=!!checked;
   payDBCalcRow(e);
   payDBRender();
+}
+function checkStartDateReminder(){
+  try{
+    var role=localStorage.getItem('mt_role')||'admin';
+    if(role!=='hr'&&role!=='admin')return; // เตือนเฉพาะ HR/แอดมิน
+    var today=new Date().toISOString().slice(0,10);
+    if(localStorage.getItem('mt_startdate_reminder')===today)return; // แจ้งไปแล้ววันนี้
+    var EXCL=['สุทธิพงษ์ ปลัดยศ','ฟลุ๊ค'];
+    var noStart=(ALL||[]).filter(function(a){
+      if(a.status==='terminated')return false;
+      if(String(a.position||'').indexOf('ลูกค้าสัมพันธ์')<0)return false;
+      var nm=(String(a.name||'')+' '+String(a.nickname||'')).replace(/\s+/g,' ');
+      if(EXCL.some(function(x){return nm.indexOf(x)>=0}))return false;
+      return !a.start_date||String(a.start_date).length<8;
+    });
+    if(!noStart.length)return;
+    localStorage.setItem('mt_startdate_reminder',today); // เด้งวันละครั้ง
+    var list=noStart.slice(0,40).map(function(a){return '<div style="padding:6px 10px;border-bottom:1px solid #f1f1f1;font-size:13px">📌 '+esc(a.name)+(a.nickname?' <span style="color:var(--muted);font-size:11px">('+esc(a.nickname)+')</span>':'')+'</div>'}).join('');
+    var more=noStart.length>40?'<div style="padding:6px 10px;color:var(--muted);font-size:12px">... และอีก '+(noStart.length-40)+' คน</div>':'';
+    mtModal({
+      title:'📅 กรุณาระบุวันเริ่มงาน',
+      body:'<div style="font-size:14px;color:#b45309;font-weight:800;margin-bottom:10px">⚠️ มีพนักงาน '+noStart.length+' คน ยังไม่ได้ระบุวันเริ่มงาน</div>'
+        +'<div style="max-height:48vh;overflow:auto;border:1px solid #eee;border-radius:8px">'+list+more+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-top:8px">ไปที่ Dashboard หรือเมนู "พนักงาน" เพื่อระบุวันเริ่มงานของแต่ละคน</div>',
+      okText:'📋 ไปที่ Dashboard',okColor:'#d4a73c',onOk:function(){mtModalClose();if(typeof showTab==='function')showTab('dash');},
+      cancelText:'ปิด'
+    });
+  }catch(e){}
 }
 function payDBToggle70Mode(){
   window.PAY70_MODE=!window.PAY70_MODE;

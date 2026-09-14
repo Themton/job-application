@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-16';
+window.APP_VER='v2026.08.01-17';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -5459,10 +5459,10 @@ function payDBLoad(){
       e.unpaid_ded=0;
       if(e._unpaidDays>0){
         var _upRate=((e.daily_rate||0)>0)?e.daily_rate:((e.salary||0)/daysInMonth);
-        e.unpaid_ded=Math.round(_upRate*e._unpaidDays*100)/100;
+        e.unpaid_ded=Math.round(_upRate*e._unpaidDays);
       }
       if(absD>0&&(e.status==='monthly'||e.status==='new')){
-        e.absent_ded=Math.round((e.salary||0)/daysInMonth*absD*100)/100;
+        e.absent_ded=Math.round((e.salary||0)/daysInMonth*absD);
         e._absentDays=absD;
         absentApplied++;
       }
@@ -5476,7 +5476,7 @@ function payDBLoad(){
         e._loanUpdated=true;
         loanUpdated++;
       }
-      if((!e._saved&&(e.salary>0||e.work_days>0))||e._baseUpdated||e._loanUpdated||e._absentDays>0||e.status==='resigned_pending'||e.status==='terminated')payDBCalcRow(e);
+      if((!e._saved&&(e.salary>0||e.work_days>0))||e._baseUpdated||e._loanUpdated||e._absentDays>0||e._unpaidDays>0||e.status==='resigned_pending'||e.status==='terminated')payDBCalcRow(e);
     });
     var absentNote=absentApplied?' <span style="color:#dc2626;font-weight:700">📋 หักวันขาด '+absentApplied+' คน (จากระบบลา/ขาด เดือน '+month+')</span>':'';
     var loanNote=loanUpdated?' <span style="color:#92400e;font-weight:700">🎓 อัปเดต กยศ. '+loanUpdated+' คน (กดบันทึกเพื่อยืนยัน)</span>':'';
@@ -5698,27 +5698,31 @@ function payDBRender(){
 }
 
 function payDBCalcRow(e){
+  // ปัดทุกช่องเป็นบาทเต็ม (>=.5 ปัดขึ้น, <.5 ปัดลง)
+  e.salary=Math.round(e.salary||0);
+  e.diligence=Math.round(e.diligence||0);
+  e.late=Math.round(e.late||0);
+  e.absent_ded=Math.round(e.absent_ded||0);
+  e.unpaid_ded=Math.round(e.unpaid_ded||0);
+  e.loan=Math.round(e.loan||0);
+  e.advance=Math.round(e.advance||0);
   e.totalIncome=e.salary+e.diligence;
-  // รายวัน: หัก 3% ไม่หัก ปกส. / ประจำ: ไม่หัก 3% หัก ปกส.5% / ประจำ(รายวัน): ไม่หัก 3% หัก ปกส.5%
-  // ลาออก-รอจ่าย: ใช้ประเภทเดิมตัดสิน — เคยรายวัน=ไม่หัก ปกส. / เคยประจำรายวัน+ปกส.=หัก ปกส.5%
-  // ถ้าไม่รู้ประเภทเดิม (ข้อมูลเก่า) → ดูจากการกรอกจำนวนวัน
   var isResignedDaily=false;
   if(e.status==='resigned_pending'||e.status==='terminated'){
     if(e.prevStatus)isResignedDaily=(e.prevStatus==='daily');
     else isResignedDaily=(e.work_days>0);
   }
   if(e.status==='daily'||isResignedDaily){
-    // ถ้ายอดเบิกล่วงหน้าถูกหัก 3% ไปแล้วตอนเบิก → ไม่คิด 3% ซ้ำบนก้อนที่เบิก
-    var _inc3=Math.max(0,e.totalIncome-(e.unpaid_ded||0)); // คิดภาษีจากเงินจริง (หักลาไม่รับก่อน)
+    var _inc3=Math.max(0,e.totalIncome-(e.unpaid_ded||0));
     var base3=e.adv3_deducted?Math.max(0,_inc3-(e.advance||0)):_inc3;
-    e.tax3=Math.round(base3*0.03*100)/100;
+    e.tax3=Math.round(base3*0.03);
     e.ss5=0;
   }else if(e.status==='monthly_daily'){
     e.tax3=0;
-    e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,875);
+    e.ss5=Math.min(Math.round(e.totalIncome*0.05),875);
   }else{
     e.tax3=0;
-    e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,875);
+    e.ss5=Math.min(Math.round(e.totalIncome*0.05),875);
   }
   e.totalDed=e.late+e.absent_ded+(e.unpaid_ded||0)+e.tax3+e.ss5+e.loan+e.advance;
   e.net=Math.round(Math.max(0,e.totalIncome-e.totalDed));

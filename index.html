@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-15';
+window.APP_VER='v2026.08.01-16';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -5721,7 +5721,7 @@ function payDBCalcRow(e){
     e.ss5=Math.min(Math.round(e.totalIncome*0.05*100)/100,875);
   }
   e.totalDed=e.late+e.absent_ded+(e.unpaid_ded||0)+e.tax3+e.ss5+e.loan+e.advance;
-  e.net=Math.max(0,e.totalIncome-e.totalDed);
+  e.net=Math.round(Math.max(0,e.totalIncome-e.totalDed));
 }
 
 function payDBSetPrevStatus(i,val){
@@ -5788,7 +5788,7 @@ function payDBCell(i,field,val){
   }else{
     e.totalIncome=e.salary+e.diligence;
     e.totalDed=e.late+e.absent_ded+(e.unpaid_ded||0)+e.tax3+e.ss5+e.loan+e.advance;
-    e.net=Math.max(0,e.totalIncome-e.totalDed);
+    e.net=Math.round(Math.max(0,e.totalIncome-e.totalDed));
   }
 
   var t3inp=$('paydb2-table').querySelector('input[data-i="'+i+'"][data-c="tax3"]');
@@ -6407,7 +6407,7 @@ function commRender(){
   });
   var total=0,totalLate=0,totalNet=0,cnt=0;
   filtered.forEach(function(e){
-    var net=Math.max(0,(e.commission||0)-(e.late||0));
+    var net=Math.round(Math.max(0,(e.commission||0)-(e.late||0)));
     total+=e.commission;totalLate+=e.late||0;totalNet+=net;if(e.commission>0)cnt++;
   });
 
@@ -6418,7 +6418,7 @@ function commRender(){
 
   filtered.forEach(function(e,i){
     var idx=COMM_DATA.indexOf(e);
-    var net=Math.max(0,(e.commission||0)-(e.late||0));
+    var net=Math.round(Math.max(0,(e.commission||0)-(e.late||0)));
     h+='<tr>';
     h+='<td class="xr">'+(i+1)+'</td>';
     h+='<td class="xr">'+(i+1)+'</td>';
@@ -6444,7 +6444,7 @@ function commRender(){
 
 function commUpdateRow(idx){
   var e=COMM_DATA[idx];
-  var net=Math.max(0,(e.commission||0)-(e.late||0));
+  var net=Math.round(Math.max(0,(e.commission||0)-(e.late||0)));
   var cell=$('comm-net-'+idx);
   if(cell)cell.textContent=payFmt(net);
 }
@@ -6477,7 +6477,7 @@ function commExport(){
   var month=$('comm-month').value||'export';
   var csv='\uFEFF';
   csv+='ชื่อ,ชื่อเล่น,แผนก,ตำแหน่ง,ธนาคาร,เลขบัญชี,คอมมิชชั่น,หักมาสาย,สุทธิ,หมายเหตุ\n';
-  valid.forEach(function(e){var net=Math.max(0,(e.commission||0)-(e.late||0));csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.department)+'","'+esc(e.position)+'","'+esc(e.bank||'')+'","'+esc(e.account||'')+'",'+e.commission+','+(e.late||0)+','+net+',"'+esc(e.note)+'"\n'});
+  valid.forEach(function(e){var net=Math.round(Math.max(0,(e.commission||0)-(e.late||0)));csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.department)+'","'+esc(e.position)+'","'+esc(e.bank||'')+'","'+esc(e.account||'')+'",'+e.commission+','+(e.late||0)+','+net+',"'+esc(e.note)+'"\n'});
   accDownload(csv,'คอมมิชชั่น_'+month+'.csv','text/csv;charset=utf-8');
   toast('Export คอมมิชชั่น '+valid.length+' คน','tok');
 }
@@ -6505,7 +6505,7 @@ function commClearAll(){
 
 function commBuildSlipHTML(e){
   var month=$('comm-month').value||'';
-  var net=Math.max(0,(e.commission||0)-(e.late||0));
+  var net=Math.round(Math.max(0,(e.commission||0)-(e.late||0)));
   return'<html><head><meta charset="utf-8"></head><body style="margin:0">'
     +'<div style="max-width:500px;margin:0 auto;font-family:sans-serif;color:#3d3520">'
     +'<div style="background:linear-gradient(135deg,#5c4a1e,#8b6914,#c6952b);padding:20px;text-align:center;border-radius:12px 12px 0 0">'

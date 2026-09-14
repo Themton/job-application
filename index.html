@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-17';
+window.APP_VER='v2026.08.01-18';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -6331,10 +6331,12 @@ function payDBExportCSV(){
   if(!valid.length){toast('ไม่มีข้อมูล'+(PAYDB2_FILTER?' ประเภทนี้':''),'terr');return}
   var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='monthly_daily'?'_ประจำรายวัน':PAYDB2_FILTER==='daily'?'_รายวัน':PAYDB2_FILTER==='resigned_pending'?'_ลาออกรอจ่าย':'';
   var csv='\uFEFF';
-  csv+='ชื่อ,ชื่อเล่น,ตำแหน่ง,สถานะ,ธนาคาร,เลขบัญชี,เงินเดือน,เบี้ยขยัน,รวมรายรับ,หักมาสาย,หักขาดงาน,ภาษี3%,ประกันสังคม5%,กยศ.,เบิกล่วงหน้า,รวมหัก,สุทธิ\n';
+  csv+='เดือน,ชื่อ-สกุล,ชื่อเล่น,ตำแหน่ง,แผนก,ประเภท,สัญญา,ธนาคาร,เลขบัญชี,ค่าแรง/วัน,จำนวนวัน,จ่าย70%,เงินเดือน,เบี้ยขยัน,รวมรายรับ,หักมาสาย,วันขาด,หักขาดงาน,ลาไม่รับ(วัน),หักลาไม่รับ,ภาษี3%,ประกันสังคม5%,กยศ.,เบิกล่วงหน้า,รวมหัก,สุทธิ\n';
+  var _mon=($('paydb2-month')&&$('paydb2-month').value)||'';
   valid.forEach(function(e){
-    var st=e.status==='monthly'?'ประจำ':e.status==='monthly_daily'?'ประจำ(รายวัน)':e.status==='daily'?'รายวัน':'ใหม่';
-    csv+='"'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.position)+'","'+st+'","'+esc(e.bank)+'","'+esc(e.account)+'",'+e.salary+','+e.diligence+','+e.totalIncome+','+e.late+','+e.absent_ded+','+e.tax3+','+e.ss5+','+e.loan+','+e.advance+','+e.totalDed+','+e.net+'\n';
+    var st=e.status==='monthly'?'ประจำ':e.status==='monthly_daily'?'ประจำ(รายวัน)':e.status==='daily'?'รายวัน':e.status==='resigned_pending'?'ลาออก-รอจ่าย':e.status==='terminated'?'พ้นสภาพ':'ใหม่';
+    var contract=(typeof contractPeriodTH==='function'?contractPeriodTH(e):'')||'';
+    csv+='"'+_mon+'","'+esc(e.name)+'","'+esc(e.nickname)+'","'+esc(e.position)+'","'+esc(e.department||'')+'","'+st+'","'+contract+'","'+esc(e.bank)+'","'+esc(e.account)+'",'+(e.daily_rate||0)+','+(e.work_days||0)+',"'+(e.pay70?'70%':'')+'",'+e.salary+','+e.diligence+','+e.totalIncome+','+e.late+','+(e._absentDays||0)+','+e.absent_ded+','+(e._unpaidDays||0)+','+(e.unpaid_ded||0)+','+e.tax3+','+e.ss5+','+e.loan+','+e.advance+','+e.totalDed+','+e.net+'\n';
   });
   accDownload(csv,'เงินเดือน_'+($('paydb2-month').value||'export')+stLabel+'.csv','text/csv;charset=utf-8');
   toast('Export '+valid.length+' คน'+(PAYDB2_FILTER?' ['+stLabel.replace('_','')+']':''),'tok');

@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.08.01-18';
+window.APP_VER='v2026.09.14-1';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -5447,12 +5447,8 @@ function payDBLoad(){
     PAYDB2.forEach(function(e){
       // รายวัน: ไม่เติมจำนวนวันทำงานอัตโนมัติแล้ว — ให้กรอกเอง
       // (ดูจำนวนวันมาตรฐานของรอบ 26→25 ได้ที่ป้ายตัดรอบด้านบนเป็นค่าอ้างอิง)
-      // พนักงานประจำที่บันทึกแล้ว: ถ้าฐานเงินเดือนถูกแก้ใหม่ → ดึงค่าล่าสุดมาใช้ (ยกเว้นลาออก-รอจ่าย ให้กรอกเองอิสระ)
-      if(e._saved&&e.status!=='daily'&&e.status!=='monthly_daily'&&e.status!=='resigned_pending'&&e.status!=='terminated'&&e.baseSalary>0&&e.baseSalary!==e.salary){
-        e.salary=e.baseSalary;
-        e._baseUpdated=true;
-        baseUpdated++;
-      }
+      // เดือนที่บันทึกแล้ว = ใช้เงินเดือนที่บันทึกไว้จริงเสมอ (ไม่ดึงฐานปัจจุบันมาทับ เพื่อความถูกต้องย้อนหลัง)
+      // ถ้าต้องการอัปเดตฐานใหม่ ให้แก้ช่องเงินเดือนเอง หรือคำนวณเดือนใหม่
       // ดึงวันขาดมาหัก — เฉพาะประจำ/ใหม่ (เงินเดือนคงที่) • รายวัน/รายวันปกส คิดจากจำนวนวันที่กรอกเองอยู่แล้ว
       var absD=absentMap[e.id]||0;
       e._unpaidDays=unpaidMap[e.id]||0;

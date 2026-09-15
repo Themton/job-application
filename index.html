@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.09.15-2';
+window.APP_VER='v2026.09.15-3';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -5424,7 +5424,7 @@ function payDBLoad(){
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         prevStatus:a.prev_status||'',pay70:(hasSaved&&(p.pay70===true||p.pay70==='true'))?true:false,
-        bank:a.bank||'',account:a.bank_account||'',contract_period:a.contract_period||'',
+        bank:a.bank||'',account:a.bank_account||'',contract_period:a.contract_period||'',note:p.note||'',
         daily_rate:hasSaved&&p.daily_rate!==undefined?p.daily_rate:(a.daily_rate||(a.salary?Math.round(a.salary/30):352)),
         work_days:hasSaved?p.work_days||0:0,
         salary:hasSaved?p.salary:(a.salary||0),
@@ -5538,7 +5538,7 @@ function payDBLoadPrev(){
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
         prevStatus:a.prev_status||'',pay70:(hasSaved&&(p.pay70===true||p.pay70==='true'))?true:false,
-        bank:a.bank||'',account:a.bank_account||'',contract_period:a.contract_period||'',
+        bank:a.bank||'',account:a.bank_account||'',contract_period:a.contract_period||'',note:p.note||'',
         daily_rate:p.daily_rate||(a.daily_rate||(a.salary?Math.round(a.salary/30):352)),
         work_days:0,
         salary:p.salary||a.salary||0,diligence:p.diligence||0,late:0,absent_ded:0,
@@ -5611,6 +5611,7 @@ function payDBRender(){
   h+='<th style="min-width:90px;background:#d4ecc0">'+String.fromCharCode(70+cols.length)+'</th>';
   h+='<th style="min-width:80px;background:#f5d0c0">'+String.fromCharCode(71+cols.length)+'</th>';
   h+='<th style="min-width:100px;background:#c0d8f0">'+String.fromCharCode(72+cols.length)+'</th>';
+  h+='<th style="min-width:150px">'+String.fromCharCode(73+cols.length)+'</th>';
   h+='</tr><tr>';
   h+='<th class="xr"></th>';
   h+='<th style="font-size:9px">ลำดับ</th>';
@@ -5622,6 +5623,7 @@ function payDBRender(){
   h+='<th style="background:#d4ecc0">รวมรับ</th>';
   h+='<th style="background:#f5d0c0">รวมหัก</th>';
   h+='<th style="background:#c0d8f0">สุทธิ</th>';
+  h+='<th>📝 หมายเหตุ</th>';
   h+='</tr></thead><tbody>';
 
   var _hrView=(typeof isHR==='function'&&isHR());
@@ -5692,6 +5694,7 @@ function payDBRender(){
     h+=hideMoney?'<td class="xsum" style="text-align:center;color:#c00">🔒</td>':'<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
     h+=hideMoney?'<td class="xsum" style="text-align:center;color:#c00">🔒</td>':'<td class="xsum xsum-err">'+payFmt(e.totalDed)+'</td>';
     h+=hideMoney?'<td class="xsum" style="text-align:center;color:#c00">🔒</td>':'<td class="xsum" style="font-size:13px;color:var(--pri)">'+payFmt(e.net)+'</td>';
+    h+='<td><input value="'+esc(e.note||'')+'" onchange="payDBSetNote('+i+',this.value)" placeholder="—" title="หมายเหตุ (ไม่บังคับ)" style="width:100%;border:none;background:transparent;font-size:11px;color:#555;font-family:inherit"></td>';
     h+='</tr>';
   });
 
@@ -5706,6 +5709,7 @@ function payDBRender(){
   h+='<td class="xsum xsum-ok">'+payFmt(tI)+'</td>';
   h+='<td class="xsum xsum-err">'+payFmt(tD)+'</td>';
   h+='<td class="xsum" style="font-size:14px;color:var(--pri)">'+payFmt(tN)+'</td>';
+  h+='<td></td>';
   h+='</tr></tfoot></table></div>';
 
   $('paydb2-table').innerHTML=h;
@@ -5805,6 +5809,7 @@ function payDB70SelectAll(checked){
   });
   payDBRender();payDBUpdateFooter();
 }
+function payDBSetNote(i,val){if(PAYDB2[i])PAYDB2[i].note=val;}
 function payDBTogglePay70(i,checked){
   var e=PAYDB2[i];if(!e)return;
   e.pay70=!!checked;
@@ -6162,7 +6167,7 @@ function payDBSave(){
   payBackupMonth(month).then(function(){return sb("payroll","DELETE",null,"?month=eq."+encodeURIComponent(month))}).then(function(){
     prog(40,'กำลังบันทึก '+valid.length+' คน...');
     var records=valid.map(function(e,ri){
-      return{id:'PR-'+month+'-'+Date.now()+'-'+ri+'-'+Math.random().toString(36).substr(2,6),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||0,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net,pay70:e.pay70||false,published:false};
+      return{id:'PR-'+month+'-'+Date.now()+'-'+ri+'-'+Math.random().toString(36).substr(2,6),month:month,emp_name:e.name,nickname:e.nickname,position:e.position,daily_rate:e.daily_rate||0,work_days:e.work_days||0,salary:e.salary,diligence:e.diligence,late:e.late,absent_ded:e.absent_ded,total_income:e.totalIncome,tax3:e.tax3,ss5:e.ss5,loan:e.loan,advance:e.advance,total_ded:e.totalDed,net:e.net,pay70:e.pay70||false,note:e.note||'',published:false};
     });
     sb("payroll","POST",records).then(function(){
       prog(100,'บันทึกเงินเดือน ✅ '+valid.length+' คน');

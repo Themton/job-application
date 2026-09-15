@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-window.APP_VER='v2026.09.15-3';
+window.APP_VER='v2026.09.15-4';
 (function(){
   function checkVer(){
     fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
@@ -5423,7 +5423,7 @@ function payDBLoad(){
       return{
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
-        prevStatus:a.prev_status||'',pay70:(hasSaved&&(p.pay70===true||p.pay70==='true'))?true:false,
+        prevStatus:a.prev_status||'',pay70:(p&&(p.pay70===true||p.pay70==='true'))?true:false,
         bank:a.bank||'',account:a.bank_account||'',contract_period:a.contract_period||'',note:p.note||'',
         daily_rate:hasSaved&&p.daily_rate!==undefined?p.daily_rate:(a.daily_rate||(a.salary?Math.round(a.salary/30):352)),
         work_days:hasSaved?p.work_days||0:0,
@@ -5537,7 +5537,7 @@ function payDBLoadPrev(){
       return{
         id:a.id,name:a.name,nickname:a.nickname||'',position:a.position||'',
         status:a.status||'new',
-        prevStatus:a.prev_status||'',pay70:(hasSaved&&(p.pay70===true||p.pay70==='true'))?true:false,
+        prevStatus:a.prev_status||'',pay70:(p&&(p.pay70===true||p.pay70==='true'))?true:false,
         bank:a.bank||'',account:a.bank_account||'',contract_period:a.contract_period||'',note:p.note||'',
         daily_rate:p.daily_rate||(a.daily_rate||(a.salary?Math.round(a.salary/30):352)),
         work_days:0,

@@ -5551,6 +5551,7 @@ function payDBLoadPrev(){
 
     var matched=PAYDB2.filter(function(e){return e.salary>0}).length;
     // ดึงจากเดือนก่อน → คำนวณ tax3/ss5 ใหม่ (เพราะเป็นเดือนใหม่)
+    PAYDB2.forEach(function(e){if((e.status==='monthly'||e.status==='monthly_daily')&&e.tax_mode==='tax3'&&String(e.note||'').indexOf('ยังไม่เข้าประกันสังคม')<0)e.note=(e.note?e.note+' | ':'')+'ยังไม่เข้าประกันสังคม เลยหัก 3% แทน'});
     PAYDB2.forEach(function(e){if(e.salary>0)payDBCalcRow(e)});
     $('paydb2-status').innerHTML='✅ ดึงข้อมูล <b>'+PAYDB2.length+'</b> คน — ดึงเงินเดือนจาก '+prevMonth+' ได้ <b>'+matched+'</b> คน';
     PAYDB2_FILTER='';payDBBuildFilters();payDBRender();
@@ -5694,7 +5695,10 @@ function payDBRender(){
     h+=hideMoney?'<td class="xsum" style="text-align:center;color:#c00">🔒</td>':'<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';
     h+=hideMoney?'<td class="xsum" style="text-align:center;color:#c00">🔒</td>':'<td class="xsum xsum-err">'+payFmt(e.totalDed)+'</td>';
     h+=hideMoney?'<td class="xsum" style="text-align:center;color:#c00">🔒</td>':'<td class="xsum" style="font-size:13px;color:var(--pri)">'+payFmt(e.net)+'</td>';
-    h+='<td><input value="'+esc(e.note||'')+'" onchange="payDBSetNote('+i+',this.value)" placeholder="—" title="หมายเหตุ (ไม่บังคับ)" style="width:100%;border:none;background:transparent;font-size:11px;color:#555;font-family:inherit"></td>';
+    var isPerm=(e.status==='monthly'||e.status==='monthly_daily');
+    var t3on=(e.tax_mode==='tax3'||e.tax_mode==='both');
+    var t3chk=isPerm?('<label style="font-size:9px;color:#dc2626;cursor:pointer;display:flex;align-items:center;gap:3px;margin-top:2px;white-space:nowrap" title="ยังไม่เข้าประกันสังคม — หัก 3% แทน ปกส. 5%"><input type="checkbox" '+(t3on?'checked':'')+' onchange="payDBToggleTax3('+i+',this.checked)" style="width:12px;height:12px;margin:0;flex:none"> หัก 3% (ยังไม่เข้า ปกส.)</label>'):'';
+    h+='<td'+(t3on&&isPerm?' style="background:#fff1f1"':'')+'><input value="'+esc(e.note||'')+'" onchange="payDBSetNote('+i+',this.value)" placeholder="—" title="หมายเหตุ (ไม่บังคับ)" style="width:100%;border:none;background:transparent;font-size:11px;color:#555;font-family:inherit">'+t3chk+'</td>';
     h+='</tr>';
   });
 
@@ -5759,6 +5763,20 @@ function payDBSetPrevStatus(i,val){
   payDBUpdateFooter();
 }
 
+var TAX3_NOTE='ยังไม่เข้าประกันสังคม เลยหัก 3% แทน';
+function payDBToggleTax3(i,checked){
+  var e=PAYDB2[i];if(!e)return;
+  e.tax_mode=checked?'tax3':'ss5';
+  var nt=String(e.note||'').replace(TAX3_NOTE,'').replace(/^[\s,|/]+|[\s,|/]+$/g,'').trim();
+  e.note=checked?(nt?nt+' | '+TAX3_NOTE:TAX3_NOTE):nt;
+  payDBCalcRow(e);
+  payDBRender();
+  // จำโหมดไว้ที่ข้อมูลพนักงาน (เดือนถัดไปใช้ต่ออัตโนมัติ)
+  if(e.id)sb("applications","PATCH",{tax_mode:e.tax_mode},"?id=eq."+encodeURIComponent(e.id)).then(function(){
+    if(typeof ALL!=='undefined')ALL.forEach(function(a){if(a.id===e.id)a.tax_mode=e.tax_mode});
+    toast(checked?('💸 '+e.name+': หัก 3% แทน ปกส.'):('🛡️ '+e.name+': กลับเป็นหัก ปกส. 5%'),'tok');
+  }).catch(function(){toast('บันทึกโหมดไม่สำเร็จ — เช็คคอลัมน์ tax_mode ใน Supabase','terr')});
+}
 function payDBToggleAdv3(i,checked){
   var e=PAYDB2[i];if(!e)return;
   e.adv3_deducted=!!checked;

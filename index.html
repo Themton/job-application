@@ -5683,6 +5683,11 @@ function payDBRender(){
         h+='<td><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'advance\',this.value)" onkeydown="payDBNav(event,'+ri+',\'advance\')" data-r="'+ri+'" data-c="advance" data-i="'+i+'" placeholder="0">'+chk+'</td>';
         return;
       }
+      if(c.k==='tax3'&&(e.status==='monthly'||e.status==='monthly_daily')){
+        var on3=(e.tax_mode==='tax3'||e.tax_mode==='both');
+        h+='<td style="background:'+(on3?'#fee2e2':'#f0f8ff')+';text-align:right" title="ติ๊กเมื่อยังไม่เข้าประกันสังคม — หัก 3% แทน ปกส. 5%"><div style="font-weight:'+(on3?'800;color:#dc2626':'400;color:#4a90d9')+';padding:0 4px">'+(v||0)+'</div><label style="font-size:9px;color:#dc2626;cursor:pointer;display:flex;align-items:center;justify-content:flex-end;gap:3px;white-space:nowrap;padding:0 4px 2px"><input type="checkbox" '+(on3?'checked':'')+' onchange="payDBToggleTax3('+i+',this.checked)" style="width:13px;height:13px;margin:0;flex:none"> หัก 3%</label></td>';
+        return;
+      }
       var auto=(c.k==='tax3'||c.k==='ss5')||(isDaily&&c.k==='salary'&&e.work_days>0);
       var refreshed=(c.k==='salary'&&e._baseUpdated);
       var absentAuto=(c.k==='absent_ded'&&e._absentDays>0);

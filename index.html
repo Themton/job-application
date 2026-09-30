@@ -5679,7 +5679,7 @@ function payDBRender(){
       var v=e[c.k]||0;
       if(c.k==='advance'){
         var taxable3=(e.status==='daily')||((e.status==='resigned_pending'||e.status==='terminated')&&(e.prevStatus==='daily'||(!e.prevStatus&&e.work_days>0)));
-        var chk=taxable3?('<label style="font-size:9px;color:#7c3aed;cursor:pointer;display:flex;align-items:center;gap:3px;margin-top:3px" title="ยอดเบิกนี้ถูกหักภาษี 3% ไปแล้วตอนเบิก — ระบบจะไม่คิด 3% ซ้ำ"><input type="checkbox" '+(e.adv3_deducted?'checked':'')+' onchange="payDBToggleAdv3('+i+',this.checked)" style="width:12px;height:12px;margin:0;flex:none"> เบิกหัก 3% แล้ว</label>'):'';
+        var chk=taxable3?('<label style="font-size:9px;color:#7c3aed;cursor:pointer;display:flex;align-items:center;gap:3px;margin-top:3px" title="ยอดเบิกนี้ถูกหักภาษี 3% ไปแล้วตอนเบิก — ระบบจะไม่คิด 3% ซ้ำ"><input type="checkbox" class="t3cb" '+(e.adv3_deducted?'checked':'')+' onchange="payDBToggleAdv3('+i+',this.checked)" style="width:12px;height:12px;margin:0;flex:none"> เบิกหัก 3% แล้ว</label>'):'';
         h+='<td><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\'advance\',this.value)" onkeydown="payDBNav(event,'+ri+',\'advance\')" data-r="'+ri+'" data-c="advance" data-i="'+i+'" placeholder="0">'+chk+'</td>';
         return;
       }

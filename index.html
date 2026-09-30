@@ -5373,6 +5373,8 @@ function payDBLoad(){
   queries.push(month?sb("payroll","GET",null,"?month=eq."+encodeURIComponent(month)+"&select=*").catch(function(){return[]}):Promise.resolve([]));
   queries.push(month?sb("leaves","GET",null,"?type=eq.absent&date=gte."+_absStart+"&date=lte."+_absEnd+"&select=emp_id,date,days,status").catch(function(){return[]}):Promise.resolve([]));
   queries.push(month?sb("leaves","GET",null,"?type=eq.unpaid&status=neq.rejected&status=neq.cancelled&date=gte."+_absStart+"&date=lte."+_absEnd+"&select=emp_id,date,days,status").catch(function(){return[]}):Promise.resolve([]));
+  // ลาป่วย/ลากิจ ในรอบ — พนักงานรายวันไม่ได้รับค่าจ้างวันลา → หักตามค่าแรง
+  queries.push(month?sb("leaves","GET",null,"?type=in.(sick,personal)&status=neq.rejected&status=neq.cancelled&date=gte."+_absStart+"&date=lte."+_absEnd+"&select=emp_id,date,days,status,type").catch(function(){return[]}):Promise.resolve([]));
 
   Promise.all(queries).then(function(res){
     var r=res[0];
@@ -5396,6 +5398,16 @@ function payDBLoad(){
       if(!_unpByEmp[l.emp_id])_unpByEmp[l.emp_id]={};
       var dk=l.date||('_'+Math.random());
       _unpByEmp[l.emp_id][dk]=Math.max(_unpByEmp[l.emp_id][dk]||0,l.days||1);
+    });
+    // ลาป่วย/ลากิจ ต่อพนักงาน (ใช้หักเฉพาะพนักงานรายวัน) — รวมกับลาไม่รับค่าจ้างแบบไม่นับวันซ้ำ
+    var _slByEmp={},_slType={};
+    (Array.isArray(res[4])?res[4]:[]).forEach(function(l){
+      if(!l.emp_id)return;if(l.status==='rejected'||l.status==='cancelled')return;
+      if(!_slByEmp[l.emp_id]){_slByEmp[l.emp_id]={};_slType[l.emp_id]={sick:0,personal:0}}
+      var dk=l.date||('_'+Math.random());
+      var dd=l.days||1;
+      if(!(dk in _slByEmp[l.emp_id]))_slType[l.emp_id][l.type==='sick'?'sick':'personal']+=dd;
+      _slByEmp[l.emp_id][dk]=Math.max(_slByEmp[l.emp_id][dk]||0,dd);
     });
     var unpaidMap={};
     Object.keys(_unpByEmp).forEach(function(eid){var s=0;Object.keys(_unpByEmp[eid]).forEach(function(d){s+=_unpByEmp[eid][d]});unpaidMap[eid]=s});
@@ -5470,6 +5482,18 @@ function payDBLoad(){
       // ดึงวันขาดมาหัก — เฉพาะประจำ/ใหม่ (เงินเดือนคงที่) • รายวัน/รายวันปกส คิดจากจำนวนวันที่กรอกเองอยู่แล้ว
       var absD=absentMap[e.id]||0;
       e._unpaidDays=unpaidMap[e.id]||0;
+      e._slDays=0;e._slInfo='';
+      var _isDailyEmp=e.status==='daily'||((e.status==='resigned_pending'||e.status==='terminated')&&e.prevStatus==='daily');
+      if(_isDailyEmp&&_slByEmp[e.id]){
+        // รายวัน: ลาป่วย/ลากิจ = ไม่ได้ค่าจ้าง → รวมเข้าวันลาไม่รับ (วันที่ซ้ำกับลาไม่รับค่าจ้างนับครั้งเดียว)
+        var _mg=Object.assign({},_unpByEmp[e.id]||{});
+        Object.keys(_slByEmp[e.id]).forEach(function(d){_mg[d]=Math.max(_mg[d]||0,_slByEmp[e.id][d])});
+        var _tot=0;Object.keys(_mg).forEach(function(d){_tot+=_mg[d]});
+        e._slDays=_tot-e._unpaidDays;
+        e._unpaidDays=_tot;
+        var _t=_slType[e.id];
+        e._slInfo=(_t.sick?'ลาป่วย '+_t.sick+' วัน ':'')+(_t.personal?'ลากิจ '+_t.personal+' วัน':'');
+      }
       e.unpaid_ded=0;
       if(e._unpaidDays>0){
         var _upRate=((e.daily_rate||0)>0)?e.daily_rate:((e.salary||0)/daysInMonth);
@@ -5673,7 +5697,7 @@ function payDBRender(){
       if(hideMoney&&c.type!=='days'){h+='<td style="text-align:center;color:#c00;background:#f7f7f7" title="ซ่อนเงินเดือนจาก HR">🔒</td>';return;}
       if(c.type==='days'){
         var dv=e[c.k]||0;var isUnp=(c.k==='_unpaidDays');
-        h+='<td style="text-align:center;'+(dv>0?(isUnp?'background:#fbdada;color:#b91c1c;font-weight:800':'background:#fde8e8;color:#dc2626;font-weight:bold'):'background:#fafafa;color:#ccc')+'" title="'+(isUnp?'ลาไม่รับค่าจ้าง (ดึงจากระบบลา) — ต้องหักเงิน':'จำนวนวันขาดงาน (ดึงจากระบบลา/ขาด)')+'">'+(dv>0?dv:'-')+'</td>';
+        h+='<td style="text-align:center;'+(dv>0?(isUnp?'background:#fbdada;color:#b91c1c;font-weight:800':'background:#fde8e8;color:#dc2626;font-weight:bold'):'background:#fafafa;color:#ccc')+'" title="'+(isUnp?'ลาไม่รับค่าจ้าง (ดึงจากระบบลา) — ต้องหักเงิน':'จำนวนวันขาดงาน (ดึงจากระบบลา/ขาด)')+(isUnp&&e._slInfo?' — รวม '+e._slInfo:'')+'">'+(dv>0?dv:'-')+(isUnp&&e._slInfo?'<div style="font-size:9px;font-weight:600;color:#9a3412;white-space:nowrap">'+esc(e._slInfo)+'</div>':'')+'</td>';
         return;
       }
       var v=e[c.k]||0;
@@ -5694,7 +5718,7 @@ function payDBRender(){
       var unpaidAuto=(c.k==='unpaid_ded'&&e._unpaidDays>0);
       var cellBg=refreshed?'background:#fef3c7':absentAuto?'background:#fde8e8':unpaidAuto?'background:#fbdada':(auto?'background:#f0f8ff':'');
       var cellColor=refreshed?'color:#92400e;font-weight:bold':absentAuto?'color:#dc2626;font-weight:bold':unpaidAuto?'color:#b91c1c;font-weight:bold':(auto?'color:#4a90d9':'');
-      var cellTitle=refreshed?'อัปเดตฐานเงินเดือนใหม่จากข้อมูลพนักงาน':absentAuto?('หักขาดงาน '+e._absentDays+' วัน (ดึงจากระบบลา/ขาด)'):unpaidAuto?('หักลาไม่รับค่าจ้าง '+e._unpaidDays+' วัน (คำนวณอัตโนมัติ — แก้ได้)'):'';
+      var cellTitle=refreshed?'อัปเดตฐานเงินเดือนใหม่จากข้อมูลพนักงาน':absentAuto?('หักขาดงาน '+e._absentDays+' วัน (ดึงจากระบบลา/ขาด)'):unpaidAuto?('หักลาไม่รับค่าจ้าง '+e._unpaidDays+' วัน'+(e._slInfo?' (รวม '+e._slInfo+' — รายวันไม่ได้ค่าจ้างวันลา)':'')+' (คำนวณอัตโนมัติ — แก้ได้)'):'';
       h+='<td style="'+cellBg+'" title="'+cellTitle+'"><input value="'+(v||'')+'" onfocus="this.select()" onchange="payDBCell('+i+',\''+c.k+'\',this.value)" onkeydown="payDBNav(event,'+ri+',\''+c.k+'\')" data-r="'+ri+'" data-c="'+c.k+'" data-i="'+i+'" placeholder="0" style="'+cellColor+'"></td>';
     });
     h+=hideMoney?'<td class="xsum" style="text-align:center;color:#c00">🔒</td>':'<td class="xsum xsum-ok">'+payFmt(e.totalIncome)+'</td>';

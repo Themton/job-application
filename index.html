@@ -700,7 +700,7 @@ body.hr-mode .hr-hide{display:none!important}
             <button class="btn btn-g btn-s" onclick="payRestoreModal()" style="border:1px solid #7c3aed;color:#6d28d9">⏱️ กู้คืน</button>
             <span id="paydb2-pub-status" style="font-size:12px;margin-left:4px;align-self:center"></span>
             <button class="btn btn-a btn-s" onclick="payDBExportSCB()" style="background:linear-gradient(135deg,#4e2a84,#7b3fa0)">🏦 สร้างไฟล์ SCB</button>
-            <button class="btn btn-a btn-s" onclick="payDBExportTxt()" style="background:linear-gradient(135deg,#166534,#16a34a)">📄 ไฟล์ .txt (อัปโหลดตรง)</button>
+            <span style="font-size:12px">เปิดไฟล์ SCB ใน Excel แล้วกด Generate Text File เพื่อสร้าง TXT</span>
             <button class="btn btn-g btn-s" onclick="payDBSCBSettings()" title="ตั้งค่าเลขบัญชีตัดเงิน + Product">⚙️</button>
             <button class="btn btn-g btn-s" onclick="payDBExportCSV()">📥 Export CSV</button>
             <span id="paydb2-save-status" style="font-size:12px;color:var(--muted)"></span>
@@ -6251,122 +6251,15 @@ function payDBSave(){
 }
 
 function payDBExportTxt(){
-  var valid=PAYDB2.filter(function(e){
-    if(PAYDB2_FILTER&&e.status!==PAYDB2_FILTER)return false;
-    return e.net>0;
-  });
-  if(!valid.length){toast('ไม่มีข้อมูล'+(PAYDB2_FILTER?' ประเภทนี้':'')+' — คำนวณก่อน','terr');return}
-  var debit=getSetting('scb_debit');
-  if(!debit){
-    debit=(prompt('🏦 ตั้งค่าครั้งแรก: เลขที่บัญชี SCB ที่ใช้ตัดเงินเดือน (เฉพาะตัวเลข)','')||'').replace(/[-\s]/g,'');
-    if(!debit){toast('ยังไม่ได้ตั้งเลขบัญชีตัดเงิน','terr');return}
-    setSetting('scb_debit',debit);
-  }
-  var product='RFT'; // Other Bank Transfer (ORFT) — ตามไฟล์จริงของบริษัท
-  var month=$('paydb2-month').value;
-  var vd='';
-  if(month){var pp=month.split('-');var ld=new Date(parseInt(pp[0]),parseInt(pp[1]),0).getDate();vd=pp[0]+pp[1]+String(ld).padStart(2,'0')}
-  else{var nw=new Date();vd=nw.getFullYear()+String(nw.getMonth()+1).padStart(2,'0')+String(nw.getDate()).padStart(2,'0')}
-  // batch ref = DDMMYY(พ.ศ.)HHMMSS
-  function p2(x){return String(x).padStart(2,'0')}
-  var nn=new Date();
-  var batchRef=p2(nn.getDate())+p2(nn.getMonth()+1)+p2((nn.getFullYear()+543)%100)+p2(nn.getHours())+p2(nn.getMinutes())+p2(nn.getSeconds());
-  var fileRef=batchRef+product;
-  function amt(v){return (Math.round((v||0)*100)/100).toFixed(2)}
-  function clean(s){return String(s==null?'':s).replace(/\|/g,' ').replace(/[\r\n]/g,' ')}
-  var total=0;valid.forEach(function(e){total+=Math.round(e.net*100)/100});
-  var scbCount=0;
-  var L=[];
-  L.push('HEADER|'+fileRef+'|');
-  L.push('BCHDET|'+batchRef+'|'+product+'|'+vd+'|'+debit+'|'+debit+'|'+amt(total)+'|'+valid.length+'||');
-  valid.forEach(function(e){
-    var bk=scbBank(BANK_MAP[e.bank]||e.bank||'');
-    var code=String(bk.c||'').padStart(3,'0');
-    if(code==='014')scbCount++;
-    var acct=String(e.account||'').replace(/[-\s|]/g,'');
-    L.push('TXNDET||'+acct+'||'+code+'|0000|'+amt(e.net)+'||OUR|N||N||'+clean(e.name)+'||||N|||N|N||||N||');
-  });
-  L.push('TRAILR|1|'+valid.length+'|'+amt(total));
-  var content=L.join('\r\n')+'\r\n';
-  var blob=new Blob([content],{type:'text/plain;charset=utf-8'}); // UTF-8 ไม่มี BOM
-  var fname='SCB_Payroll_'+(month||'export')+'_'+valid.length+'คน_'+batchRef+'.txt';
-  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=fname;
-  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-  var w=scbCount>0?' ⚠️ มีบัญชี SCB '+scbCount+' คน (ORFT อาจไม่รับโอนเข้า SCB — ตรวจสอบ)':'';
-  toast('สร้างไฟล์ .txt '+valid.length+' คน ฿'+amt(total)+w,scbCount>0?'twarn':'tok');
+  return payDBExportSCB();
 }
 
 function payDBExportSCB(){
   var valid=PAYDB2.filter(function(e){
-    if(PAYDB2_FILTER&&e.status!==PAYDB2_FILTER)return false;
-    return e.net>0;
+    return (!PAYDB2_FILTER || e.status===PAYDB2_FILTER) && e.net>0;
   });
-  if(!valid.length){toast('ไม่มีข้อมูล'+(PAYDB2_FILTER?' ประเภทนี้':'')+'  — คำนวณก่อน','terr');return}
-  if(valid.length>259){toast('เกิน 259 คน เทมเพลตรองรับไม่พอ — แบ่งกรองประเภทก่อน','terr');return}
-  if(typeof JSZip==='undefined'){toast('กำลังโหลดไลบรารี ลองใหม่อีกครั้ง','terr');return}
-  var month=$('paydb2-month').value;
-  // ค่าตั้งต้นบริษัท (จำไว้): เลขบัญชีตัดเงิน + product
-  var debit=getSetting('scb_debit');
-  if(!debit){
-    debit=(prompt('🏦 ตั้งค่าครั้งแรก: เลขที่บัญชี SCB ที่ใช้ตัดเงินเดือน\n(ใส่เฉพาะตัวเลข ไม่ต้องมีขีด)','')||'').replace(/[-\s]/g,'');
-    if(!debit){toast('ยังไม่ได้ตั้งเลขบัญชีตัดเงิน','terr');return}
-    setSetting('scb_debit',debit);
-  }
-  var product=getSetting('scb_product')||'SCB Payroll1';
-  var prodCode=product==='SCB Payroll2'?'PA2':product==='SCB Payroll3'?'PA3':'PAY';
-  var vDate='';
-  if(month){var pp=month.split('-');var ld=new Date(parseInt(pp[0]),parseInt(pp[1]),0).getDate();vDate=String(ld).padStart(2,'0')+'/'+pp[1]+'/'+pp[0]}
-  else{var nw=new Date();var ld2=new Date(nw.getFullYear(),nw.getMonth()+1,0).getDate();vDate=String(ld2).padStart(2,'0')+'/'+String(nw.getMonth()+1).padStart(2,'0')+'/'+nw.getFullYear()}
-  var stLabel=PAYDB2_FILTER==='monthly'?'_ประจำ':PAYDB2_FILTER==='monthly_daily'?'_ประจำรายวัน':PAYDB2_FILTER==='daily'?'_รายวัน':PAYDB2_FILTER==='resigned_pending'?'_ลาออกรอจ่าย':'';
-  prog(10,'สร้างไฟล์ SCB จากเทมเพลตต้นฉบับ...');
-  fetch('CPX_Toolkit_Template.xlsm').then(function(r){
-    if(!r.ok)throw new Error('โหลดเทมเพลตไม่ได้ (CPX_Toolkit_Template.xlsm)');
-    return r.arrayBuffer();
-  }).then(function(buf){
-    return JSZip.loadAsync(buf);
-  }).then(function(zip){
-    var path='xl/worksheets/sheet2.xml'; // Payment sheet
-    return zip.file(path).async('string').then(function(xml){
-      function xesc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-      function cS(ref,v){return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+xesc(v)+'</t></is></c>'}
-      function cN(ref,v){return '<c r="'+ref+'"><v>'+v+'</v></c>'}
-      function setCell(oldc,ref,style,val){xml=xml.replace(oldc,'<c r="'+ref+'" s="'+style+'" t="inlineStr"><is><t xml:space="preserve">'+xesc(val)+'</t></is></c>')}
-      // เติมหัวเอกสาร: product(M1), บัญชีตัดเงิน(C3), บัญชีค่าธรรมเนียม(C4), วันที่(C5), product(E4)
-      setCell('<c r="M1" s="29"/>','M1','29',prodCode);
-      setCell('<c r="C3" s="113"/>','C3','113',debit);
-      setCell('<c r="C4" s="113"/>','C4','113',debit);
-      setCell('<c r="C5" s="130" t="s"><v>413</v></c>','C5','130',vDate);
-      setCell('<c r="E4" s="140" t="s"><v>416</v></c>','E4','140',product);
-      // เติมค่าลงเซลล์เดิมในแถว 9+ (แถวมีอยู่แล้ว — ห้ามเพิ่มแถวใหม่ ไม่งั้น Excel ซ่อมแซม)
-      function fill(col,r,val,isNum){
-        var re=new RegExp('<c r="'+col+r+'"([^>]*?)/>');
-        xml=xml.replace(re,function(m,a){a=a.replace(/\s+t="[^"]*"/,'');
-          return isNum?'<c r="'+col+r+'"'+a+'><v>'+val+'</v></c>':'<c r="'+col+r+'"'+a+' t="inlineStr"><is><t xml:space="preserve">'+xesc(val)+'</t></is></c>';});
-      }
-      valid.forEach(function(e,i){
-        var bk=scbBank(BANK_MAP[e.bank]||e.bank||'');
-        var r=9+i;
-        var acct=String(e.account||'').replace(/[-\s]/g,'');
-        var amt=Math.round(e.net*100)/100;
-        fill('A',r,String(i+1));
-        fill('B',r,bk.n);
-        fill('C',r,acct);
-        fill('D',r,e.name);
-        fill('E',r,amt,true);
-        fill('G',r,'Payer (OUR)');
-        fill('N',r,bk.c);
-        fill('O',r,'OUR');
-      });
-      zip.file(path,xml);
-      return zip.generateAsync({type:'blob',mimeType:'application/vnd.ms-excel.sheet.macroEnabled.12',compression:'DEFLATE'});
-    });
-  }).then(function(blob){
-    var fname='CPX_Payroll_'+(month||'export')+stLabel+'_'+valid.length+'คน.xlsm';
-    var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=fname;
-    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-    prog(100,'สร้างไฟล์ SCB ✅ (เหมือนต้นฉบับ) '+valid.length+' คน');
-    toast('สร้างไฟล์ SCB '+valid.length+' คน — พร้อมอัปโหลด','tok');
-  }).catch(function(err){prog(-1);toast('❌ '+err.message,'terr');console.error('payDBExportSCB error:',err)});
+  var labels={monthly:"_ประจำ",monthly_daily:"_ประจำรายวัน",daily:"_รายวัน",resigned_pending:"_ลาออกรอจ่าย"};
+  return scbExportPayroll(valid,$("paydb2-month").value,labels[PAYDB2_FILTER] || "");
 }
 
 var APP_SETTINGS={};
@@ -6731,122 +6624,12 @@ function scbBank(raw){
 
 /* ═══ SCB CPX Toolkit Payroll Export — ตาม Template v1.3.5 ═══ */
 function payExportSCB(){
-  try{
-  if(!PAY_DATA||!PAY_DATA.length){toast('ยังไม่มีข้อมูลเงินเดือน','terr');return}
-  var month=$('pay-month')?$('pay-month').value:'';
-
-  // Value Date = วันสุดท้ายของเดือน DD/MM/YYYY
-  var vDate='';
-  if(month){var pp=month.split('-');var ld=new Date(parseInt(pp[0]),parseInt(pp[1]),0).getDate();vDate=String(ld).padStart(2,'0')+'/'+pp[1]+'/'+pp[0]}
-  else{var now=new Date();var ld=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();vDate=String(ld).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear()}
-
-  // Filter: net > 0 AND NOT terminated
-  var terminated=[];
-  var emps=PAY_DATA.filter(function(e){
-    var net=e.pay?e.pay.net:e.net;
-    if(e.isTerminated){terminated.push(e.name);return false}
-    return net>0;
+  var valid=(PAY_DATA || []).filter(function(e){
+    return !e.isTerminated && (e.pay?e.pay.net:e.net)>0;
+  }).map(function(e){
+    return {name:e.name,bank:e.bank,account:e.account,net:e.pay?e.pay.net:e.net};
   });
-  if(!emps.length){toast('ไม่มีพนักงานที่ต้องจ่ายเงิน','terr');return}
-
-  var msg='สร้างไฟล์ Payroll '+emps.length+' คน';
-  if(terminated.length){msg+='\n\n⛔ ไม่รวมพนักงานลาออก '+terminated.length+' คน:\n— '+terminated.join('\n— ')}
-  if(!confirm(msg+'\n\nดำเนินการ?'))return;
-
-  // ═══ Build Payment sheet ตาม CPX Toolkit Template ═══
-  var D=[];var N=19; // 19 columns A-S
-
-  // Row 1: M1='PAY', N1=0
-  var r1=new Array(N).fill('');r1[12]='PAY';r1[13]=0;D.push(r1);
-
-  // Row 2: B2=header, D2=header, M-P=lookup names
-  var r2=new Array(N).fill('');
-  r2[1]='อ้างอิงไฟล์รายการ\nCustomer File Ref. ';r2[3]='อ้างอิงกลุ่มรายการ\nCustomer Batch Ref.';r2[6]=' ';
-  r2[12]='TBPPPayroll';r2[13]='TBBankPAY';r2[14]='TBFeePayroll';r2[15]='TBServiceType';
-  D.push(r2);
-
-  // Row 3: B3=Debit Account
-  var r3=new Array(N).fill('');r3[1]='เลขที่บัญชีตัดเงิน\nDebit Account';D.push(r3);
-
-  // Row 4: B4=Debit Fee Account, D4=Select Product, E4=SCB Payroll1
-  var r4=new Array(N).fill('');
-  r4[1]='เลขที่บัญชีหักค่าธรรมเนียม\nDebit Fee Account';r4[3]='Select Product';r4[4]='SCB Payroll1';
-  D.push(r4);
-
-  // Row 5: B5=วันที่, C5=Value Date, D5=WHT/Invoice, E5=System Ref
-  var r5=new Array(N).fill('');
-  r5[1]='วันที่รายการมีผล';r5[2]=vDate;r5[3]='เลือก WHT/Invoice';r5[4]='System Reference ID';
-  D.push(r5);
-
-  // Row 6: A6=' ', B6=label
-  var r6=new Array(N).fill('');r6[0]=' ';r6[1]='Value Date (DD/MM/YYYY)';D.push(r6);
-
-  // Row 7: empty
-  D.push(new Array(N).fill(''));
-
-  // Row 8: Column headers
-  var r8=new Array(N).fill('');
-  r8[0]='ลำดับที่\nCredit Seq. No.';
-  r8[1]='*เลือกธนาคาร\nBank Code';
-  r8[2]='*เลขที่บัญชี / หมายเลขพร้อมเพย์\nCredit Account Number / PromptPay ID';
-  r8[3]='*ชื่อผู้รับเงิน\nRecipient Name (TH/EN)';
-  r8[4]='*จำนวนเงิน\nAmount';
-  r8[5]='อ้างอิงรายการ\nCustomer Transaction Ref.';
-  r8[6]='หักค่าธรรมเนียมจาก\nFee Charge';
-  r8[7]='เลขที่สาขา\nBranch Code';
-  r8[8]='วัตถุประสงค์ของธุรกรรม\nService Type';
-  r8[9]='หมายเลขโทรศัพท์\nผู้รับเงิน\nSMS Notification';
-  r8[10]='อีเมล์ผู้รับเงิน\nEmail Notification/Receiving Document';
-  r8[11]='หมายเหตุสำหรับเอกสารแจ้งชำระเงิน\nPayment Advice Remark (Txn level)\n (=<200 ตัวอักษร)';
-  r8[12]='1';r8[17]='Y';r8[18]='Y';
-  D.push(r8);
-
-  // Row 9+: Data rows
-  emps.forEach(function(e,i){
-    var net=e.pay?e.pay.net:e.net;
-    var bankRaw=e.bank||'SCB';
-    var bk=scbBank(BANK_MAP[bankRaw]||bankRaw);
-    var account=String(e.account||'').replace(/[-\s]/g,'');
-    var row=new Array(N).fill('');
-    row[0]=String(i+1);
-    row[1]=bk.n;
-    row[2]=account;
-    row[3]=e.name;
-    row[4]=Math.round(net*100)/100;
-    row[6]='Payer (OUR)';
-    row[13]=bk.c;
-    row[14]='OUR';
-    row[15]='';
-    D.push(row);
-  });
-
-  var wb=XLSX.utils.book_new();
-  var ws=XLSX.utils.aoa_to_sheet(D);
-
-  // Column widths
-  ws['!cols']=[{wch:8},{wch:22},{wch:20},{wch:25},{wch:14},{wch:14},{wch:14},{wch:10},{wch:10},{wch:14},{wch:20},{wch:20},{wch:12},{wch:8},{wch:8},{wch:8},{wch:5},{wch:5},{wch:5}];
-
-  // Force account number as text (prevent leading zero loss)
-  for(var i=0;i<emps.length;i++){
-    var cr=XLSX.utils.encode_cell({r:8+i,c:2});
-    if(ws[cr]){ws[cr].t='s';ws[cr].z='@'}
-  }
-
-  XLSX.utils.book_append_sheet(wb,ws,'Payment');
-
-  // ═══ Invoice sheet (empty template) ═══
-  var invH=[['Code','ลำดับที่\nCredit Seq. No.','*วันที่แจ้งหนี้\nInvoice Date','*Invoice Number\nหมายเลขใบแจ้งหนี้','*จำนวนแจ้งหนี้\nInvoice Amount','คำอธิบายใบแจ้งหนี้\nInvoice Description (=<100 Char)','หมายเลขใบสั่งซื้อ\nPurchase Order No.','ภาษีมูลค่าเพิ่ม\nVAT Amount','หัก ณ ที่จ่าย\nWHT Amount','*ยอดสุทธิในแจ้งหนี้\nInvoice Net Amount','หมายเหตุใบแจ้งหนี้\nRemark for Invoice (=<100 Char)']];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(invH),'Invoice');
-
-  // ═══ WHT sheet (empty template) ═══
-  var whtH=[['Code','ลำดับที่\nCredit Seq. No.','เลขที่\nWHT Book No.','เลขประจำตัวผู้เสียภาษีอากร\nWHT Payer Tax ID','ผู้มีหน้าที่หักภาษี ณ ที่จ่าย\nWHT Payer Name','ที่อยู่ 1\nWHT Payer Address Line 1','ที่อยู่ 2\nWHT Payer Address Line 2','ที่อยู่ 2\nWHT Payer Address Line 2']];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(whtH),'WHT');
-
-  // Download
-  var fname='CPX_Payroll_'+(month||'export')+'_'+emps.length+'คน.xlsx';
-  XLSX.writeFile(wb,fname);
-  toast('สร้างไฟล์ '+fname+' ('+emps.length+' คน)','tok');
-  }catch(err){toast('❌ Error: '+err.message,'terr');console.error('payExportSCB error:',err)}
+  return scbExportPayroll(valid,$("pay-month").value,"");
 }
 
 function payExportCSV2(){
@@ -9514,6 +9297,104 @@ if(MODE==='admin'){
     var _nbc=document.getElementById('nav-btns');if(_nbc)_nbc.style.display='none';
   }
 }
+</script>
+<script>
+/* Fill the official CPX workbook. TXT must be generated by its bank macro. */
+async function scbExportPayroll(records, month, suffix) {
+  try {
+    if (!records.length) throw new Error('ไม่มีรายการที่ต้องจ่าย');
+    if (records.length > 259) throw new Error('แม่แบบรองรับสูงสุด 259 รายการ กรุณาแบ่งรายการ');
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month || '')) throw new Error('กรุณาเลือกเดือนเงินเดือน');
+    if (typeof JSZip === 'undefined') throw new Error('กำลังโหลดเครื่องมือ กรุณาลองใหม่');
+    var product = getSetting('scb_product') || 'SCB Payroll1';
+    var codes = {'SCB Payroll1':'PAY', 'SCB Payroll2':'PA2', 'SCB Payroll3':'PA3'};
+    if (!codes[product]) throw new Error('กรุณาตั้งค่าบริการ SCB Payroll ให้ถูกต้อง');
+    var debit = String(getSetting('scb_debit') || '').replace(/[-\s]/g, '');
+    if (!debit) {
+      debit = String(prompt('เลขที่บัญชี SCB ที่ใช้ตัดเงินเดือน', '') || '').replace(/[-\s]/g, '');
+      if (!debit) return;
+    }
+    if (!/^\d{10}$/.test(debit)) throw new Error('บัญชีตัดเงิน SCB ต้องเป็นตัวเลข 10 หลัก');
+    var seen = {};
+    var data = records.map(function(e, i) {
+      var raw = String(BANK_MAP[e.bank] || e.bank || '').trim();
+      var keys = Object.keys(SCB_BANK_MAP2);
+      var key = keys.find(function(k) { return k === raw; }) || keys.find(function(k) { return raw && (raw.indexOf(k) >= 0 || k.indexOf(raw) >= 0); });
+      if (!key) throw new Error('รายการ '+(i+1)+': ไม่พบธนาคารที่รองรับ');
+      var bank = SCB_BANK_MAP2[key];
+      var account = String(e.account || '').replace(/[-\s]/g, '');
+      if (!/^\d+$/.test(account)) throw new Error('รายการ '+(i+1)+': เลขบัญชีว่างหรือไม่ใช่ตัวเลข');
+      if (bank.c === '014' && account.length !== 10) throw new Error('รายการ '+(i+1)+': บัญชี SCB ต้องมี 10 หลัก');
+      var id = bank.c + ':' + account;
+      if (seen[id]) throw new Error('รายการ '+(i+1)+': บัญชีผู้รับซ้ำ กรุณาตรวจสอบ');
+      seen[id] = true;
+      if (!String(e.name || '').trim()) throw new Error('รายการ '+(i+1)+': ไม่มีชื่อผู้รับ');
+      var amount = Number(e.net);
+      if (!Number.isFinite(amount) || amount <= 0) throw new Error('รายการ '+(i+1)+': ยอดจ่ายไม่ถูกต้อง');
+      return {name:e.name, account:account, bank:bank, amount:Math.round(amount*100)/100};
+    });
+    var parts = month.split('-');
+    var last = new Date(Number(parts[0]), Number(parts[1]), 0).getDate();
+    var date = String(last).padStart(2, '0')+'/'+parts[1]+'/'+parts[0];
+    setSetting('scb_debit', debit);
+    prog(10, 'สร้างไฟล์จากแม่แบบ SCB...');
+    var response = await fetch('CPX_Toolkit_Template.xlsm');
+    if (!response.ok) throw new Error('โหลดแม่แบบ SCB ไม่สำเร็จ');
+    var zip = await JSZip.loadAsync(await response.arrayBuffer());
+    var ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+    function parse(source) {
+      var doc = new DOMParser().parseFromString(source, 'application/xml');
+      if (doc.getElementsByTagName('parsererror').length) throw new Error('โครงสร้างแม่แบบไม่ถูกต้อง');
+      return doc;
+    }
+    var book = parse(await zip.file('xl/workbook.xml').async('string'));
+    var payment = Array.from(book.getElementsByTagNameNS(ns, 'sheet')).find(function(s) { return s.getAttribute('name') === 'Payment'; });
+    if (!payment) throw new Error('ไม่พบชีต Payment');
+    var rid = payment.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+    var rels = parse(await zip.file('xl/_rels/workbook.xml.rels').async('string'));
+    var rel = Array.from(rels.getElementsByTagName('Relationship')).find(function(r) { return r.getAttribute('Id') === rid; });
+    if (!rel) throw new Error('ไม่พบตำแหน่งชีต Payment');
+    var path = new URL(rel.getAttribute('Target'), 'https://template.invalid/xl/workbook.xml').pathname.slice(1);
+    if (!zip.file(path) || !zip.file('xl/vbaProject.bin')) throw new Error('แม่แบบไม่มีชีตหรือมาโครที่ต้องใช้');
+    var doc = parse(await zip.file(path).async('string'));
+    var cells = {};
+    Array.from(doc.getElementsByTagNameNS(ns, 'c')).forEach(function(c) { cells[c.getAttribute('r')] = c; });
+    function set(ref, value, numeric) {
+      var c = cells[ref];
+      if (!c) throw new Error('แม่แบบขาดเซลล์ '+ref);
+      while (c.firstChild) c.removeChild(c.firstChild);
+      c.removeAttribute('t');
+      if (value == null) return;
+      if (numeric) {
+        var v = doc.createElementNS(ns, 'v'); v.textContent = String(value); c.appendChild(v);
+      } else {
+        c.setAttribute('t', 'inlineStr');
+        var is = doc.createElementNS(ns, 'is'), t = doc.createElementNS(ns, 't');
+        t.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve');
+        t.textContent = String(value); is.appendChild(t); c.appendChild(is);
+      }
+    }
+    set('M1', codes[product]); set('C3', debit); set('C4', debit); set('C5', date); set('E4', product);
+    // Clear only transaction input cells; retain macro, controls, formulas and styles.
+    var columns = ['A','B','C','D','E','F','G','H','I','J','K','L','N','O','P'];
+    for (var row = 9; row <= 267; row++) columns.forEach(function(col) { if (cells[col+row]) set(col+row, null); });
+    data.forEach(function(e, i) {
+      var row = i+9;
+      set('A'+row, String(i+1)); set('B'+row, e.bank.n); set('C'+row, e.account);
+      set('D'+row, e.name); set('E'+row, e.amount, true);
+      set('G'+row, 'Payer (OUR)'); set('N'+row, e.bank.c); set('O'+row, 'OUR');
+    });
+    zip.file(path, new XMLSerializer().serializeToString(doc));
+    var blob = await zip.generateAsync({type:'blob', mimeType:'application/vnd.ms-excel.sheet.macroEnabled.12', compression:'DEFLATE'});
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = 'CPX_Payroll_'+month+(suffix || '')+'_'+data.length+'คน.xlsm';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function() { URL.revokeObjectURL(url); }, 30000);
+    prog(100, 'สร้างแม่แบบ SCB แล้ว '+data.length+' คน');
+    toast('เปิดไฟล์ใน Excel แล้วกด Generate Text File เพื่อสร้าง TXT สำหรับธนาคาร', 'tok');
+  } catch (err) { prog(-1); toast('❌ '+err.message, 'terr'); }
+}
+
 </script>
 </body>
 </html>

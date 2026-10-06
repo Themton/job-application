@@ -700,7 +700,7 @@ body.hr-mode .hr-hide{display:none!important}
             <button class="btn btn-g btn-s" onclick="payRestoreModal()" style="border:1px solid #7c3aed;color:#6d28d9">⏱️ กู้คืน</button>
             <span id="paydb2-pub-status" style="font-size:12px;margin-left:4px;align-self:center"></span>
             <button class="btn btn-a btn-s" onclick="payDBExportSCB()" style="background:linear-gradient(135deg,#4e2a84,#7b3fa0)">🏦 สร้างไฟล์ SCB</button>
-            <span style="font-size:12px">เปิดไฟล์ SCB ใน Excel แล้วกด Generate Text File เพื่อสร้าง TXT</span>
+            <button class="btn btn-a btn-s" onclick="payDBExportTxt()" style="background:#166534">📄 สร้าง TXT สำหรับธนาคาร</button>
             <button class="btn btn-g btn-s" onclick="payDBSCBSettings()" title="ตั้งค่าเลขบัญชีตัดเงิน + Product">⚙️</button>
             <button class="btn btn-g btn-s" onclick="payDBExportCSV()">📥 Export CSV</button>
             <span id="paydb2-save-status" style="font-size:12px;color:var(--muted)"></span>
@@ -735,6 +735,7 @@ body.hr-mode .hr-hide{display:none!important}
           <div class="fld" style="margin:0"><label style="font-size:11px">เดือน/ปี</label><input type="month" id="pay-month" value="" onchange="if(window.PAY_DATA&&PAY_DATA.length)payLoadUnpaidLeaves()" style="padding:8px 12px;border:1px solid var(--bdr);border-radius:7px;font-size:13px;font-family:inherit;background:var(--inp)"></div>
           <button class="btn btn-a btn-s" onclick="paySaveToDB()" id="pay-save-btn">💾 บันทึกลงระบบ</button>
           <button class="btn btn-a btn-s" onclick="payExportSCB()" style="background:linear-gradient(135deg,#4e2a84,#7b3fa0)">🏦 สร้างไฟล์ Payroll SCB</button>
+          <button class="btn btn-a btn-s" onclick="payExportSCBTxt()" style="background:#166534">📄 สร้าง TXT สำหรับธนาคาร</button>
           <button class="btn btn-g btn-s" onclick="payExportCSV2()">📥 Export CSV</button>
           <span id="pay-save-status" style="font-size:12px;color:var(--muted)"></span>
         </div>
@@ -6250,10 +6251,6 @@ function payDBSave(){
   }).catch(function(e){prog(-1);$('paydb2-save-status').innerHTML='<span style="color:var(--err)">❌ '+e+'</span>'});
 }
 
-function payDBExportTxt(){
-  return payDBExportSCB();
-}
-
 function payDBExportSCB(){
   var valid=PAYDB2.filter(function(e){
     return (!PAYDB2_FILTER || e.status===PAYDB2_FILTER) && e.net>0;
@@ -6267,7 +6264,7 @@ function loadAppSettings(){
   return sb('settings','GET',null,'?select=key,value').then(function(rows){
     (rows||[]).forEach(function(s){APP_SETTINGS[s.key]=s.value;try{localStorage.setItem(s.key,s.value)}catch(e){}});
     // ย้ายค่าเดิมจากเครื่องขึ้น DB ครั้งแรก (ถ้า DB ยังไม่มี)
-    ['scb_debit','scb_product'].forEach(function(k){
+    ['scb_debit','scb_product','scb_fee_debit','scb_system_ref'].forEach(function(k){
       if(!APP_SETTINGS[k]&&localStorage.getItem(k))setSetting(k,localStorage.getItem(k));
     });
   }).catch(function(){}); // ถ้ายังไม่มีตาราง settings → ใช้ localStorage ไปก่อน
@@ -9393,6 +9390,134 @@ async function scbExportPayroll(records, month, suffix) {
     prog(100, 'สร้างแม่แบบ SCB แล้ว '+data.length+' คน');
     toast('เปิดไฟล์ใน Excel แล้วกด Generate Text File เพื่อสร้าง TXT สำหรับธนาคาร', 'tok');
   } catch (err) { prog(-1); toast('❌ '+err.message, 'terr'); }
+}
+
+</script>
+<script>
+/* CPX Toolkit v1.3.5: ExportDebitRow / ExportCreditRow / Export.bas.
+ * Payroll-only: no invoice, WHT, SMS, email or payment advice.
+ * UTF-8 without BOM, CRLF between records, no newline after TRAILR.
+ */
+function scbAccountValid(account) {
+  if (!/^\d{10}$/.test(account) || /^0+$/.test(account)) return false;
+  var key='432765432', sum=0;
+  for(var i=0;i<9;i++) sum+=(Number(account[i])*Number(key[i]))%10;
+  return Number(account[9]) === (10-sum%10)%10;
+}
+
+function scbBuildPayrollTxt(records, options) {
+  var codes={'SCB Payroll1':'PAY','SCB Payroll2':'PA2','SCB Payroll3':'PA3'};
+  var product=codes[options.product];
+  if(!product) throw new Error('กรุณาเลือกบริการ SCB Payroll');
+  if(!records.length) throw new Error('ไม่มีรายการที่ต้องจ่าย');
+  function account(value,label) {
+    var a=String(value || '').replace(/[-\s]/g,'');
+    if(!scbAccountValid(a)) throw new Error(label+': เลขบัญชี SCB ไม่ถูกต้อง');
+    return a;
+  }
+  var debit=account(options.debit,'บัญชีตัดเงิน');
+  var fee=account(options.fee || options.debit,'บัญชีหักค่าธรรมเนียม');
+  var systemRef=String(options.systemRef || '').trim();
+  if(!/^[A-Za-z0-9]{1,18}$/.test(systemRef)) throw new Error('กรอกเลขที่อ้างอิงระบบ / Corporate ID จากข้อมูลบริษัทใน SCB (ตัวอักษรอังกฤษหรือตัวเลข สูงสุด 18 ตัว)');
+  var date=String(options.date || '');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('กรุณาระบุวันที่จ่าย');
+  var parsed=new Date(date+'T00:00:00Z');
+  if(!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0,10)!==date) throw new Error('วันที่จ่ายไม่ถูกต้อง');
+  var batch=String(options.batchRef || '');
+  if(!/^\d{12}$/.test(batch)) throw new Error('เลขอ้างอิงกลุ่มรายการไม่ถูกต้อง');
+  var seen=Object.create(null), total=0;
+  function amount(cents){return (cents/100).toFixed(2);}
+  var transactions=records.map(function(e,i){
+    var label='รายการ '+(i+1);
+    var raw=String(BANK_MAP[e.bank] || e.bank || '').trim();
+    var key=Object.keys(SCB_BANK_MAP2).find(function(k){return k===raw;});
+    if(!key) key=Object.keys(SCB_BANK_MAP2).find(function(k){return raw && (raw.indexOf(k)>=0 || k.indexOf(raw)>=0);});
+    // TBBankPAY in the official template contains only bank 014.
+    if(!key || SCB_BANK_MAP2[key].c!=='014') throw new Error(label+': SCB Payroll1/2/3 รองรับบัญชี SCB เท่านั้น กรุณาแยกบัญชีต่างธนาคาร');
+    var acct=account(e.account,label);
+    if(seen[acct]) throw new Error(label+': บัญชีผู้รับซ้ำ กรุณาตรวจสอบ');
+    seen[acct]=true;
+    var name=String(e.name || '').trim();
+    if(!name || name.length>140 || /[|\r\n\x00-\x1f\x7f]/.test(name)) throw new Error(label+': ชื่อผู้รับต้องยาว 1–140 ตัว และไม่มีอักขระที่ใช้ในไฟล์ไม่ได้');
+    var value=Number(e.net), cents=Math.round(value*100);
+    if(!Number.isFinite(value) || !Number.isSafeInteger(cents) || cents<1 || cents>999999999999999) throw new Error(label+': ยอดจ่ายไม่ถูกต้อง');
+    total+=cents;
+    if(!Number.isSafeInteger(total) || total>999999999999999) throw new Error('ยอดรวมเกินขนาดที่รองรับ');
+    var row=new Array(28).fill('');
+    row[0]='TXNDET'; row[2]=acct; row[4]='014'; row[5]='0111'; row[6]=amount(cents);
+    row[8]='OUR'; row[9]='N'; row[11]='N'; row[13]=name;
+    row[17]='N'; row[20]='N'; row[21]='N'; row[25]='N';
+    return row.join('|');
+  });
+  var fileRef=batch+product;
+  var lines=['HEADER|'+fileRef+'|'+systemRef,
+    ['BCHDET',batch,product,date.replace(/-/g,''),debit,fee,amount(total),records.length,'',''].join('|')];
+  lines=lines.concat(transactions);
+  lines.push(['TRAILR',1,records.length,amount(total)].join('|'));
+  return {text:lines.join('\r\n'),totalCents:total,count:records.length,product:product,fileRef:fileRef};
+}
+
+function scbPayrollBatchRef(now) {
+  var parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(now || new Date());
+  var p={}; parts.forEach(function(x){p[x.type]=x.value;});
+  return p.day+p.month+p.year.slice(-2)+p.hour+p.minute+p.second;
+}
+
+function scbShowTxtExport(records,month,suffix) {
+  if(!records.length){toast('ไม่มีรายการที่ต้องจ่าย','terr');return;}
+  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month || '')){toast('กรุณาเลือกเดือนเงินเดือน','terr');return;}
+  var old=document.getElementById('scb-txt-dialog'); if(old) old.remove();
+  var p=month.split('-');
+  var valueDate=month+'-'+String(new Date(Number(p[0]),Number(p[1]),0).getDate()).padStart(2,'0');
+  var dialog=document.createElement('dialog'); dialog.id='scb-txt-dialog';
+  dialog.style.cssText='border:1px solid #ccc;border-radius:14px;padding:22px;max-width:460px;width:calc(100% - 48px);max-height:90vh;overflow:auto;box-sizing:border-box;font:inherit;background:var(--bg,#fff);color:var(--tx,#222)';
+  dialog.innerHTML='<form><h3 style="margin:0 0 14px">สร้าง TXT เงินเดือน SCB</h3>'+
+    '<p id="scb-txt-summary"></p>'+
+    '<div class="fld"><label>บริการที่บริษัทเปิดใช้</label><select id="scb-txt-product"><option>SCB Payroll1</option><option>SCB Payroll2</option><option>SCB Payroll3</option></select></div>'+
+    '<div class="fld"><label>บัญชีตัดเงิน SCB</label><input id="scb-txt-debit" inputmode="numeric" autocomplete="off" required></div>'+
+    '<div class="fld"><label>บัญชีหักค่าธรรมเนียม SCB</label><input id="scb-txt-fee" inputmode="numeric" autocomplete="off" required></div>'+
+    '<div class="fld"><label>วันที่จ่าย</label><input id="scb-txt-date" type="date" required></div>'+
+    '<div class="fld"><label>เลขที่อ้างอิงระบบ / Corporate ID</label><input id="scb-txt-ref" maxlength="18" autocomplete="off" required></div>'+
+    '<p style="font-size:12px">ดูเลขอ้างอิงจากข้อมูลบริษัทใน SCB Business Anywhere และเลือกบริการตามที่บริษัทเปิดใช้</p>'+
+    '<p id="scb-txt-error" role="alert" style="color:#dc2626"></p>'+
+    '<div style="display:flex;gap:8px"><button type="submit" class="btn btn-a">ดาวน์โหลด TXT</button><button type="button" id="scb-txt-cancel" class="btn btn-g">ยกเลิก</button></div></form>';
+  document.body.appendChild(dialog);
+  function field(id){return dialog.querySelector('#scb-txt-'+id);}
+  var total=records.reduce(function(t,e){return t+Math.round(Number(e.net)*100);},0)/100;
+  field('summary').textContent=records.length+' คน · รวมสุทธิ '+total.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})+' บาท';
+  field('product').value=getSetting('scb_product') || 'SCB Payroll1';
+  field('debit').value=getSetting('scb_debit') || '';
+  field('fee').value=getSetting('scb_fee_debit') || getSetting('scb_debit') || '';
+  field('date').value=valueDate; field('ref').value=getSetting('scb_system_ref') || '';
+  field('cancel').onclick=function(){dialog.close();dialog.remove();};
+  dialog.addEventListener('close',function(){dialog.remove();});
+  dialog.querySelector('form').onsubmit=function(event){
+    event.preventDefault();
+    try{
+      var options={product:field('product').value,debit:field('debit').value,fee:field('fee').value,date:field('date').value,systemRef:field('ref').value,batchRef:scbPayrollBatchRef()};
+      var result=scbBuildPayrollTxt(records,options);
+      // Blob encodes strings as UTF-8 without adding a BOM.
+      var blob=new Blob([result.text],{type:'text/plain;charset=utf-8'});
+      var url=URL.createObjectURL(blob), a=document.createElement('a');
+      a.href=url; a.download='SCB_Payroll_'+month+(suffix || '')+'_'+result.count+'คน_'+result.fileRef+'.txt';
+      document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},30000);
+      setSetting('scb_product',options.product);setSetting('scb_debit',options.debit.replace(/[-\s]/g,''));
+      setSetting('scb_fee_debit',options.fee.replace(/[-\s]/g,''));setSetting('scb_system_ref',options.systemRef.trim());
+      dialog.close();toast('สร้าง TXT '+result.count+' รายการแล้ว กรุณาตรวจสอบผลการนำเข้าที่ธนาคาร','tok');
+    }catch(err){field('error').textContent=err.message;}
+  };
+  dialog.showModal();
+}
+
+function payDBExportTxt(){
+  var rows=PAYDB2.filter(function(e){return (!PAYDB2_FILTER || e.status===PAYDB2_FILTER) && e.net>0;});
+  var labels={monthly:'_ประจำ',monthly_daily:'_ประจำรายวัน',daily:'_รายวัน',resigned_pending:'_ลาออกรอจ่าย'};
+  scbShowTxtExport(rows,$('paydb2-month').value,labels[PAYDB2_FILTER] || '');
+}
+
+function payExportSCBTxt(){
+  var rows=(PAY_DATA || []).filter(function(e){return !e.isTerminated && (e.pay?e.pay.net:e.net)>0;}).map(function(e){return {name:e.name,bank:e.bank,account:e.account,net:e.pay?e.pay.net:e.net};});
+  scbShowTxtExport(rows,$('pay-month').value,'');
 }
 
 </script>

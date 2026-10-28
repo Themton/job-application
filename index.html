@@ -5485,9 +5485,10 @@ function payDBLoad(){
       e._unpaidDays=unpaidMap[e.id]||0;
       // แยกแสดง ลาป่วย / ลากิจ / ลาไม่รับค่าจ้าง — รายวันไม่ได้ค่าจ้างวันลาทุกประเภท
       e._sickDays=0;e._persDays=0;e._leaveDedDays=e._unpaidDays;
-      var _isDailyEmp=e.status==='daily'||((e.status==='resigned_pending'||e.status==='terminated')&&e.prevStatus==='daily');
+      // จ่ายตามวันทำงานจริง: รายวัน, ประจำ(รายวัน), และลาออก/พ้นสภาพที่จ่ายเป็นวัน
+      var _isDailyEmp=e.status==='daily'||e.status==='monthly_daily'||((e.status==='resigned_pending'||e.status==='terminated')&&(e.prevStatus==='daily'||e.prevStatus==='monthly_daily'||(e.work_days||0)>0));
       if(_isDailyEmp){
-        // รายวัน: "จำนวนวัน" ที่กรอก = วันที่มาทำงานจริง (ตัดวันลา/ธุระออกไปแล้ว)
+        // จ่ายตามวัน: "จำนวนวัน" ที่กรอก = วันที่มาทำงานจริง (ตัดวันลา/ธุระออกไปแล้ว)
         // → แสดงวันลาเป็นข้อมูลเท่านั้น ไม่หักเงินซ้ำ
         if(_slByEmp[e.id]){e._sickDays=_slType[e.id].sick||0;e._persDays=_slType[e.id].personal||0}
         e._leaveDedDays=0;

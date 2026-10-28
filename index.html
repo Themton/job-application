@@ -5490,7 +5490,8 @@ function payDBLoad(){
       if(_isDailyEmp){
         // จ่ายตามวัน: "จำนวนวัน" ที่กรอก = วันที่มาทำงานจริง (ตัดวันลา/ธุระออกไปแล้ว)
         // → แสดงวันลาเป็นข้อมูลเท่านั้น ไม่หักเงินซ้ำ
-        if(_slByEmp[e.id]){e._sickDays=_slType[e.id].sick||0;e._persDays=_slType[e.id].personal||0}
+        // ไม่นับวันลาเลย (ไม่แสดง ไม่รวมยอด ไม่หัก)
+        e._sickDays=0;e._persDays=0;e._unpaidDays=0;
         e._leaveDedDays=0;
         e._leaveInfoOnly=true;
         if((e.unpaid_ded||0)>0)e._fixedLeaveDed=true; // เดือนที่บันทึกไว้เคยหักวันลา → คำนวณใหม่ให้ถูก

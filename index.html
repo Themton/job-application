@@ -261,8 +261,8 @@ body.hr-mode .hr-hide{display:none!important}
 
   <div class="cd"><div class="cd-t"><span class="dot"></span> ข้อมูลธนาคาร</div>
     <div class="g2">
-      <div class="fld" id="F4"><label>ธนาคาร <span style="font-size:10px;color:var(--muted);font-weight:400">(กรอกภายหลังได้)</span></label>
-        <select id="i-bank"><option value="">-- เลือกธนาคาร --</option><option>กสิกรไทย (KBANK)</option><option>กรุงเทพ (BBL)</option><option>กรุงไทย (KTB)</option><option>ไทยพาณิชย์ (SCB)</option><option>กรุงศรีอยุธยา (BAY)</option><option>ทหารไทยธนชาต (TTB)</option><option>ออมสิน (GSB)</option><option>ธ.ก.ส. (BAAC)</option><option>เกียรตินาคินภัทร (KKP)</option><option>ซีไอเอ็มบี (CIMB)</option><option>ทิสโก้ (TISCO)</option><option>ยูโอบี (UOB)</option></select>
+      <div class="fld" id="F4"><label>ธนาคาร <span style="color:var(--err)">*</span> (จำเป็น)</label>
+        <select required aria-required="true" id="i-bank"><option value="">-- เลือกธนาคาร --</option><option>กสิกรไทย (KBANK)</option><option>กรุงเทพ (BBL)</option><option>กรุงไทย (KTB)</option><option>ไทยพาณิชย์ (SCB)</option><option>กรุงศรีอยุธยา (BAY)</option><option>ทหารไทยธนชาต (TTB)</option><option>ออมสิน (GSB)</option><option>ธ.ก.ส. (BAAC)</option><option>เกียรตินาคินภัทร (KKP)</option><option>ซีไอเอ็มบี (CIMB)</option><option>ทิสโก้ (TISCO)</option><option>ยูโอบี (UOB)</option></select>
       </div>
       <div class="fld" id="F5"><label>เลขบัญชี <span style="font-size:10px;color:var(--muted);font-weight:400">(กรอกภายหลังได้)</span></label><input id="i-baccount" placeholder="เลขบัญชี" maxlength="15" inputmode="numeric"></div>
       <div class="fld fw"><label>สำเนา Book Bank <span style="font-size:10px;color:var(--muted);font-weight:400">(แนบภายหลังได้)</span></label>
@@ -439,7 +439,7 @@ body.hr-mode .hr-hide{display:none!important}
           <div class="fld" id="ae-fld-pos"><label>ตำแหน่ง <span class="rq">*</span></label><select id="ae-pos" onfocus="aeClsErr(this)"><option value="">-- เลือก --</option></select></div>
           <div class="fld"><label>ประเภท <span class="rq">*</span></label><select id="ae-status"><option value="daily">รายวัน</option><option value="monthly">ประจำ</option><option value="monthly_daily">ประจำ(รายวัน)+ปกส.</option><option value="new">ใหม่</option></select></div>
           <div class="fld"><label>วุฒิการศึกษา</label><select id="ae-edu"><option value="">-- เลือก --</option><option>ไม่มีวุฒิการศึกษา</option><option>ประถมศึกษา</option><option>มัธยมศึกษาตอนต้น (ม.3)</option><option>มัธยมศึกษาตอนปลาย (ม.6)</option><option>ปวช.</option><option>ปวส.</option><option>อนุปริญญา</option><option>ปริญญาตรี</option><option>ปริญญาโท</option><option>ปริญญาเอก</option></select></div>
-          <div class="fld" id="ae-fld-bank"><label>ธนาคาร <span style="font-size:10px;color:var(--muted);font-weight:400">(กรอกภายหลังได้)</span></label><select id="ae-bank" onfocus="aeClsErr(this)"><option value="">-- เลือก --</option><option>กสิกรไทย (KBANK)</option><option>กรุงเทพ (BBL)</option><option>กรุงไทย (KTB)</option><option>ไทยพาณิชย์ (SCB)</option><option>กรุงศรีอยุธยา (BAY)</option><option>ทหารไทยธนชาต (TTB)</option><option>ออมสิน (GSB)</option><option>ธ.ก.ส. (BAAC)</option></select></div>
+          <div class="fld" id="ae-fld-bank"><label>ธนาคาร <span style="color:var(--err)">*</span> (จำเป็น)</label><select required aria-required="true" id="ae-bank" onfocus="aeClsErr(this)"><option value="">-- เลือก --</option><option>กสิกรไทย (KBANK)</option><option>กรุงเทพ (BBL)</option><option>กรุงไทย (KTB)</option><option>ไทยพาณิชย์ (SCB)</option><option>กรุงศรีอยุธยา (BAY)</option><option>ทหารไทยธนชาต (TTB)</option><option>ออมสิน (GSB)</option><option>ธ.ก.ส. (BAAC)</option></select></div>
           <div class="fld" id="ae-fld-account"><label>เลขบัญชี <span style="font-size:10px;color:var(--muted);font-weight:400">(กรอกภายหลังได้)</span></label><input id="ae-account" placeholder="เลขบัญชี" maxlength="15" inputmode="numeric" onfocus="aeClsErr(this)"></div>
         </div>
         <div style="margin-top:14px"><div class="cd-t"><span class="dot"></span> 📎 แนบเอกสาร / รูปภาพ</div>
@@ -1665,6 +1665,7 @@ function toggleCred(){var w=$('cred-wrap');if($('i-edu').value==='ไม่ม�
 
 /* ═══ SUBMIT ═══ */
 function doSubmit(){
+  if(!$('i-bank').value.trim()){$('F4').classList.add('er');toast('กรุณาเลือกธนาคารก่อนบันทึก','terr');$('i-bank').focus();return}
   ['F1','F2','F4','F5','F6'].forEach(function(x){$(x).classList.remove('er')});
   var nm=$('i-name').value.trim(),nick=$('i-nickname').value.trim(),ph=$('i-phone').value.trim(),em=$('i-email').value.trim(),pos=$('i-position').value,bk=$('i-bank').value,ba=$('i-baccount').value.trim(),edu=$('i-edu').value;
   var bday=$('i-birthday').value||null,idcard=$('i-idcard').value.trim();
@@ -1677,7 +1678,7 @@ function doSubmit(){
   if(!ph){$('F2').classList.add('er');toast('กรุณากรอกเบอร์โทร','terr');bad=true}
   else{var dg=ph.replace(/\D/g,'');if(dg.length!==10){$('F2').classList.add('er');toast('เบอร์โทรต้อง 10 หลัก','terr');bad=true}}
   if(!pos){$('F6').classList.add('er');toast('กรุณาเลือกตำแหน่ง','terr');bad=true}
-  // เอกสาร + ธนาคาร/เลขบัญชี ไม่บังคับแล้ว — บันทึกได้แม้ไม่ครบ (ระบบจะแจ้งเตือนที่ Dashboard ว่าขาดอะไร)
+  // ธนาคารจำเป็น ส่วนเอกสารและเลขบัญชียังกรอกภายหลังได้
   if(bad)return;
 
   var btn=$('btnSub');btn.disabled=true;btn.innerHTML='<span class="sp"></span> กำลังบันทึก...';
@@ -2260,6 +2261,7 @@ function empFilterNoCode(){
 }
 function adminAddEmp(){
   aeClsAllErr();
+  if(!$('ae-bank').value.trim()){aeSetErr('ae-fld-bank','กรุณาเลือกธนาคาร');toast('กรุณาเลือกธนาคารก่อนบันทึก','terr');$('ae-bank').focus();return}
   var nm=$('ae-name').value.trim(),nick=$('ae-nick').value.trim(),ph=$('ae-phone').value.trim();
   var em=$('ae-email').value.trim(),dept=$('ae-dept').value,pos=$('ae-pos').value,st=$('ae-status').value;
   var edu=$('ae-edu').value,bk=$('ae-bank').value,ba=$('ae-account').value.trim();
@@ -2274,7 +2276,7 @@ function adminAddEmp(){
   if(!nm){errors.push('กรุณากรอกชื่อ-สกุล');aeSetErr('ae-fld-name','* จำเป็น')}
   if(!ph||ph.replace(/\D/g,'').length!==10){errors.push('เบอร์โทรต้อง 10 หลัก');aeSetErr('ae-fld-phone','* 10 หลัก')}
   if(!pos){errors.push('กรุณาเลือกตำแหน่ง');aeSetErr('ae-fld-pos','* จำเป็น')}
-  // ธนาคาร + เลขบัญชี ไม่บังคับ — บันทึกได้แม้ไม่มี (Dashboard จะแจ้งเตือน 'ขาด เลขบัญชี')
+  // ธนาคารจำเป็น ส่วนเลขบัญชียังกรอกภายหลังได้
 
   if(errors.length){
     $('ae-errors').innerHTML='⚠️ กรุณาตรวจสอบข้อมูล:<br>• '+errors.join('<br>• ');
@@ -3448,7 +3450,7 @@ function editEmp(id){
       '<div class="fld"><label>ตำแหน่ง</label><select id="ed-pos">'+posOpts+'</select></div>'+
       '<div class="fld"><label>ประเภท</label><select id="ed-status">'+stOpts+'</select></div>'+
       '<div class="fld"><label>วุฒิการศึกษา</label><select id="ed-edu">'+eduOpts+'</select></div>'+
-      '<div class="fld"><label>ธนาคาร</label><select id="ed-bank">'+bankOpts+'</select></div>'+
+      '<div class="fld"><label>ธนาคาร * (จำเป็น)</label><select required aria-required="true" id="ed-bank">'+bankOpts+'</select></div>'+
       '<div class="fld"><label>เลขบัญชี</label><input id="ed-baccount" value="'+esc(a.bank_account||'')+'" maxlength="15" inputmode="numeric"></div>'+
     '</div>'+
     '<div style="margin-top:14px"><div class="cd-t"><span class="dot"></span> 📎 เอกสาร / รูปภาพ</div>'+
@@ -3479,6 +3481,7 @@ function edPickFile(inp,key){
 }
 
 function saveEmp(id){
+  if(!$('ed-bank').value.trim()){toast('กรุณาเลือกธนาคารก่อนบันทึก','terr');$('ed-bank').focus();return}
   var d={
     name:$('ed-name').value.trim(),
     nickname:$('ed-nick').value.trim(),

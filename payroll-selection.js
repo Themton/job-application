@@ -40,7 +40,7 @@
     host.querySelectorAll('td.xname').forEach(function(cell,n){
       var f=rows[n];if(!f)return;
       var box=document.createElement('input');box.type='checkbox';box.dataset.transferIndex=f.i;
-      box.setAttribute('aria-label','เลือกโอน '+f.e.name);box.style.cssText='width:18px;height:18px;margin-right:8px;vertical-align:middle';
+      box.setAttribute('aria-label','เลือกโอน '+f.e.name);box.style.cssText='-webkit-appearance:checkbox!important;appearance:auto!important;display:inline-block!important;opacity:1!important;width:20px!important;height:20px!important;min-width:20px!important;padding:0!important;margin:0 8px 0 0!important;vertical-align:middle;accent-color:#2563eb;cursor:pointer;border:1px solid #64748b!important;background:#fff!important';
       box.onchange=function(){f.e._transferSelected=box.checked;update();};cell.prepend(box);
     });update();
   };

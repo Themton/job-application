@@ -7,6 +7,7 @@
       (!q || (e.name + ' ' + e.nickname + ' ' + e.position).toLowerCase().includes(q));
   }
   function selected() {
+    if (month !== $('paydb2-month').value) return [];
     return PAYDB2.filter(function(e) { return visible(e) && e._transferSelected === true && Number(e.net) > 0; });
   }
   function update() {
@@ -51,6 +52,10 @@
     if(kind==='txt')return scbShowTxtExport(rows,$('paydb2-month').value,'_เลือกโอน');
     return scbExportPayroll(rows,$('paydb2-month').value,'_เลือกโอน');
   }
+  $('paydb2-month').addEventListener('change',function(){
+    PAYDB2.forEach(function(e){delete e._transferSelected;});
+    month=$('paydb2-month').value;update();
+  });
   payDBExportTxt=function(){return exportRows('txt');};
   payDBExportSCB=function(){return exportRows('xlsm');};
 })();
